@@ -47,6 +47,7 @@ suppressMessages(library(ff))            # saves large matrices on disk and not 
 suppressMessages(library(caTools))
 suppressMessages(library(pracma))        # for wind vectors
 suppressMessages(library(easyVerification)) # spread-error ratio
+suppressMessages(library(fields))        # for designer colors and raster maps
 
 #library(pspline)
 # first install ncdfUtils of Jonas with all his functions 

@@ -1,43 +1,39 @@
-expname="EKF400_v1.3_corr_echam_clim" # "EKF400_v1.3_full_res" #
+expname="EKF400_v1.3_test_merged_code" # "EKF400_v1.3_full_res" #
 # TODO
+#  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
+                                 # maybe idealized pseudoproxy experiment
 #  "EKF400_v1.4_new_error"       # run with new error covar estimates from Luca 
 #  "PAGES_2_0_full"              # complete PAGES proxy database version 2.0
 #  "PAGES_2_0_screened"          # screened version of PAGES DB 2.0, just good asian rec.
 #  "all_data_2017"               # include ISTI, Petra's TRW and more docu and ... data
 #
-# CURRENTY RUNNING
+# DONE
 #  "EKF400_v1.3_full_res"        # same but tps only and EVERY grid cell, 1901-2004
 #  "EKF400_v1.3_no_forc_30_ens" # use all years as one big 30 member ensemble regardless of forcing, 1901-2004
 #  "EKF400_v1.3_no_forc_100_ens" # use all years as one big 100 member ensemble regardless of forcing, 1901-2004
 #  "EKF400_v1.3_no_forc_500_ens" # use all years as one big 500 member ensemble regardless of forcing, 1901-2004
-#
-# DONE
 #  "clim_covar_25_NO_loc_250mem" # echam covar 75% current year 25% climatology
-#                                # but clim. calc. from n=200 instead of 500; code version 1.3
+                                 # but clim. calc. from n=200 instead of 500; code version 1.3
 #  "EKF400_v1.3_corr_echam_clim" # echam climatology had wrong dates, 35 years shift
-#                                # validation data had bug, full period
+                                 # validation data had bug, full period
 #  "clim_covar_75_NO_loc"        # echam covar 25% current year 75% climatology
 #  "clim_covar_75_NO_with"       # code version 1.2
 #  "clim_covar_25_NO_loc"        # echam covar 75% current year 25% climatology
 #  "clim_covar_25_with_loc"      # code version 1.2
 #  "clim_covar_50_NO_loc_250mem" # echam covar 50% current year 50% climatology
-#                                # but clim. calc. from n=200 instead of 500
-#                                # REPEAT: obviously something wrong (see spread recuction)
+                                 # but clim. calc. from n=200 instead of 500
+                                 # REPEAT: obviously something wrong (see spread recuction)
 #  "clim_covar_50_NO_loc"        # echam covar 50% current year 50% climatology
 #  "clim_covar_50_with_loc"      # run with version 1.1???
 #  "clim_covar_100_with_loc"     # echam covar 0% current year 100% climatology
 #  "clim_covar_100_NO_loc"       # run with version 1.1???
 
 #  "EKF400_v1.2_corr_inst_screen"  # outlier screening of instr. data corrected,
-#                                  # now 71-yr window instead of current year only
-#                                  # proper vali data, too. Hopefully! NO!!!
+                                   # now 71-yr window instead of current year only
+                                   # proper vali data, too. Hopefully! NO!!!
 #  "EKF400_v1.1_correct_71yr_anom" # corrected 71-yr anomaly in assim data 08-2017
 #expname=paste(expname,format(Sys.time(),"%Y%m%d%H%M"),sep="_")
 
-  
-  
-# !!!!! run generate ECHAM and generate CRU with "land_only=F" first to correct 
-# existing files and t500->t850 etc.
 
 
 
@@ -64,12 +60,6 @@ expname="EKF400_v1.3_corr_echam_clim" # "EKF400_v1.3_full_res" #
 # - run tps_only because super slow otherwise (1 year in ~2 days)
 
 # Planned Experiments
-# 1. - ADD LAST 100 YR TO echallts_for_covar.Rdata
-#      err. covar. climatology only vs. 50% clim, 50% current year vs. current 100% current year
-#      use monthly covar structure to take seasonal changes into account, i.e. covar jan != feb
-#      exp. w/ and w/o localization
-#   DONE 2017-07-31
-#      check different fractions (or different size of the ensemble)
 # 2. - Paleodata only, NO instr. (after adding N-TREND, PAGES CORALS and more hist. DOCUMENTS)
 # 3. - all year as one big ensemble (Hakim style)
 # 4. - 60 ens. mem. vs 30 mem.
@@ -85,8 +75,6 @@ expname="EKF400_v1.3_corr_echam_clim" # "EKF400_v1.3_full_res" #
 # estimate observation errors using "Simultaneous estimation of covariance inflation and 
 # observation errors within an ensemble Kalman filter"
 # Hong Li, Eugenia Kalnay and Takemasa Miyoshi
-
-# try using all years as one big ensemble in Hakim style
 
 # change every2grid  to lowres, i.e. interpolation
 # library(akima)
@@ -172,49 +160,28 @@ generate_LUTPAULKUT=F # gridded seasonal recons (1750-1999)
 #} 
 #generate_ind_recon=F   # read Stefan's indices 1900-2000 from .txt to .RData
 # use scripts in data_yuri to generate .Rdata files 
-generate_t_yuri=F      # if TRUE -> yuri's temp. data collection is read
+generate_t_yuri=F      # if TRUE -> yuri's temp. data collection including HISTALP is read
 generate_slp_yuri=F    # if TRUE -> yuri's slp data collection is read
 generate_GHCN=F        # if TRUE -> orig. GHCN stat. data is read; 
 generate_GHCN_precip=F # if FALSE -> ghcn.Rdata 
-#generate_HISTALP=F     # histalp temp. is already in yuri's collection 
-#if (syr < 1960) {
-#  generate_PROXIES=T     # if FALSE -> real_proxies.Rdata
-#} else {
-generate_PROXIES=F
-#} 
-trw_only=F           # Petra's TRW only
-mxd_only=F           # Use only MXD tree ring proxies, NOT Petra's TRW
-schweingr_only=F     # Use Schweingruber MXD grid only
 generate_DOCUM=F        # if TRUE -> yuri's docu. data collection is read 
+generate_PROXIES=F
 
-# choose data (only 1 of the following options must be TRUE!!!)
-# if (eyr > 1659) {
-#   instrumental=T        # all instrumental stations
-# } else {
-#   instrumental=F
-# }
 yuri_temp=T          # yuri's data compilation, SLP always loaded
 yuri_slp=T
 ghcn_temp=T
 ghcn_prec=F
-#inst_at_proxy=F        # only few instrumental stations close to proxy sites
-#inst_at_proxy_noise=F  # only few instrumental stations close to proxy sites + noise
-# if (syr < 1960) {
-#   real_proxies=T         # Proxy data experiment (regression NOT H operator)
-# } else {
-#   real_proxies=F
-# }
-# if (syr > 1853) {
-#   docum=F                 # read documentary based data
-# } else {
-#   docum=T
-# }
-# print(paste("instr:",instrumental, "proxies:",real_proxies, "documentary:",docum))
+trw_only=F           # Petra's TRW only
+mxd_only=F           # Use only MXD tree ring proxies, NOT Petra's TRW
+schweingr_only=F     # Use Schweingruber MXD grid only
+
+# all available data selected above are automatically switched on when available in EnSRF_data
+
 
 loc=T      # T = WITH localization, F without
 covarclim=0 # set 50 or 100 [%] how much echam climatology covariance should be used
-# default=0, i.e. current year covar
-n_covar=7   # set max to 7 for n=500, other exp. 14 for n=250
+# default=0, i.e. current year covar from ECHAM ensemble
+n_covar=500  # set sample size for covar calc, e.g. 250 or 500
 
 calc_decorr_dist=F     # calculate decorrelation distance for each variable from ECHAM to set L
 if (loc) {
@@ -245,11 +212,12 @@ if (loc) {
   l_dist_ind=999999 
 }
 
-
+# ATTENTION: landcorrected only works with anomaly_assim==T and every2grid==T!!!
+  landcorr = F      # use simulation WITHOUT land use bug if TRUE
 # how to treat multiple input series in same grid box
 first_prox_per_grid=F  # first proxy per echam grid box ATTENTION: only this 
 # or second next option (avg_prox_per_grid) can be TRUE
- firstproxres=10      # grid resolution for instr. stations (5 = echamgrid/5)
+  firstproxres=10      # grid resolution for instr. stations (5 = echamgrid/5)
 avg_prox_per_grid=T    # average more than one proxy per echam grid box 
                        # and calc proxy vs echam correlation
 instmaskprox=F         # remove proxy data from grid boxes that have instr. data
@@ -264,18 +232,18 @@ loo=F                  # leave-one-out validation
 if (loo) {tps_only=T;no_stream=F}  # reduce state vector for faster validation
 no_forc_big_ens=F      # use all years as one big ensemble regardless of forcing like LMR
                        # ONLY works with next option load_71yr_anom=T
- n_no_forc=500         # ensemble size for no_forc LMR like experiment
-load_71yr_anom=T       # load 71yr echam anomalies calculated with cdo
-anom_reload=F          # reload anom calculated in R (next option)
-anom_save=F            # save anom calculated in R to reload next time
-if (load_71yr_anom==T) {
-  anom_reload=F
-  anom_save=F}
+  n_no_forc=500         # ensemble size for no_forc LMR like experiment
+#load_71yr_anom=T       # load 71yr echam anomalies calculated with cdo
+#anom_reload=F          # reload anom calculated in R (next option)
+#anom_save=F            # save anom calculated in R to reload next time
+#if (load_71yr_anom==T) {
+#  anom_reload=F
+#  anom_save=F}
 check_assimdata=T      # screen assimilation data before using it
 
 if (no_stream & tps_only) {
- tps_only = F
- print('ACHTUNG: tps_only was set to FALSE')
+  tps_only = F
+  print('ACHTUNG: tps_only was set to FALSE')
 }
 
 
@@ -315,14 +283,14 @@ ncep_vali=F            # NCEP/NCAR reanalysis data for validation
 #####################################################################################
 # prepare plot switches
 #####################################################################################
-monthly_out=T    # if sixmonstatevector=T output is backtransformed to seasonal 
+monthly_out=F    # if sixmonstatevector=T output is backtransformed to seasonal 
                  # average or monthly data if monthly_out=T 
 calc_prepplot=F  # save half year averages calc from monthly data into /prepplot folder
   write_coor=F     # write ascii files with assimilated stations and data per ts
 # maybe change files names for new EKF400 version "1.0" to "1.1"
 # write_netcdf requires to run calc_prepplot before 
 # best set load_prepplot=F
-write_netcdf=T   # write entire EKF400 to NetCDF files
+write_netcdf=F   # write entire EKF400 to NetCDF files
 version="v1.3"   # set version number for netcdf file name
 # v1.1 at DKRZ is experiment 1.2 here!
 if (!monthly_out & write_netcdf) {

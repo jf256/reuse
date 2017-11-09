@@ -16,7 +16,7 @@ if (machine=="macbook") {
     eyr = as.numeric(args[2])
   }
   print(paste('period',syr, 'to', eyr))
-  workdir='/scratch3/joerg/projects/reuse/src/'
+  workdir='/scratch3/joerg/projects/reuse/reuse_git/' #src/'
   dataextdir='/mnt/climstor/giub/EKF400/'
   dataintdir=paste0(workdir,'../data/')
 }

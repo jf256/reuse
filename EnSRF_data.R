@@ -14,8 +14,8 @@ rm(list=ls())
 #}
 
 # enter syr ane eyr manually
-syr=1942
-eyr=1943
+syr=1800
+eyr=1801
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
 args <- commandArgs(TRUE)
@@ -28,7 +28,8 @@ print(paste('period',syr, 'to', eyr))
 user <- system("echo $USER",intern=T)
 print(paste('User:',user))
 if (user=="veronika") {
-  workdir('/scratch/veronika/rerun/r_code')
+  # workdir('/scratch/veronika/rerun/r_code')
+  workdir ='/scratch3/veronika/reuse/reuse_git/' # where are the scripts from github
 } else if (user=="joerg") {
   workdir='/scratch3/joerg/projects/reuse/reuse_git/'
 } else {
@@ -216,7 +217,7 @@ if (generate_PROXIES){
     schprox <- read_proxy_schweingr(fsyr,feyr)
     mxdprox <- read_proxy_mxd(fsyr,feyr)
     trwprox <- read_proxy2(fsyr,feyr)
-# ORIG VERSION JOERG
+# ORIG VERSION JOERG -> I think both versions are correct, just as far as I remember in the old script that i Used this line was not included
     ## add NA for TRW data that ends 1970
     #trwprox$data <- rbind(trwprox$data,matrix(NA,nrow=length(seq(1971,2004)),
     #                  ncol=dim(trwprox$data)[2]))
@@ -318,7 +319,7 @@ for (cyr in syr2:eyr) {
     load(paste(dataextdir,"echam/echam_",(cyr-1),"-",cyr,".Rdata",sep=""))
     #load(paste(dataintdir,"echam/echam_",(cyr-1),"-",cyr,".Rdata",sep=""))
   }
-  echam.sd <- echam # to have non-sixmon echam in docum section
+  echam.sd <- echam # to have non-sixmon echam in docum section -> I would move it to 1.3
   if ((anomaly_assim) & (!no_forc_big_ens)) {  
     # anomalies calculated efficiently with cdo, slow calculation within R has been removed
     yr1 <- cyr-1
@@ -459,8 +460,8 @@ for (cyr in syr2:eyr) {
     echam_clim_mon_ensmean <- echam_clim$ensmean[,10:21]
     rm(echam_anom,echam_clim)
     if (landcorr) {
-      # Veronika thinks they (temp2, precip, slp) are corrected for the climatology
-      # Veronika thinks they (precip, slp) are NOT corrected for the anomaly
+      # They (temp2, precip, slp) are corrected for the climatology
+      # They (precip, slp) are NOT corrected for the anomaly
       landcorrected_anom$data[landcorrected_anom$names=='precip',] <-
         landcorrected_anom$data[landcorrected_anom$names=='precip',] * 3600 * 24 * 30
       landcorrected_anom$data[landcorrected_anom$names=='slp',] <-
@@ -474,19 +475,6 @@ for (cyr in syr2:eyr) {
   
   
   # 1.3 Calc echam st. dev. for each grid point and month over ens memb. to scale docu data
-
-# VERONIKA: PLEASE CHECK IF THE NEXT LINES ARE NEEDED
-  #tmp1 <- array(echam$data,c(dim(echam$data)[1]*dim(echam$data)[2],dim(echam$data)[3]))
-  # cut oct cyr-1 to sep cyr
-  #tmp2 <- tmp1[((9*dim(echam$data)[1]+1):(dim(tmp1)[1]-(3*dim(echam$data)[1]))),] 
-  #if (docum) { # probabaly later this if will be deleted, now I just would like to test for the docu data
-  #    # if I want to use the echam.sd in the 6monstatevector format then maybe I could merge this point to 1.5
-  #    # or maybe simply enough to do the first if in 1.5
-  #    echam$data <- array(tmp2,c(dim(tmp2)[1]/(((dim(echam$data)[2]/12)-1)*2), (((dim(echam$data)[2]/12)-1)*2),dim(tmp2)[2]))
-  #} else {
-  #    echam$data <- array(tmp2,c(dim(tmp2)[1]/12,12,dim(tmp2)[2]))
-  #}
-  #rm(tmp1);rm(tmp2)
   if (sixmonstatevector) {
     echam.sd$data <- apply(echam$data[,10:21,],1:2,sd)
     echam.sd$time <- echam$time[10:21]
@@ -742,7 +730,7 @@ for (cyr in syr2:eyr) {
   
   ##########################################################################################
   # 3. Real Proxy Part
-  # 3.1 Loading documentary data
+  # 3.1 Loading proxy data
   # 3.2 Screen the proxy data: more than 5 std. dev. from mean
   # 3.3 Convert to 2 season per year
   # 3.4 Calculate the anomalies
@@ -750,7 +738,7 @@ for (cyr in syr2:eyr) {
   # 3.6 Set real_proxies to FALSE if there is no data
   ##########################################################################################
 
-  # 3.1 Loading documentary data
+  # 3.1 Loading proxy data
   if (real_proxies){
     load(paste0("../data/proxies/real_proxies_",fsyr,"-",feyr,".Rdata"))  
   
@@ -788,6 +776,9 @@ for (cyr in syr2:eyr) {
     tmp2[,2,]=tmp1
     realprox.allts$data=array(tmp2,c(dim(tmp2)[1],dim(tmp2)[2]*dim(tmp2)[3]))
     realprox.allts$data=realprox.allts$data[,3:dim(realprox.allts$data)[2]] # why is first year removed?
+    # although Im not sure about it, I found a note about deleting the first line, where I assumed it was done
+    # because if sixmonstatevector = T then the syr was equal to syr +1 -> but I havent checked it now if it was the reason
+    # maybe now we dont need anymore to delete the first line
     realprox.allts$time=seq(fsyr+1,feyr+0.5,0.5) 
     ti=which(floor(realprox.allts$time)==cyr)
     sts=ti[1]
@@ -1052,22 +1043,6 @@ for (cyr in syr2:eyr) {
               stsv = round(dim(vtmp)[2]/2)
 
               for (j in 1:12) {
-                # if ( !is.na(vtmp[j,((stsv-1)/12+1),i]) ) { # I added this, cause it can happen that the station in a certain month of cyr year has no data -> not good yet
-                #if (all(is.na(vtmp[j,,i])) ) { # good
-                #  print(paste0("There is no data for month:", j, " at station:",i))
-                #} else {
-# VERONIKA PLEASE CHECK:  I spent quite a bit of time and think I fixed everything now!
-#                  echam.clim_2 = echam.clim
-#                  tmp.echam.clim = array(echam.clim_2$ensmean, dim(echam.clim_2$ensmean)[1]*dim(echam.clim_2$ensmean)[2])
-#                  echam.clim_2$ensmean = array(tmp.echam.clim, c(dim(tmp.echam.clim)/12, 12))
-#                  # Probably at this point Veronika throws out a lot of data that Jörg still uses to assimilate
-#                  # Therfore Veronika commented following if
-#                  # if ( sum(is.na(vtmp[j,,i])) > 41) { # I added this if, but maybe one if would be enough (all - 41)
-#                  #  print("Inst data will not be assimilated at this time step, because vtmp has more than 41 NA values" )
-#                  #  biasm = NA
-#                  #} else {
-#                  biasm <- echam.clim_2$ensmean[m,j] - mean(vtmp[j,,i], na.rm = T)
-                
                 # if bias corrected proxy/inst is outside echam ens range +- 5SD,
                 # data point will not be assimilated at this time step
                 if (!all(is.na(vtmp[j,,i])) ) { 
@@ -1355,6 +1330,7 @@ for (cyr in syr2:eyr) {
       }  
     }
     
+    # 5.4.3 Average more than one proxy per echam grid box 
     if (avg_prox_per_grid) {
       # average data in same grid box and count number of avg. series as error estimate
       # separate temp, precip, slp
@@ -1379,6 +1355,7 @@ for (cyr in syr2:eyr) {
           m=k[which(match(k,l)>0)]
           if (length(m) > 0) {
             dlist[i]=m   #[1]
+            # it gives warning message because now the echam is in 6monstatevector format the length(m)=66 (6 month * 11 variables)
           } else {
             dlist[i]=NA
           }
@@ -1502,6 +1479,7 @@ for (cyr in syr2:eyr) {
       }
     } # end instmaskprox
     
+   # 5.7 Use every ??th (see code below) proxy record
     if (reduced_proxies) {
       every <- 12 
       if (real_proxies) {

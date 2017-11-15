@@ -787,7 +787,12 @@ for (cyr in syr2:eyr) {
       inst_t <- t
     }
     if (ghcn_temp) {
-      load(paste0(dataextdir,"assimil_data/ghcn/ghcn_temp_1600-2005.Rdata"))
+      if (isti_instead_ghcn) {
+        load(paste0(dataextdir,"assimil_data/isti/isti_1600-2005.Rdata"))
+        print("ACHTUNG: ISTI instr. temp. data will be assimilated NOT GHCN")
+      } else {
+        load(paste0(dataextdir,"assimil_data/ghcn/ghcn_temp_1600-2005.Rdata"))
+      }
     }
     if (ghcn_prec) {
       load(paste0(dataextdir,"assimil_data/ghcn/ghcn_precip_1600-2005.Rdata"))

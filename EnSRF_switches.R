@@ -170,6 +170,7 @@ generate_PROXIES=F
 yuri_temp=T          # yuri's data compilation, SLP always loaded
 yuri_slp=T
 ghcn_temp=T
+isti_instead_ghcn=F  # switch from ghcn to isti (ghcn_temp must still be set to TRUE)
 ghcn_prec=F
 trw_only=F           # Petra's TRW only
 mxd_only=F           # Use only MXD tree ring proxies, NOT Petra's TRW

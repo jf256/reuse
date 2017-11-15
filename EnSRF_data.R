@@ -319,7 +319,6 @@ for (cyr in syr2:eyr) {
     load(paste(dataextdir,"echam/echam_",(cyr-1),"-",cyr,".Rdata",sep=""))
     #load(paste(dataintdir,"echam/echam_",(cyr-1),"-",cyr,".Rdata",sep=""))
   }
-  echam.sd <- echam # to have non-sixmon echam in docum section -> I would move it to 1.3
   if ((anomaly_assim) & (!no_forc_big_ens)) {  
     # anomalies calculated efficiently with cdo, slow calculation within R has been removed
     yr1 <- cyr-1
@@ -475,6 +474,7 @@ for (cyr in syr2:eyr) {
   
   
   # 1.3 Calc echam st. dev. for each grid point and month over ens memb. to scale docu data
+  echam.sd <- echam # to have non-sixmon echam in docum section -> I would move it to 1.3
   if (sixmonstatevector) {
     echam.sd$data <- apply(echam$data[,10:21,],1:2,sd)
     echam.sd$time <- echam$time[10:21]
@@ -775,11 +775,7 @@ for (cyr in syr2:eyr) {
     tmp2=array(NA,c(dim(tmp1)[1],2,dim(tmp1)[2]))
     tmp2[,2,]=tmp1
     realprox.allts$data=array(tmp2,c(dim(tmp2)[1],dim(tmp2)[2]*dim(tmp2)[3]))
-    realprox.allts$data=realprox.allts$data[,3:dim(realprox.allts$data)[2]] # why is first year removed?
-    # although Im not sure about it, I found a note about deleting the first line, where I assumed it was done
-    # because if sixmonstatevector = T then the syr was equal to syr +1 -> but I havent checked it now if it was the reason
-    # maybe now we dont need anymore to delete the first line
-    realprox.allts$time=seq(fsyr+1,feyr+0.5,0.5) 
+    realprox.allts$time=seq(fsyr,feyr+0.5,0.5) 
     ti=which(floor(realprox.allts$time)==cyr)
     sts=ti[1]
     ets=ti[length(ti)]      
@@ -1354,7 +1350,7 @@ for (cyr in syr2:eyr) {
           l=which(abs(clat-plat)==min(abs(clat-plat))) 
           m=k[which(match(k,l)>0)]
           if (length(m) > 0) {
-            dlist[i]=m   #[1]
+            dlist[i]=m[1]
             # it gives warning message because now the echam is in 6monstatevector format the length(m)=66 (6 month * 11 variables)
           } else {
             dlist[i]=NA

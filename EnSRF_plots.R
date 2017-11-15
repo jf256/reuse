@@ -4,6 +4,15 @@
 # plot_echam(bias.ech, varname='temp2', type='ensmean', cex.pt=1.5, ti=1)
 # plot_echam(bias$'Localized analysis', varname='temp2', type='ensmean', cex.pt=2, ti=1)
 # plot_echam(echam.anom, varname='temp2', type='ensmean', cex.pt=2, ti=1)
+# par(mar=c(0,0,0,0))
+# map("world",interior=F,col='darkgrey') 
+# map.axes()
+# title("")
+# #map.scale(-180, -50, relwidth = 0.15, metric=T, ratio=F,cex=0.5) # ACHTUNG, wenn Projektion nicht längentreu
+# points(calibrate$lon, calibrate$lat, main='1943 station locations',pch='.',col='red')
+# points(calibrate$lon[which(calibrate$sour=="prox")], 
+#       calibrate$lat[which(calibrate$sour=="prox")],pch=1,col='red',cex=0.5)
+# points(analysis$lon[H.i[,1]],analysis$lat[H.i[,1]],col='blue',cex=0.5,pch=20) # nur die proxies sind in H.i
 
 figpath=paste0('../figures/',expname,'_',syr,'-',eyr,'/') #format(Sys.time(), "%Y%m%d_%H-%M_")
 dir.create(figpath)

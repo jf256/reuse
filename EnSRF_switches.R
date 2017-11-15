@@ -225,8 +225,8 @@ reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=F            # calc on land only
 fasttest=F             # use even less data
-tps_only=F             # only use temp, precip and slp in state vector, remove other vars
-no_stream=T            # all echam vars but stream function as there is problem with 
+tps_only=T             # only use temp, precip and slp in state vector, remove other vars
+no_stream=F            # all echam vars but stream function as there is problem with 
 #                       # 5/9 levels, which are in lat dimension before and after 1880
 loo=F                  # leave-one-out validation 
 if (loo) {tps_only=T;no_stream=F}  # reduce state vector for faster validation

@@ -187,20 +187,20 @@ if (generate_GHCN_precip){
 
 if (generate_t_yuri){
   print("generate_t_yuri")
-  source("../assim_data/data_yuri/t_assimil/read_all.R")
+  source(paste0(dataextdir,"assim_data/data_yuri/t_assimil/read_all.R"))
 }
 
 if (generate_slp_yuri){
   print("generate_slp_yuri")
-  source("../assim_data/data_yuri/slp_assimil/read_all.R")
+  source(paste0(dataextdir,"assim_data/data_yuri/slp_assimil/read_all.R"))
 }
 
 if (generate_DOCUM){
   print("generate_DOCUM")
-  source("../assim_data/data_yuri/t_docu/read_seas.R")
-  source("../assim_data/data_yuri/t_docu/read_monthly.R")
-  source("../assim_data/data_yuri/t_docu/read_JFMA.R")
-  source("../assim_data/data_yuri/t_docu/read_AMJJA.R")
+  source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_seas.R"))
+  source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_monthly.R"))
+  source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_JFMA.R"))
+  source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_AMJJA.R"))
 }
 
 if (generate_PROXIES){
@@ -622,13 +622,13 @@ for (cyr in syr2:eyr) {
   # 2.1 Loading the validation data set
   if (vali) {
     if (every2grid) {
-      if (ncep_vali) {load(paste("../data/ncep/ncep_allvar_",syr_ncep,"-",eyr_ncep,"_2ndgrid.Rdata",sep=""))
-      } else if (recon_vali) {load(paste("../data/recon/recon_allvar_",syr_recon,"-",eyr_recon,"_2ndgrid.Rdata",sep=""))
-      } else if (cru_vali) {load(paste("../data/cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid.Rdata",sep=""))} 
+      if (ncep_vali) {load(paste(dataextdir,"vali_data/ncep/ncep_allvar_",syr_ncep,"-",eyr_ncep,"_2ndgrid.Rdata",sep=""))
+      } else if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,"_2ndgrid.Rdata",sep=""))
+      } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid.Rdata",sep=""))} 
     } else {
-      if (ncep_vali) {load(paste("../data/ncep/ncep_allvar_",syr_ncep,"-",eyr_ncep,".Rdata",sep=""))
-      } else if (recon_vali) {load(paste("../data/recon/recon_allvar_",syr_recon,"-",eyr_recon,".Rdata",sep=""))
-      } else if (cru_vali) {load(paste("../data/cru/cru_allvar_",syr_cru,"-",eyr_cru,".Rdata",sep=""))} 
+      if (ncep_vali) {load(paste(dataextdir,"vali_data/ncep/ncep_allvar_",syr_ncep,"-",eyr_ncep,".Rdata",sep=""))
+      } else if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,".Rdata",sep=""))
+      } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,".Rdata",sep=""))} 
     }
     # if (ind_recon) {
     #   load(file=paste("../data/indices/indices_recon_",syr,"-",eyr,".Rdata",sep=""))
@@ -740,7 +740,7 @@ for (cyr in syr2:eyr) {
 
   # 3.1 Loading proxy data
   if (real_proxies){
-    load(paste0("../data/proxies/real_proxies_",fsyr,"-",feyr,".Rdata"))  
+    load(paste0(dataextdir,"assimil_data/rdata_files/real_proxies_",fsyr,"-",feyr,".Rdata"))  
   
 
     # 3.2 Screen the proxy data
@@ -847,7 +847,7 @@ for (cyr in syr2:eyr) {
 
   if (docum) {
     # 4.1 Loading documentary data
-    load('../assimil_data/data_yuri/t_docu_monthly.Rdata')
+    load(paste0(dataextdir,"assimil_data/rdata_files/t_docu_monthly.Rdata"))
     if (!any(!is.na(t$data))) { docu=F }
     
     if (sixmonstatevector) {
@@ -973,18 +973,18 @@ for (cyr in syr2:eyr) {
   if (instrumental){
     # 5.1 Loading the files
     if (yuri_slp) {
-      load('../assimil_data/data_yuri/slp.Rdata') # monthly slp collection from yuri, histalp included
+      load(paste0(dataextdir,'assimil_data/rdata_files/slp.Rdata')) # monthly slp collection from yuri, histalp included
       inst_slp <- slp
     }
     if (yuri_temp) {
-      load('../assimil_data/data_yuri/t.Rdata') # monthly temp collection from yuri, histalp included
+      load(paste0(dataextdir,'assimil_data/rdata_files/t.Rdata')) # monthly temp collection from yuri, histalp included
       inst_t <- t
     }
     if (ghcn_temp) {
-      load("../assimil_data/ghcn/ghcn_temp_1600-2005.Rdata")
+      load(paste0(dataextdir,"assimil_data/ghcn/ghcn_temp_1600-2005.Rdata"))
     }
     if (ghcn_prec) {
-      load("../assimil_data/ghcn/ghcn_precip_1600-2005.Rdata")
+      load(paste0(dataextdir,"assimil_data/ghcn/ghcn_precip_1600-2005.Rdata"))
     }
   
     # 5.2 Qualtiy check of the data

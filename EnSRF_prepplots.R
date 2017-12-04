@@ -3,20 +3,31 @@
 rm(list=ls())
 machine="climcal" #"climcal3" # "climpa12"  
 if (machine=="macbook") {
-  syr=1603     # set to 1603 to process analysis; set to >=1901 or 1902? for cru validation
-  eyr=2004     # max 2004 ?
+  syr=1904     # set to 1603 to process analysis; set to >=1901 or 1902? for cru validation
+  eyr=1909     # max 2004 ?
   datadir="/Volumes/DATA/climdata/"
   workdir=('~/unibe/projects/EnSRF/src/')
 } else {
-  syr=1903 #1902 #1941
-  eyr=2004 #2003 #1970
+  syr=1904 #1902 #1941
+  eyr=1909 #2003 #1970
   args <- commandArgs(TRUE)
   if (length(args!=0)) {
     syr = as.numeric(args[1])
     eyr = as.numeric(args[2])
   }
   print(paste('period',syr, 'to', eyr))
-  workdir='/scratch3/joerg/projects/reuse/reuse_git/' #src/'
+  user <- system("echo $USER",intern=T)
+  print(paste('User:',user))
+  if (user=="veronika") {
+    # workdir('/scratch/veronika/rerun/r_code')
+    workdir ='/scratch3/veronika/reuse/reuse_git/' # where are the scripts from github
+  } else if (user=="lucaf") {
+    workdir='/scratch4/lucaf/reuse/reuse_git/'
+  } else if (user=="joerg") {
+    workdir='/scratch3/joerg/projects/reuse/reuse_git/'
+  } else {
+    stop("Unknown user!")
+  }
   dataextdir='/mnt/climstor/giub/EKF400/'
   dataintdir=paste0(workdir,'../data/')
 }
@@ -2536,3 +2547,4 @@ if (vali_plots) {
 #}
 warnings()
 #quit(save='no')
+

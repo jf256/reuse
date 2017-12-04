@@ -36,22 +36,25 @@
 
 ##  data
 rm(list=ls())
-workdir='/scratch4/lucaf/reuse/src/'
+
+
+workdir='/scratch4/lucaf/reuse/reuse_git/'
 setwd(workdir)
 dataextdir='/mnt/climstor/giub/EKF400/'
-dataintdir='/scratch4/joerg/projects/reuse/src/../data/'
+dataintdir='/scratch4/lucaf/reuse/data/analysis/obs.error/'
+plotintdir='/scratch4/lucaf/reuse/figures/obs.error/'
 ana_dir="/scratch4/joerg/projects/reuse/data/analysis/EKF400_v1.3_corr_echam_clim/"
 
 ## input
-expname="obs_error_inflation_factor_test3_1850-1929_iter_2_errtime_40"
-initsyr=1850
-initeyr=1929 # always watch the nr of year you pick! because if nyr for ex. = 5 then 
+expname="obs_error_inflation_factor_1604-2003_iter_8_errtime_40"
+initsyr=1604
+initeyr=2003 # always watch the nr of year you pick! because if nyr for ex. = 5 then 
          # errtime of 2 makes little sense
-niter=2 # 1660-1999, errtime=20,niter=4, nrcores=10 geht 11:40h
+niter=8 # 1660-1999, errtime=20,niter=4, nrcores=10 geht 11:40h
 errtime=40 # error is calculated for errtime years
 errtimeloop=TRUE #if F then you also need to comment lines 66-74
 calc.delta=TRUE
-nrcores=10 ## take a multiple of errtime
+nrcores=5 ## take a multiple of errtime
 notop4=FALSE
 cutoffoutliers=FALSE
 
@@ -64,7 +67,10 @@ eyr=initeyr
 yr <- syr:eyr
 nyr=(eyr-syr)+1
 
-dir.create(paste0("../data/analysis/archive/",expname))
+dir.create(paste0("../data/analysis/obs.error"))
+dir.create(paste0("../data/analysis/obs.error/",expname))
+dir.create(paste0("../figures/obs.error"))
+dir.create(paste0("../figures/obs.error/",expname))
 
 ptm <- proc.time()
 
@@ -291,6 +297,7 @@ for (iter in 1:niter) {
         
         
           analysis <- echam
+          analysis$data <- echam$data - as.vector(echam$ensmean)
           for (j in 1:nprox){
             # for (j in 1:500){
             if (j %% 100 == 0) {
@@ -487,11 +494,11 @@ for (iter in 1:niter) {
        
         all<-list(station=station, calibrate=calibrateio, analysis=analysis.rel, echam=echam.rel, sigma=sigma, sigmab=sigmab, lon=calibrate$lon, lat=calibrate$lat, names=calibrate$names, sour=calibrate$sour, month=month, year=year, obsperyear = obsperyear,delta = delta)
       
-        save(all, delta,file=paste0(workdir,'../data/analysis/all/',syr-1+r,'.Rdata'))
+        save(all, delta,file=paste0(dataintdir,'../all/',syr-1+r,'.Rdata'))
         
       } ##end of yearly loop
   for (r in 1:length(yr)){
-        load(paste0(workdir,'../data/analysis/all/',syr-1+r,'.Rdata'))
+        load(paste0(dataintdir,'../all/',syr-1+r,'.Rdata'))
     if (r==1){
       all1<-all
       delta1<-delta
@@ -544,6 +551,12 @@ if (calc.delta){
   print(deltanew)
  }
 
+if (length(sigma)==0) {
+  sigma<- array(NA, dim=c(278))
+}
+if (length(sigma.doc)==0) {
+  sigma.doc <- array(NA,dim=c(5))
+}
   if (errtimeloop){
   if (n==1){
       archive.alltime <- archive
@@ -564,11 +577,11 @@ if (calc.delta){
 
 
 
-print(paste("time for whole:",(proc.time() -ptm)[3]))
+print(paste("time for sigma calc:",(proc.time() -ptm)[3]))
 
 ##save and load ##
-save(calc.delta,initsyr,initeyr,errtime,sigma.time,sigma.doctime,delta.time,archive.alltime, Rcalnew.time, file=paste0(workdir,'../data/analysis/archive/',expname,'/data.Rdata'))
-load(paste0(workdir,'../data/analysis/archive/',expname,'/data.Rdata'))
+save(calc.delta,initsyr,initeyr,errtime,sigma.time,sigma.doctime,delta.time,archive.alltime, Rcalnew.time, file=paste0(dataintdir,expname,'/sigma.Rdata'))
+# load(paste0(workdir,'../data/analysis/archive/',expname,'/data.Rdata'))
 
 ##variable description ####
 
@@ -632,7 +645,7 @@ if (any(!is.na(Rcalnew.time[,1:2]))){
 #for T###################################################################################################
   if (any(!is.na(Rcalnew.time[,1]))){
 
- png(filename=paste0(workdir,'../data/analysis/archive/',expname,'/Evolution_T.png'),width=800,height = 480)
+ png(filename=paste0(plotintdir,expname,'/Evolution_T.png'),width=1400,height = 800)
 par(mfrow=c(2, 1))
 op <- par(mar = c(5,4,4,4) + 0.1)
 x <- seq(from=initsyr, to=initeyr, by=errtime)+errtime/2## I assume that the first 192 obs are always T and the last 89 are always SLP
@@ -652,7 +665,7 @@ dev.off()
 
 if (any(!is.na(Rcalnew.time[,2]))){
 
-png(filename=paste0(workdir,'../data/analysis/archive/',expname,'/Evolution_SLP.png'),width=800,height = 480)
+png(filename=paste0(plotintdir,expname,'/Evolution_SLP.png'),width=1400,height = 800)
 par(mfrow=c(2, 1))
 op <- par(mar = c(5,4,4,4) + 0.1)
 plot(x, Rcalnew.time[,2], main=expression(paste("Evolution of ",sigma[SLP],"²","  Method: Desroziers et al.  Intervall: 20 yrs Iterations: 4")), sub="",xlab="Year" , ylab=expression(paste(sigma[SLP],"²")), xaxp  = c(1650, 2000, 35), cex=1, pch=21, bg="blue", ylim=c(0,max(Rcalnew.time[,2],na.rm=TRUE)))
@@ -678,7 +691,7 @@ colpal <- two.colors(n=br,start="yellow", end="purple", middle="red", alpha=1.0)
 datcol <- colpal[as.numeric(cut(tsigma.time[,],breaks=br))] 
 datcol <- array(datcol,dim=dim(tsigma.time))
 for (m in 1:((initeyr-initsyr+1)/errtime)) { ##nloops
-  png(filename=paste0(workdir,'../data/analysis/archive/',expname,'/map_T_',x[m]-(errtime/2),"-",x[m]+(errtime/2-1),'.png'),width=1400,height = 800)
+  png(filename=paste0(plotintdir,expname,'/map_T_',x[m]-(errtime/2),"-",x[m]+(errtime/2-1),'.png'),width=1400,height = 800)
   plot(lon[names=="temp2"][which(!is.na(tsigma.time[,m]))], lat[names=="temp2"][which(!is.na(tsigma.time[,m]))],
        xlim=c(-180,180),ylim=c(-90,90),
        cex=1.2,                   # cex=point size~precip
@@ -702,7 +715,7 @@ colpal <- two.colors(n=br,start="yellow", end="purple", middle="red", alpha=1.0)
 datcol <- colpal[as.numeric(cut(ssigma.time,breaks=br))] 
 datcol <- array(datcol,dim=dim(ssigma.time))
 for (m in 1:((initeyr-initsyr+1)/errtime)) { ##nloops
-  png(filename=paste0(workdir,'../data/analysis/archive/',expname,'/map_SLP_',x[m]-(errtime/2),"-",x[m]+(errtime/2-1),'.png'),width=1400,height = 800)
+  png(filename=paste0(plotintdir,expname,'/map_SLP_',x[m]-(errtime/2),"-",x[m]+(errtime/2-1),'.png'),width=1400,height = 800)
   plot(lon[names=="slp"][which(!is.na(ssigma.time[,m]))], lat[names=="slp"][which(!is.na(ssigma.time[,m]))],
        xlim=c(-180,180),ylim=c(-90,90),
        cex=1.2,                   # cex=point size~precip
@@ -730,7 +743,7 @@ lowlat <- which(archive.alltime$names=="slp"&archive.alltime$sour=="inst"&(archi
 ssig.highlat <- tapply(archive.alltime$sigma[highlat],archive.alltime$month[highlat],mean,na.rm=TRUE)
 ssig.lowlat <- tapply(archive.alltime$sigma[lowlat],archive.alltime$month[lowlat],mean,na.rm=TRUE)
 
-png(filename=paste0(workdir,'../data/analysis/archive/',expname,'/monthly&lat.png'),width=1200,height = 600)
+png(filename=paste0(plotintdir,expname,'/monthly&lat.png'),width=1400,height = 800)
 
 old.par <- par(mfrow=c(2, 2))
 
@@ -770,7 +783,7 @@ par(mfrow=c(1,1))
 }
 ##map T sigma for all years###################################################################################################
   if (any(!is.na(Rcalnew.time[,1]))){
-png(filename=paste0(workdir,'../data/analysis/archive/',expname,'/map_T.png'),width=800,height = 480)
+png(filename=paste0(plotintdir,expname,'/map_T.png'),width=1400,height = 800)
 
 lev <- pretty(sigma.T,13)
 br <- length(lev)
@@ -796,7 +809,7 @@ colpal <- two.colors(n=br,start="yellow", end="purple", middle="red", alpha=1.0)
 datcol <- colpal[as.numeric(cut(tsigmonths.all[,],breaks=br))] 
 datcol <- array(datcol,dim=dim(tsigmonths.all))
 for (m in 1:12) {
-  png(filename=paste0(workdir,'../data/analysis/archive/',expname,'/map_T_month_',m,'.png'),width=800,height = 480)
+  png(filename=paste0(plotintdir,expname,'/map_T_month_',m,'.png'),width=1400,height = 800)
   
   plot(lon[names=="temp2"][which(!is.na(tsigmonths.all[,m]))], lat[names=="temp2"][which(!is.na(tsigmonths.all[,m]))],
        xlim=c(-180,180),ylim=c(-90,90),
@@ -813,7 +826,7 @@ for (m in 1:12) {
 }
 ##map SLP sigma for all years###################################################################################################
   if (any(!is.na(Rcalnew.time[,2]))){
-png(filename=paste0(workdir,'../data/analysis/archive/',expname,'/map_SLP.png'),width=800,height = 480)
+png(filename=paste0(plotintdir,expname,'/map_SLP.png'),width=1400,height = 800)
 
 lev <- pretty(sigma.SLP,13)
 br <- length(lev)
@@ -841,7 +854,7 @@ datcol <- colpal[as.numeric(cut(ssigmonths.all[,],breaks=br))]
 datcol <- array(datcol,dim=dim(ssigmonths.all))
 
 for (m in 1:12) {
-  png(filename=paste0(workdir,'../data/analysis/archive/',expname,'/map_SLP_month_',m,'.png'),width=800,height = 480)
+  png(filename=paste0(plotintdir,expname,'/map_SLP_month_',m,'.png'),width=1400,height = 800)
   plot(lon[names=="slp"][which(!is.na(ssigmonths.all[,m]))], lat[names=="slp"][which(!is.na(ssigmonths.all[,m]))],
        xlim=c(-180,180),ylim=c(-90,90),
        cex=1.2,                   # cex=point size~precip
@@ -878,7 +891,7 @@ if (any(!is.na(Rcalnew.time[,3]))){
 
 #Evolution of Sigma² ###################################################################################################
 
-  png(filename=paste0(workdir,'../data/analysis/archive/',expname,'/Evolution_DOC.png'),width=800,height = 480)
+  png(filename=paste0(plotintdir,expname,'/Evolution_DOC.png'),width=1400,height = 800)
   par(mfrow=c(2, 1))
   op <- par(mar = c(5,4,4,4) + 0.1)
   x <- seq(from=initsyr, to=initeyr, by=errtime)+errtime/2## I assume that the first 192 obs are always T and the last 89 are always SLP
@@ -907,7 +920,7 @@ if (any(!is.na(Rcalnew.time[,3]))){
   datcol <- colpal[as.numeric(cut(tsigma.doctime[,],breaks=br))] 
   datcol <- array(datcol,dim=dim(tsigma.doctime))
   for (m in 1:((initeyr-initsyr+1)/errtime)) { ##nloops
-    png(filename=paste0(workdir,'../data/analysis/archive/',expname,'/map_DOC_',x[m]-(errtime/2),"-",x[m]+(errtime/2-1),'.png'),width=1400,height = 800)
+    png(filename=paste0(plotintdir,expname,'/map_DOC_',x[m]-(errtime/2),"-",x[m]+(errtime/2-1),'.png'),width=1400,height = 800)
     plot(lon[names=="temp2"][which(!is.na(tsigma.doctime[,m]))], lat[names=="temp2"][which(!is.na(tsigma.doctime[,m]))],
          xlim=c(-180,180),ylim=c(-90,90),
          cex=1.2,                   # cex=point size~precip
@@ -923,7 +936,7 @@ if (any(!is.na(Rcalnew.time[,3]))){
   }
 #map doc sigma for all years###################################################################################################
   
-  png(filename=paste0(workdir,'../data/analysis/archive/',expname,'/map_DOC.png'),width=800,height = 480)
+  png(filename=paste0(plotintdir,expname,'/map_DOC.png'),width=1400,height = 800)
   
   lev <- pretty(sigma.DOC,13)
   br <- length(lev)
@@ -949,7 +962,7 @@ if (any(!is.na(Rcalnew.time[,3]))){
   datcol <- colpal[as.numeric(cut(dsigmonths.all[,],breaks=br))] 
   datcol <- array(datcol,dim=dim(dsigmonths.all))
   for (m in 1:12) {
-    png(filename=paste0(workdir,'../data/analysis/archive/',expname,'/map_DOC_month_',m,'.png'),width=800,height = 480)
+    png(filename=paste0(plotintdir,expname,'/map_DOC_month_',m,'.png'),width=1400,height = 800)
     plot(lon[which(!is.na(dsigmonths.all[,m]))], lat[which(!is.na(dsigmonths.all[,m]))],
          xlim=c(-180,180),ylim=c(-90,90),   
          cex=1.2,                   # cex=point size~precip
@@ -967,3 +980,317 @@ if (any(!is.na(Rcalnew.time[,3]))){
   
   
 
+
+
+
+###################################################################################################################################
+## extrapolation (Wartenburger) ###################################################################################################
+###################################################################################################################################
+
+cutoff=1500 # in km
+
+## go
+
+syr=initsyr
+eyr=initeyr
+yr <- syr:eyr
+nyr=(eyr-syr)+1
+source('EnSRF_switches.R')
+source('EnSRF_functions.R')
+expname2=paste0("extrapolation_",syr,"-",eyr,"_cutoff_",cutoff,"_errtime_",errtimeloop)
+dir.create(paste0(dataintdir,expname,"/",expname2))
+dir.create(paste0(plotintdir,expname,"/",expname2))
+
+instrumental=TRUE
+docum=FALSE ## no docum used because too complicated, we concentrate on inst. 
+real_proxies=FALSE
+
+ptm <- proc.time()
+
+for (z in 1:2) {
+  if (z==1){
+    Temp=TRUE ## if false then SLP is taken, also (!!!): change colours and ylab from T <-> SLP in last plot
+    name="temp2"
+    savein="T"
+    print("Calculating Temperature")
+    }else { 
+    Temp=FALSE
+    name="slp"
+    savein="SLP"
+    print("Calculating SLP")
+    }
+nyr=(initeyr-initsyr)+1  
+
+k=0
+## a function to calculate the distance between to coordinate points
+
+
+# dist <- function (lat,lon,lat1,lon1) {
+#   R = 6371 # Radius of the earth in km
+#   dLat = deg2rad(lat-lat1) #deg2rad below
+#   dLon = deg2rad(lon-lon1)
+#   a=sin(dLat/2) * sin(dLat/2) + cos(deg2rad(lat1)) * cos(deg2rad(lat)) * sin(dLon/2) * sin(dLon/2)
+#   c = 2 * atan2(sqrt(a), sqrt(1-a))
+#   d = R * c
+# }
+# deg2rad <- function(deg) {(deg * pi) / (180)}# commented because compute_dist already exist in functions -> (lon,lat,lon0,lat0)
+nona <- function(matr){
+  matr[which(matr==0)] <- NA
+  matr<-which(!is.na(matr))
+  matr<-length(matr)
+}
+smallerequal<- function(matr) {
+  if (matr>cutoff){
+    matr=NA
+  } else if (matr<1){
+    matr=NA
+  } else {matr=matr}
+  
+}
+
+#here we load any year and calculate the distances of each station to each station
+load(paste0(ana_dir,'analysis_',1940,'_2ndgrid.Rdata'))
+rm(analysis.abs,analysis.anom,echam.abs,echam.anom)
+
+calibrate$lat <- calibrate$lat[which(calibrate$sour=="inst"&calibrate$names==name)] # take only the instrument data and only
+lat <- calibrate$lat[1:(length(calibrate$lat)/6)] # one month because all stations are in one month
+
+calibrate$lon <- calibrate$lon[which(calibrate$sour=="inst"&calibrate$names==name)]
+lon <- calibrate$lon[1:(length(calibrate$lon)/6)]
+len<-length(lon)## if Temp==TRUE this is 192 else 86
+distances<-array(NA,dim=c(len,len))
+
+
+for (s in 1:len){
+  # im Umkreis von x kilometer:    (x - center_x)^2 + (y - center_y)^2 < radius^2
+  lat0 <- lat[s]
+  lon0 <- lon[s]
+  
+  distances[,s]<-mapply(compute_dist,lon,lat,lon0,lat0)
+}
+#here we only take the ones that are within the cutoff distance
+
+wewant<- sapply(distances,smallerequal)
+wewant<- array(wewant,dim=c(len,len))
+howmany <- apply(wewant,2,nona) # this gives a list indicating how many stations are surrounding it
+
+coef.alltime <- array(NA,dim=c(nyr/errtime,9))
+nrobs <- array(NA,dim=c(nyr/errtime,3))
+for (n in seq(from=1, to=nyr, by=errtime)){ # calculates the error of errtime year until eyr to
+  syr=initsyr                               # come up how the error changes over time
+  eyr=initeyr
+  nyr=(eyr-syr)+1
+  syr=syr-1+n
+  eyr=syr-1+errtime
+  nyr=eyr-syr+1
+  yr <- syr:eyr
+  print(paste0("years ",syr,'-',eyr))
+  k=k+1  
+  if (syr < 1660) {
+    next      
+  } 
+  
+  
+  
+  ## here we go through the years taking the stations that have data and taking 
+  ## their surrounding stations with data
+  
+  
+  for (r in 1:length(yr)) {
+    print(paste0("loading year: ",syr-1+r))
+    load(paste0(ana_dir,'analysis_',syr-1+r,'_2ndgrid.Rdata'))
+    rm(analysis.abs,analysis.anom,echam.abs,echam.anom)
+    calibrate$data <- calibrate$data[which(calibrate$sour=="inst" & calibrate$names==name),] #only instrumental data
+    calibrate$data <- array(calibrate$data,dim=c((dim(calibrate$data)[1]*2))) # rearrange data
+    
+    month <- rep(1:12,each=(dim(calibrate$data)/12)) #define which rows belong to which month
+    d <- array(NA,dim=c(len,12,len))
+    diff <- array(NA,dim=c(len,12,len))
+    
+    
+    for (m in 1:12){                                  # monthly loop
+      data <- calibrate$data[which(month==m)]                # data is only one month at a time
+      
+      active <- array(NA,dim=c(len,len))
+      
+      
+      for (s in 1:length(data)){                      # loop over all stations
+        if (!is.na(data[s])) {                        # loop only executed if middle station is not NA
+          active[,s][which(!is.na(wewant[,s]))] <- data[which(!is.na(wewant[,s]))] # here the data for all stations within perimeter are selected (remember distance to self is NA)
+          active[s,s] <- data[s]                                                   # data of station itself is added
+          d[,m,s][which(!is.na(active[,s]))] <- wewant[which(!is.na(active[,s])),s] # here the distance to the station is taken but only the ones that have data
+          d[s,m,s]<-0                                                               # now we see: if in the diagonal ther is a 0 then the station has a value but if it's NA it has none
+          diff[,m,s] <- active[,s]-active[s,s]                                      # here we substract the middle station's value from the surrounding stations's
+          diff[s,m,s] <- NA                                                        # the diff would be zero but make it NA so we don't plot it at the end
+        }
+      }   
+      # the diff has a different format: each thrid dimension is a station with the coloumns 
+      # being the months, this way it is easier later on to calculate the variance of the diff
+      
+      
+      ## in the resulting matrix active.tot the third dimension is for each month
+      ## one coloumn represents the "middle" station and the rows all the stations
+      ## surrounding it. In the diagonal (1,1 ; 2,2 ..) you have the value
+      ## of the station itself. the other values in the row are of the stations
+      ## within the perimeter.
+      ## Now if for instance in the first coloumn the third row [3,1] has value, this 
+      ## means the third row is within the perimeter AND has a value (is not NA)
+      ## Therefore the value at [3,3] which is the value of the third station itself
+      ## should be exactly the same, which it is :)
+      ## d.tot is the same matrix but instead of the data it has the distance to
+      ## the station of the coloumn. There the distance to the station itself, 
+      ## the diagonal is zero, but I changed it to NA
+      
+    } # end of monthly loop
+    
+    # add calculation of deltasigma² here 
+    # produce a file with 3 dimensions: first coloumn for deltasigma² of first station to all its 
+    # surrounding stations in the perimeter. Second coloumn the corresponding distances. There should
+    # 278 of these matrices in the third dimension, for each stations one. 
+    
+    if (r==1) {
+      diff.tot <- diff
+      dist.tot <- d
+    }else{
+      diff.tot <- abind(diff.tot,diff,along=2)
+      dist.tot <- abind(dist.tot,d, along=2) 
+    } # diff.tot has the months of the one station as coloumns
+    # the rows are the differences to the surrounding stations 
+    # and the 278 "middle" stations are in the third dimension
+  } #end of yearly loop  
+  for (r in 1:(dim(diff.tot)[2]/12))  {
+    diff.winter<-diff.tot[,c((1+12*(r-1)):(1+12*(r-1)+5)),]
+    diff.summer<-diff.tot[,c((7+12*(r-1)):(7+12*(r-1)+5)),]
+  }
+  sigmadiff.winter <- apply(diff.winter,c(1,3),var,na.rm=TRUE)
+  sigmadiff.summer <- apply(diff.summer,c(1,3),var,na.rm=TRUE)
+  sigmadiff.tot <- apply(diff.tot,c(1,3),var,na.rm=TRUE)
+  
+  ### Fits plotten und y-Achsenabschnitte speichern ####
+  
+  coef.summer<-array(NA,dim=c(len,3))
+  coef.winter<-array(NA,dim=c(len,3))
+  coef.tot<-array(NA,dim=c(len,3))
+  
+  for (s in 1:len){ #plot sigmadiff.summer and winter
+    x <- wewant[,s][which(!is.na(sigmadiff.summer[,s]))]*wewant[,s][which(!is.na(sigmadiff.summer[,s]))] #if x is length=1 then none of the surrounding stations have data or it has no surrounding stations
+    y <- sigmadiff.summer[,s][which(!is.na(sigmadiff.summer[,s]))] 
+    x1 <- wewant[,s][which(!is.na(sigmadiff.winter[,s]))]*wewant[,s][which(!is.na(sigmadiff.winter[,s]))] #if x is length=1 then none of the surrounding stations have data or it has no surrounding stations
+    y1 <- sigmadiff.winter[,s][which(!is.na(sigmadiff.winter[,s]))]  
+    x2 <- wewant[,s][which(!is.na(sigmadiff.tot[,s]))]*wewant[,s][which(!is.na(sigmadiff.tot[,s]))]
+    y2 <- sigmadiff.tot[,s][which(!is.na(sigmadiff.tot[,s]))]
+    
+    if ( length(x2)>4 & length(y2)>4){
+      ylim <- c(0,max(sigmadiff.tot),na.rm=TRUE)
+      fit2 <- lm(y2 ~ x2)
+      coef.tot[s,]<-c("value"=coef(fit2)[1],"2.5"=confint(fit2)[1,1],"97.5"=confint(fit2)[1,2])
+      if (errtimeloop==FALSE) {
+        # png(filename=paste0(plotintdir,expname,'/',expname2,'/extrapolation','_',savein,'_','/station',s,'.png'),width=1400,height = 800)
+        plot(x2,y2, main=paste0("Middle station: ",s),xlab="Distance²", ylab=expression(paste(sigma[Delta],"²")), cex=1, pch=21, bg="black", xlim=c(0,cutoff*cutoff),ylim=ylim)
+        abline(fit2, col="red")
+        legend(
+          "topleft",
+          pch = 21,
+          pt.bg=c("black", "red"),
+          legend = c("Surrounding Stations","Regression"))
+        # dev.off()
+      }
+    }
+    
+    if ( length(x)>4 & length(y)>4 & length(x1)>4 & length(y1)>4){  
+      ylim <- c(0,max(cbind(sigmadiff.summer,sigmadiff.winter),na.rm=TRUE))
+      fit <- lm(y ~ x)
+      fit1 <- lm(y1 ~ x1)
+      coef.summer[s,]<-c("value"=coef(fit)[1],"2.5"=confint(fit)[1,1],"97.5"=confint(fit)[1,2])
+      coef.winter[s,]<-c("value"=coef(fit1)[1],"2.5"=confint(fit1)[1,1],"97.5"=confint(fit1)[1,2])
+      if (errtimeloop==FALSE) {
+        # png(filename=paste0(plotintdir,expname,'/',expname2,'/',extrapolation,'_',savein,'_','/station',s,'.png'),width=1400,height = 800)
+        plot(x,y, main=paste0("Summer - Middle station: ",s),xlab="Distance²", ylab=expression(paste(sigma[Delta],"²")), cex=1, pch=21, bg="green", xlim=c(0,cutoff*cutoff),ylim=ylim)
+        points(x1, y1, cex=1, pch=21, bg="blue", xlim=c(0,cutoff*cutoff),ylim=ylim)
+        abline(fit, col="green")
+        abline(fit1, col="blue")
+        legend(
+          "topleft", 
+          pch = 21,
+          pt.bg=c("green", "blue"), 
+          legend = c("Summer","Winter"))
+        # dev.off()
+      }
+    }
+  }
+  # save(coef.summer,coef.winter, coef.tot, sigmadiff.winter, sigmadiff.summer,sigmadiff.tot, file=paste0(dataintdir,expname,'/',expname2,'/extrapolation_',savein,'_data_',syr,'-',eyr,'.Rdata'))
+  
+  
+  
+  
+  
+  if (errtimeloop==TRUE) {
+    coef.alltime[k,1:3]<- cbind("Summer"=mean(coef.summer[,1],na.rm=TRUE),"2.5"=mean(coef.summer[,2],na.rm=TRUE),"97.5"=mean(coef.summer[,3],na.rm=TRUE))
+    coef.alltime[k,4:6]<- cbind("Winter"=mean(coef.winter[,1],na.rm=TRUE),"2.5"=mean(coef.winter[,2],na.rm=TRUE),"97.5"=mean(coef.winter[,3],na.rm=TRUE))
+    coef.alltime[k,7:9]<- cbind("Tot"=mean(coef.tot[,1],na.rm=TRUE),"2.5"=mean(coef.tot[,2],na.rm=TRUE),"97.5"=mean(coef.tot[,3],na.rm=TRUE))
+    nrobs[k,1] <- length(which(!is.na(apply(sigmadiff.summer,1,mean,na.rm=TRUE))))
+    nrobs[k,2] <- length(which(!is.na(apply(sigmadiff.winter,1,mean,na.rm=TRUE))))
+    nrobs[k,3]<-length(which(!is.na(apply(sigmadiff.tot,1,mean,na.rm=TRUE))))
+  } 
+  
+} # end of errtime loop
+
+if (errtimeloop==TRUE&length(which(nrobs!=0))!=0){
+  x <- seq(from=initsyr, to=initeyr, by=errtime)+errtime/2
+  # png(filename=paste0(plotintdir,expname,'/',expname2,'/extrapolation_',savein,'_Evolution.png'),width=1400,height = 800)
+  op <- par(mar = c(5,4,4,4) + 0.1)
+  plot(x, coef.alltime[,7], cex=1, pch=21, bg="red", main=expression(paste("Evolution of ", sigma,"²  Method: Wartenburger et al. Intervall: 20 yrs  Cutoff: 1500km")), xlab="Year", ylab=expression(paste(sigma[T],"²")), xaxp  = c(1650, 2000, 35), ylim=c(min(coef.alltime[,7:9],na.rm=TRUE),max(coef.alltime[,7:9],na.rm=TRUE)))
+  arrows(x,coef.alltime[,8],x,coef.alltime[,9], code=3, angle=90, length=0.05)
+  par(new = TRUE)
+  plot(x, nrobs[,3], type = "l", col="black", axes = FALSE,  xlab = "", ylab = "")
+  axis(side=4, at = pretty(range(nrobs[,3])))
+  mtext("Number of midlle stations", side=4, line=3)
+  par(op)
+  # legend(
+  #  "topleft", 
+  #   pch = c(21,2),
+  #   pt.bg=c("red","black"), 
+  #   legend = c("Value","95% Confidence Intervall"))
+  # dev.off()
+  
+  # data<-data.frame(Year=x,upper=coef.alltime[,9],intercept=coef.alltime[,7],lower=coef.alltime[,8])
+  # data1<- melt(data, id = "Year")
+  # g1<-ggplot(data1, aes(x=Year,y=value,color=variable))+ geom_point(na.rm=TRUE)  + 
+  #   geom_ribbon(data=merge(data1,data),aes(x=Year, ymax=upper, ymin=lower), fill="pink", alpha=.5, colour=NA) + 
+  #   xlab("Year") + ylab(expression(paste(sigma[SLP],"²")))+
+  #   labs(title=expression(paste("Evolution of ",sigma[SLP],"²")),subtitle= "Intervall: 20 yrs ")+
+  #   labs(caption="Method: Wartenburger et al.")+
+  #   scale_x_continuous(breaks = round(seq(min(data$Year), max(data$Year), by = 20),1))+
+  #   theme(legend.text=element_text(size=12))+
+  #   theme(axis.text=element_text(size=10),axis.title=element_text(size=12))
+  # data<-data.frame(Year=x,number.of.observations=nrobs[,3])
+  # 
+  # g2<-ggplot(data,aes(x=Year,y=number.of.observations))+geom_line()+
+  #   scale_x_continuous(breaks = round(seq(min(data$Year), max(data$Year), by = 20),1))+
+  #   theme(axis.text=element_text(size=10),axis.title=element_text(size=12))
+  # # g2<-gtable_add_cols(ggplotGrob(g2),unit(1,"null"))
+  # theme_set(theme_minimal())
+  # # dev.new()
+  # plot_grid(
+  #   plot_grid(
+  #     g1 + theme(legend.position = "none")
+  #     ,g2+ theme(legend.position = "none")
+  #     , ncol = 1
+  #     , align = "hv")
+  #   , plot_grid(
+  #     get_legend(g1)
+  #     , ggplot()
+  #     , ncol =1)
+  #   , rel_widths = c(7,3)
+  # )
+  # ggsave(filename=paste0(plotintdir,expname,'/',expname2,'/extrapolation_',savein,'_Evolution_gg.png'),plot=last_plot(),width=10,height = 7)
+
+  
+}
+# save(coef.alltime, nrobs, file=paste0(dataintdir,expname,'/',expname2,'/extrapolation_',savein,'_alldata_',initsyr,'-',initeyr,'.Rdata'))
+
+} # end of z loop
+print(paste("time for extrapolation:",(proc.time() -ptm)[3]))
+
+# load(paste0(workdir,'../data/analysis/archive/',expname,'/',expname2,'/',extrapolation,'_',savein,'_alldata_',initsyr,'-',initeyr,'.Rdata'))
+# load(paste0(workdir,'../data/analysis/format'))

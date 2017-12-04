@@ -29,11 +29,16 @@ twentycrpath <- paste0(workdir,'../comparison_data/20cr/')
 # install.packages("zoo")
 # install.packages("abind")
 # install.packages("Matrix")
-# install.packages("ff")    
+# install.packages("ff")
 # install.packages("caTools")
-# install.packages("pracma")  
+# install.packages("pracma")
 # install.packages("easyVerification")
-
+# install.packages("doParallel")
+# install.packages("reshape2")
+# install.packages("ggplot2")
+# install.packages("grid")
+# install.packages("cowplot")
+      
 suppressMessages(library(akima))         # for interpolation
 suppressMessages(library(maps))
 suppressMessages(library(mapdata))
@@ -48,6 +53,11 @@ suppressMessages(library(caTools))
 suppressMessages(library(pracma))        # for wind vectors
 suppressMessages(library(easyVerification)) # spread-error ratio
 suppressMessages(library(fields))        # for designer colors and raster maps
+suppressMessages(library(doParallel))
+suppressMessages(library(reshape2))
+suppressMessages(library(ggplot2))
+suppressMessages(library(grid))
+suppressMessages(library(cowplot))
 
 #library(pspline)
 # first install ncdfUtils of Jonas with all his functions 

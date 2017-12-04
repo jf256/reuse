@@ -1,25 +1,44 @@
 #MAJOR PROBLEMS:
 # SLOW!!!
 rm(list=ls())
-machine="climcal" #"climcal3" # "climpa12"  
-if (machine=="macbook") {
-  syr=1603     # set to 1603 to process analysis; set to >=1901 or 1902? for cru validation
-  eyr=2004     # max 2004 ?
-  datadir="/Volumes/DATA/climdata/"
-  workdir=('~/unibe/projects/EnSRF/src/')
-} else {
-  syr=1903 #1902 #1941
-  eyr=2004 #2003 #1970
-  args <- commandArgs(TRUE)
-  if (length(args!=0)) {
-    syr = as.numeric(args[1])
-    eyr = as.numeric(args[2])
-  }
-  print(paste('period',syr, 'to', eyr))
-  workdir='/scratch3/joerg/projects/reuse/reuse_git/' #src/'
-  dataextdir='/mnt/climstor/giub/EKF400/'
-  dataintdir=paste0(workdir,'../data/')
+
+# uncomment following lines to run on Joerg's Macbook
+#machine="climcal" #"macbook" 
+#if (machine=="macbook") {
+#  syr=1603     # set to 1603 to process analysis; set to >=1901 or 1902? for cru validation
+#  eyr=2004     # max 2004 ?
+#  workdir='~/unibe/projects/EnSRF/src/'
+#  dataextdir='/Volumes/DATA/climdata/EKF400/'
+#  dataintdir=paste0(workdir,'../data/')
+#}
+
+# enter syr ane eyr manually
+syr=1980 #1902 #1941
+eyr=1981 #2003 #1970
+# read syr and eyr from Rscript parameters entered in bash and 
+# if existing overwrite manually entered years 
+args <- commandArgs(TRUE)
+if (length(args)>0) {
+  syr = as.numeric(args[1])
+  eyr = as.numeric(args[2])
 }
+print(paste('period',syr, 'to', eyr))
+
+user <- system("echo $USER",intern=T)
+print(paste('User:',user))
+if (user=="veronika") {
+  # workdir('/scratch/veronika/rerun/r_code')
+  workdir ='/scratch3/veronika/reuse/reuse_git/' # where are the scripts from github
+} else if (user=="joerg") {
+  workdir='/scratch3/joerg/projects/reuse/reuse_git/'
+} else if (user=="lucaf") {
+    workdir='/scratch4/lucaf/reuse/reuse_git/'
+} else {
+  stop("Unknown user!")
+
+}
+dataextdir='/mnt/climstor/giub/EKF400/'
+dataintdir=paste0(workdir,'../data/')
 setwd(workdir)
 
 source('EnSRF_switches.R')
@@ -42,6 +61,7 @@ if (load_prepplot) {dir.create(paste0("../data/image/",expname))}
 
 
 #####################################################################################
+
 ptm1 <- proc.time()
 if (calc_prepplot) {
 # read yearly analysis, calc indices, cut temp, precip, slp, merge timesteps
@@ -77,10 +97,24 @@ for (cyr in syr:eyr) {
     load(file=paste0('../data/analysis/',expname,'/analysis_',cyr,'.Rdata'))
   }
   if (anomaly_assim){
+    if (!landcorr) {
     echam <- echam.abs
     analysis <- analysis.abs
     echam.abs <- NULL
-    analysis.abs <- NULL   
+    analysis.abs <- NULL  
+    } else {
+      landcorrected.abs = landcorrected.anom
+      landcorrected.abs$data = landcorrected.anom$data + landcorrected.clim$data
+      landcorrected.abs$ensmean = landcorrected.anom$data + landcorrected.clim$data
+      echam <- landcorrected.abs
+      analysis <- analysis.abs
+      analysis$ensmean = analysis.abs$data # this is not a nice way cause I make R calculate the same things twice
+      echam.abs <- NULL
+      analysis.abs <- NULL  
+      echam.anom = landcorrected.anom
+      echam.anom$ensmean = landcorrected.anom$data
+      analysis.anom$ensmean = analysis.anom$data
+    }
   }
   if (write_coor) {
     # proxy data coordinates at each time step
@@ -209,30 +243,7 @@ for (cyr in syr:eyr) {
     validate$lat <- validate$lat[which(validate$names=="temp2" | validate$names=="precip" |
                                          validate$names=="slp")]
    }
-# ACHTUNG does NOT work if variables are in different order as here with sixmonstatevector
-# therefore "sort" has been added
-#   tpspos <- sort(c(which(echam$names=='temp2'), which(echam$names=='precip'), 
-#               which(echam$names=='slp')))
-#   echam$data <- echam$data[tpspos,,]
-#   echam$ensmean <- echam$ensmean[tpspos,]
-#   echam$names <- echam$names[tpspos]
-#   echam$lon <- echam$lon[tpspos]
-#   echam$lat <- echam$lat[tpspos]
-#   tpspos1 <- sort(c(which(analysis$names=='temp2'), which(analysis$names=='precip'), 
-#                which(analysis$names=='slp')))
-#   analysis$data <- analysis$data[tpspos1,,]    
-#   analysis$ensmean <- analysis$ensmean[tpspos1,]
-#   analysis$names <- analysis$names[tpspos1]
-#   analysis$lon <- analysis$lon[tpspos1]
-#   analysis$lat <- analysis$lat[tpspos1]
-#   if (vali) {
-#     tpspos2 <- sort(c(which(validate$names=='temp2'), which(validate$names=='precip'), 
-#                  which(validate$names=='slp')))
-#     validate$data <- validate$data[tpspos2,]
-#     validate$names <- validate$names[tpspos2]
-#     validate$lon <- validate$lon[tpspos2]
-#     validate$lat <- validate$lat[tpspos2]
-   }
+}
 
 # convert data back to old format for plotting and analysis
   if (sixmonstatevector) {
@@ -446,40 +457,29 @@ for (cyr in syr:eyr) {
                                   length(unique(validate$names)))
           validate$lon <- rep(validate$lon,length(unique(validate$names)))
           validate$lat <- rep(validate$lat,length(unique(validate$names)))
-#           validate$lon <- validate$lon[1:(dim(validate$data)[1])] #/length(unique(validate$names)))]
-#           validate$lat <- validate$lat[1:(dim(validate$data)[1])] #/length(unique(validate$names)))]
-# #          vtmp <- array(vali_ind$data,c((dim(vali_ind$data)[1]/6),6,dim(vali_ind$data)[2]))  
-# #          vali_ind$data <- apply(vtmp,c(1,3),mean)
-# #          vali_ind$ensmean <- vali_ind$data
-# #          #      vali_ind$names <- vali_ind$names[1:dim(vali_ind$data)[1]]
-# #          vali_ind$names <- rep(unique(vali_ind$names),each=dim(vali_ind$data)[1]/
-# #                                  length(unique(vali_ind$names)))
-# #          vali_ind$lon <- vali_ind$lon[1:(dim(vali_ind$data)[1])] #/length(unique(vali_ind$names)))]
-# #          vali_ind$lat <- vali_ind$lat[1:(dim(vali_ind$data)[1])] #/length(unique(vali_ind$names)))]
         }
       }
-# #       if (!real_proxies) {
-# #         # ERROR, NOT ADJUSTED FOR seasonal/annual DOCUMENTARY DATA, YET !!!
-# #         ctmp <- array(calibrate$data,c((dim(calibrate$data)[1]/6),6,
-# #                                        dim(calibrate$data)[2]))  
-# #         calibrate$data <- apply(ctmp,c(1,3),mean)
-# #         calibrate$names <- calibrate$names[1:dim(calibrate$data)[1]] 
-# #         calibrate$lon <- calibrate$lon[1:dim(calibrate$data)[1]]
-# #         calibrate$lat <- calibrate$lat[1:dim(calibrate$data)[1]]
-# #       }
-#    }
   }
   print("transformed 6-mon state vector")
   print(proc.time() - ptm1)
 
-#  if (save_prepplot){
-    if (vali) {
+  if (vali) {
+    if (every2grid) {
+      print(paste("dim validate data:",paste(nrow(validate$data),ncol(validate$data))))
+      save(analysis,analysis.anom,echam,echam.anom,validate,calibrate,
+           file=paste0(prepplotdir,'analysis_',cyr,'_2ndgrid.Rdata'))
+    } else {
       print(paste("dim validate data:",paste(nrow(validate$data),ncol(validate$data))))
       save(analysis,analysis.anom,echam,echam.anom,validate,calibrate,
            file=paste0(prepplotdir,'analysis_',cyr,'.Rdata'))
       #save(analysis,analysis.anom,ana_ind,echam,echam.anom,ech_ind,validate,vali_ind,calibrate,
       #     file=paste0(prepplotdir,'/analysis_',cyr,'.Rdata'))
       #paste0('../data/prepplot/analysis_',cyr,'.Rdata'))
+    }
+  } else {
+    if (every2grid) {
+      save(analysis,analysis.anom,echam,echam.anom,calibrate,
+           file=paste0(prepplotdir,'analysis_',cyr,'_2ndgrid.Rdata'))
     } else {
       save(analysis,analysis.anom,echam,echam.anom,calibrate,
            file=paste0(prepplotdir,'analysis_',cyr,'.Rdata'))
@@ -487,7 +487,11 @@ for (cyr in syr:eyr) {
       #     file=paste0(prepplotdir,'/analysis_',cyr,'.Rdata'))
       #paste0('../data/prepplot/analysis_',cyr,'.Rdata'))
     }
-#  } else {
+  }
+  
+  ######################################################
+  # combining the years, one after one
+  # Roni: if we want to use without loading the prepplot data, the allts variables should be renamed  
     if (cyr == syr) {
       analysis.allts=analysis
       analysis.anom.allts=analysis.anom
@@ -551,7 +555,7 @@ for (cyr in syr:eyr) {
 
 if (write_netcdf) {
   print("write_netcdf")
-  dir.create(paste0(dataintdir,"netcdf/",version,"/CCC400_ensmean"))
+  dir.create(paste0(dataintdir,"netcdf/",version,"/CCC400_ensmean")) # maybe could call it prepplot_netcdf could have subfolder monthy or seasonal
   dir.create(paste0(dataintdir,"netcdf/",version,"/CCC400_ens_mem"))
   dir.create(paste0(dataintdir,"netcdf/",version,"/EKF400_ensmean"))
   dir.create(paste0(dataintdir,"netcdf/",version,"/EKF400_ens_mem"))
@@ -561,41 +565,31 @@ if (write_netcdf) {
   cali <- calibrate
   for (cyr in syr:eyr) {
     print(paste('year',cyr))
-#     if ((cyr < 1751)) { #} |  (cyr > 1979)) {
-#       vali=F                 # switch off prepplot if no vali data selected
-#     } else {
-#       vali=T
-#     }
-#     if ((cyr > 1900) & (cyr < 2005)) { #  & (syr > 1900) & (eyr < 2005)) {
-#       cru_vali=T             # monthly CRU TS3 temp, precip and HADSLP2 gridded instrumentals (1901-2004)
-# #      if (ind_recon){
-# #        ind_recon=T            # Stefan's reconstructed indices until 1948 and NCAR reanalysis later added to CRU and NCEP
-# #      }
-#     } else {
-#       cru_vali=F 
-#  #     if (ind_recon){
-# #        ind_recon=F
-# #      }
-#     }
-#     if ((cyr < 1901) & (cyr > 1749)) { # & (syr < 1901) & (eyr > 1749)) {
-#       recon_vali=T           # seasonal luterbacher, pauling, kuettel recons (1750-1999)
-#     } else {
-#       recon_vali=F
-#     }
-#     # t=syr2
-#     print(paste("recon_vali=",recon_vali))
-#     print(paste("vali=",vali))
     
     # load data and make normal calendar year Jan-Dec
     if (cyr==feyr) {stop("last year cannot be created because oct-dec data is missing")}
-    load(file=paste0(prepplotdir,'/analysis_',(cyr+1),'.Rdata')) 
+    if (every2grid) {
+      load(file=paste0(prepplotdir,'/analysis_',(cyr+1),'_2ndgrid.Rdata')) 
+    } else {
+      load(file=paste0(prepplotdir,'/analysis_',(cyr+1),'.Rdata')) 
+    }
     echam2 <- echam
     analysis2 <- analysis
-    load(file=paste0(prepplotdir,'/analysis_',cyr,'.Rdata')) 
+    if (every2grid) {
+      load(file=paste0(prepplotdir,'/analysis_',cyr,'_2ndgrid.Rdata')) 
+    } else {
+      load(file=paste0(prepplotdir,'/analysis_',cyr,'.Rdata')) 
+    }
 #    if (monthly_out) {
       echam$data <- abind(echam$data[,4:12,],echam2$data[,1:3,],along=2)
+      if (length(dim(echam$data)) == 2) {
+        echam$data = array(echam$data,c(dim(echam$data),1))
+      }
       echam$ensmean <- abind(echam$ensmean[,4:12],echam2$ensmean[,1:3],along=2)
       analysis$data <- abind(analysis$data[,4:12,],analysis2$data[,1:3,],along=2)
+      if (length(dim(analysis$data)) == 2) {
+        analysis$data = array(analysis$data,c(dim(analysis$data),1))
+      }
       analysis$ensmean <- abind(analysis$ensmean[,4:12],analysis2$ensmean[,1:3],along=2)
       # write entire analysis to netcdf format
       if (write_netcdf) {
@@ -619,18 +613,18 @@ if (write_netcdf) {
               lev_gph  <- ncdim_def("pressure_level_gph", units="Pa", vals=c(500,100))
             }
             outpos <- which(echam$names==v)
-            if (m==31) {
+            if (m==dim(echam$data)[3]+1) {
               out_ech <- echam$ensmean[outpos,]
             } else {
               out_ech <- echam$data[outpos,,m]
             }
-            out_ech[out_ech==NA] <- -99999 #set missing value to -999
-            if (m==31) {
+            out_ech[is.na(out_ech)] <- -99999 #set missing value to -999
+            if (m==dim(analysis$data)[3]+1) {
               out_ana <- analysis$ensmean[outpos,]
             } else {
               out_ana <- analysis$data[outpos,,m]
             }
-            out_ana[out_ana==NA] <- -99999 #set missing value to -999
+            out_ana[is.na(out_ana)]<- -99999 #set missing value to -999
             # create full 3D field with potential NA over ocean
             if (length(unilon)*length(unilat)!=nrow(out_ech)) {
               fullout_ana <- fullout_ech <- array(NA,dim=c(length(unilon),length(unilat),ncol(out_ana)))
@@ -737,7 +731,7 @@ if (write_netcdf) {
             }
           } # end variables loop  
           
-          if (m==31) {
+          if (m==dim(echam$data)[3]+1) {
             outfile_ech <- nc_create(filename=paste0(dataintdir,"netcdf/",version,"/CCC400_ensmean/CCC400_ensmean_",
                                                      cyr,"_",version,".nc"), vars=list(temp,precip,slp,gph,uw,vw,omega))
             outfile_ana <- nc_create(filename=paste0(dataintdir,"netcdf/",version,"/EKF400_ensmean/EKF400_ensmean_",
@@ -837,7 +831,11 @@ if (write_netcdf) {
 if (load_prepplot){
   # load stat data network for specific year
   stat_yr=statyr #1850
-  load(paste0(prepplotdir,'/analysis_',stat_yr,'.Rdata'))
+  if (every2grid) {
+    load(paste0(prepplotdir,'analysis_',stat_yr,'_2ndgrid.Rdata'))
+  } else {
+    load(paste0(prepplotdir,'analysis_',stat_yr,'.Rdata'))
+  }
   cali <- calibrate
   for (cyr in syr:(eyr-1)) {
     print(paste('year',cyr))
@@ -868,15 +866,27 @@ if (load_prepplot){
     
     # load data and make normal calendar year Jan-Dec
 #    if (cyr==eyr) {stop("last year cannot be created because oct-dec data is missing")}
-    load(file=paste0(prepplotdir,'analysis_',(cyr+1),'.Rdata')) 
+    if (every2grid) {
+      load(file=paste0(prepplotdir,'analysis_',(cyr+1),'_2ndgrid.Rdata')) 
+    } else {
+      load(file=paste0(prepplotdir,'analysis_',(cyr+1),'.Rdata')) 
+    }
     echam2 <- echam
     analysis2 <- analysis
-    load(file=paste0(prepplotdir,'analysis_',cyr,'.Rdata')) 
+    if (every2grid) {
+      load(file=paste0(prepplotdir,'analysis_',cyr,'_2ndgrid.Rdata')) 
+    } else {
+      load(file=paste0(prepplotdir,'analysis_',cyr,'.Rdata')) 
+    }
     if (monthly_out) {
      echam$data <- abind(echam$data[,4:12,],echam2$data[,1:3,],along=2)
      echam$ensmean <- abind(echam$ensmean[,4:12],echam2$ensmean[,1:3],along=2)
      analysis$data <- abind(analysis$data[,4:12,],analysis2$data[,1:3,],along=2)
      analysis$ensmean <- abind(analysis$ensmean[,4:12],analysis2$ensmean[,1:3],along=2)
+     if (landcorr) {
+       echam$data = array (echam$data, c(dim(echam$data),1))
+       analysis$data = array (analysis$data, c(dim(analysis$data),1))
+     }
     }
   
     #    lenvar2 <- length(c(which(validate$names=="temp2"), which(validate$names=="precip"), 
@@ -919,6 +929,7 @@ if (load_prepplot){
       echam.allts=echam
       echam.anom.allts=echam.anom
 #      ech_ind.allts=ech_ind
+      
       # only instr. calibration data for period with fixed network
       # because proxies not in fixed grid format. Hence number of records 
       # and position/row in data/ensmean matrix changes over time
@@ -1001,6 +1012,7 @@ if (load_prepplot){
     }  
   }
 
+  # do we still need this part?
   # if (cyr == syr) {
   #   analysis.allts=analysis
   #   analysis.anom.allts=analysis.anom
@@ -1068,6 +1080,7 @@ print(proc.time() - ptm1)
 # validate$data[validate$names=="slp",]<- validate$data[validate$names=="slp",]/100
 # validate$ensmean[validate$names=="slp",]<- validate$ensmean[validate$names=="slp",]/100
 
+# do we still need this part?
 # # convert data back to old format for plotting and analysis
 # if (sixmonstatevector) {
 #   if (monthly_out) {
@@ -1513,6 +1526,7 @@ if (vali) {
 #  RE.dist <- lapply(rmse.dist, RE_fun, y=rmse.ech)
 #}
 
+   if (!landcorr) {
 data.dim <- dim(echam$data)[c(1,2,2,3)]
 data.dim[2:3] <- c(s,data.dim[3]/s)
 ens.dim <- c(nrow(echam$ensmean), s, ncol(echam$ensmean)/s)
@@ -1527,7 +1541,7 @@ ana.spread <- apply(sqrt(apply(array(analysis[['data']] - as.vector(analysis[['e
 #analysis.pre1800 <-
 #analysis.post1800 <-
 #analysis.post1900 <-
-
+}
 
 
 # spread to error ratio rechnen (also das zeitliche mittel der Ensemblevarianz dividiert 
@@ -1546,6 +1560,7 @@ ana.spread <- apply(sqrt(apply(array(analysis[['data']] - as.vector(analysis[['e
 # let's do the same for each grid box of your analysis:
 #   n are the 100 forecasts for the years 1901-2000
 #   k are the 30 ensemble members
+  if (!landcorr) {
 if (every2grid) {
   load(file="../data/cru/cru4_ens_sd_2ndgrid.Rdata")
 } else {
@@ -1639,14 +1654,14 @@ for (i in which(echam$names=="temp2")) {
   }
 }
 ech.sprerr.corr <- cbind(sprerr.c.win,sprerr.c.sum) # corrected for obs. uncertainties
+}
 
 
 
 
 
 
-
-
+if (!landcorr) {
 if (vali) {
 #   ereliable <- tapply(apply(echam_noindex$data[1:(dim(validate$data)[1]),,] > 
 #                   as.vector(validate$data),1:2,mean), rep(echam_noindex$names,
@@ -1728,6 +1743,7 @@ if (vali) {
 #                         as.vector(validate.anom$data[which(validate.anom$names=="temp2"),1:160]),
 #                         1:2,mean), rep(analysis.anom$names,length=length(validate.anom$data[which(
 #                         validate.anom$names=="temp2"),1:160])), table) 
+}
 }
 
 # correlation of observation errors
@@ -2536,3 +2552,4 @@ if (vali_plots) {
 #}
 warnings()
 #quit(save='no')
+

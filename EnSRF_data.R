@@ -14,8 +14,10 @@ rm(list=ls())
 #}
 
 # enter syr ane eyr manually
-syr=1800
-eyr=1801
+
+syr=1903
+eyr=1909
+
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
 args <- commandArgs(TRUE)
@@ -30,6 +32,8 @@ print(paste('User:',user))
 if (user=="veronika") {
   # workdir('/scratch/veronika/rerun/r_code')
   workdir ='/scratch3/veronika/reuse/reuse_git/' # where are the scripts from github
+} else if (user=="lucaf") {
+  workdir='/scratch4/lucaf/reuse/reuse_git/'
 } else if (user=="joerg") {
   workdir='/scratch3/joerg/projects/reuse/reuse_git/'
 } else {
@@ -73,8 +77,14 @@ for (cyr in syr2:eyr) {
   } else {
     docum=T
   }
+  
+  if (substring(expname,1,12)=="proxies_only") { ### this is for experiments where only proxies are used
+    docum=F
+    instrumental=F
+    real_proxies=T
+  }
   # next line not included yet: 
-  if (eyr < 1750) {
+  if (cyr < 1902) {        # if we don't use reconvali, the eyr here should be changed (Error in valiall : object 'valiall' not found) -> but then instead of the eyr we should use cyr
     vali=F                 # switch off prepplot if no vali data selected
   } else {
     vali=T
@@ -529,6 +539,7 @@ for (cyr in syr2:eyr) {
     # 2.6 Set validate$ensmean equal to validate$data
     validate=valiall
     validate$ensmean=validate$data
+    
   }
   
   
@@ -625,7 +636,7 @@ for (cyr in syr2:eyr) {
         realprox.allts$sour <- realprox.allts$sour[redpos]
       }
       proxies<-list(data=realprox$data, lon=realprox$lon,
-                    lat=realprox$lat, names=realprox$names,
+                    lat=realprox$lat, names=realprox$names, sour=realprox$sour,
                     height=realprox$elevation, time=realprox$time,
                     mr=realprox$mr, var_residu=realprox$var_residu,
                     numavg=rep(1,length(realprox$lon)))
@@ -1313,7 +1324,8 @@ for (cyr in syr2:eyr) {
     if (instrumental) {inst$sour <- rep('inst',length(inst$lon))}
     if (docum) {
       docall$sour <- rep('doc',length(docall$lon))
-      docall.allts$sour <- rep('doc',length(docall$lon))    
+      # docall.allts$sour <- rep('doc',length(docall$lon)) # doesn't exists anymore   
+
     }
     if (real_proxies) {
       realprox$sour <- rep('prox',length(realprox$lon))
@@ -1430,9 +1442,12 @@ for (cyr in syr2:eyr) {
       H.i <- array(NA,c((nrow(Hcal2)+nrow(Hcal3)),7))
     } else if (instrumental & !docum & sixmonstatevector & real_proxies) {
       H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal2)),7))
+    } else if (!instrumental & !docum & real_proxies) { #new
+      H.i <- array(NA,c(nrow(Hcal2),7))
     } else { 
       H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal2)+nrow(Hcal3)),7))
     }
+    
     Hredux <- H.i
     if (instrumental){
       H.i[1:nrow(Hcal1),1] <- Hcal1[,1] 
@@ -1453,6 +1468,10 @@ for (cyr in syr2:eyr) {
     if (instrumental & real_proxies & !docum) {
       H.i[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,c(1,3,5,7,9,11,13)] 
       Hredux[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,c(2,4,6,8,10,12,14)] 
+    }
+    if (!instrumental & !docum & real_proxies){ #new
+    H.i[1:nrow(Hcal2),]<-Hcal2[,c(1,3,5,7,9,11,13)] 
+    Hredux[1:nrow(Hcal2),]<-Hcal2[,c(1,3,5,7,9,11,13)] 
     }
     H.i[H.i==0] <- NA
     Hredux[Hredux==0] <- NA
@@ -1570,8 +1589,14 @@ for (cyr in syr2:eyr) {
                 PH <- (analysis$data[,i,] %*% t(x2) / (nens - 1) * wgt) %*% t(H)
                 HPHR <- as.vector(H %*% PH[h.i,] + Rcal[j])
                 K <- PH / HPHR
-                corland_analysis$data[,i,] <- corland_analysis$data[,i,] + K[,1] * 
+                corland_analysis$data[,i,] <- corland_analysis$data[,i,] + K[,1] %*%
                   (calibrate$data[j,i] - H %*% corland_analysis$data[h.i,i,])
+                # get warrning although didn't get previously
+                # In K[, 1] * (calibrate$data[j, i] - H %*% corland_analysis$data[h.i,  ... :
+                # Recycling array of length 1 in vector-array arithmetic is deprecated.
+                # Use c() or as.vector() instead.
+                # I think it is because dim(K) = 304128 1, and we multiply it only with a matrix [1 1] -> though still giving the good result
+                # using the inner product gives the same result, without warning
               }
             }
           } 
@@ -1623,11 +1648,11 @@ for (cyr in syr2:eyr) {
         if (vali) {
           save(analysis.anom,analysis.abs,echam.anom,echam.abs,landcorrected.anom,
                landcorrected.clim,validate,calibrate,
-               file=paste0('analysis/analysis_',cyr,'.Rdata'))
+               file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
         } else {
           save(analysis.anom,analysis.abs,echam.anom,echam.abs,landcorrected.anom,
                landcorrected.clim,calibrate,
-               file=paste0('analysis/analysis_',cyr,'.Rdata'))
+               file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
         }   
       }
       if (loo) { # leave one out validation

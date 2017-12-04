@@ -16,6 +16,7 @@ rm(list=ls())
 # enter syr ane eyr manually
 syr=1999
 eyr=2000
+
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
 args <- commandArgs(TRUE)
@@ -30,6 +31,8 @@ print(paste('User:',user))
 if (user=="veronika") {
   # workdir('/scratch/veronika/rerun/r_code')
   workdir ='/scratch3/veronika/reuse/reuse_git/' # where are the scripts from github
+} else if (user=="lucaf") {
+  workdir='/scratch4/lucaf/reuse/reuse_git/'
 } else if (user=="joerg") {
   workdir='/scratch3/joerg/projects/reuse/reuse_git/'
 } else {
@@ -72,6 +75,12 @@ for (cyr in syr2:eyr) {
     docum=F                 # read documentary based data
   } else {
     docum=T
+  }
+  
+  if (substring(expname,1,12)=="proxies_only") { ### this is for experiments where only proxies are used
+    docum=F
+    instrumental=F
+    real_proxies=T
   }
   # next line not included yet: 
   if (cyr < 1902) {        # if we don't use reconvali, the eyr here should be changed (Error in valiall : object 'valiall' not found) -> but then instead of the eyr we should use cyr
@@ -1431,9 +1440,12 @@ for (cyr in syr2:eyr) {
       H.i <- array(NA,c((nrow(Hcal2)+nrow(Hcal3)),7))
     } else if (instrumental & !docum & sixmonstatevector & real_proxies) {
       H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal2)),7))
+    } else if (!instrumental & !docum & real_proxies) { #new
+      H.i <- array(NA,c(nrow(Hcal2),7))
     } else { 
       H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal2)+nrow(Hcal3)),7))
     }
+    
     Hredux <- H.i
     if (instrumental){
       H.i[1:nrow(Hcal1),1] <- Hcal1[,1] 
@@ -1454,6 +1466,10 @@ for (cyr in syr2:eyr) {
     if (instrumental & real_proxies & !docum) {
       H.i[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,c(1,3,5,7,9,11,13)] 
       Hredux[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,c(2,4,6,8,10,12,14)] 
+    }
+    if (!instrumental & !docum & real_proxies){ #new
+    H.i[1:nrow(Hcal2),]<-Hcal2[,c(1,3,5,7,9,11,13)] 
+    Hredux[1:nrow(Hcal2),]<-Hcal2[,c(1,3,5,7,9,11,13)] 
     }
     H.i[H.i==0] <- NA
     Hredux[Hredux==0] <- NA

@@ -1,6 +1,7 @@
 #MAJOR PROBLEMS:
 # SLOW!!!
 rm(list=ls())
+
 # uncomment following lines to run on Joerg's Macbook
 #machine="climcal" #"macbook" 
 #if (machine=="macbook") {
@@ -30,10 +31,11 @@ if (user=="veronika") {
   workdir ='/scratch3/veronika/reuse/reuse_git/' # where are the scripts from github
 } else if (user=="joerg") {
   workdir='/scratch3/joerg/projects/reuse/reuse_git/'
-} else if (user=="luca") {
-  workdir='luca should add the path'
+} else if (user=="lucaf") {
+    workdir='/scratch4/lucaf/reuse/reuse_git/'
 } else {
   stop("Unknown user!")
+
 }
 dataextdir='/mnt/climstor/giub/EKF400/'
 dataintdir=paste0(workdir,'../data/')
@@ -2550,3 +2552,4 @@ if (vali_plots) {
 #}
 warnings()
 #quit(save='no')
+

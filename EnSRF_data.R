@@ -15,8 +15,8 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
-syr=1903
-eyr=1909
+syr=1999
+eyr=2000
 
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
@@ -1325,7 +1325,6 @@ for (cyr in syr2:eyr) {
     if (docum) {
       docall$sour <- rep('doc',length(docall$lon))
       # docall.allts$sour <- rep('doc',length(docall$lon)) # doesn't exists anymore   
-
     }
     if (real_proxies) {
       realprox$sour <- rep('prox',length(realprox$lon))

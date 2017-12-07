@@ -7,6 +7,7 @@ echanompath <- paste0(dataextdir,'echam_anom/')
 echclimpath <- paste0(dataextdir,'echam_clim/')
 echsdpath <- paste0(dataextdir,'echam_sd/')
 crupath <- paste0(dataintdir,'cru/')
+gisspath = '/scratch/veronika/PAGES/climdata/giss/' # can be copied to climstore
 #cru4path <- paste0(dataintdir,'cru4/')
 reconpath <- paste0(dataintdir,'recon/')
 erapath <- paste0(dataintdir,'era/')
@@ -15,7 +16,8 @@ ghcnprecippath <- paste0(workdir,'../instr/ghcn/precip_v2/')
 histalppath <- paste0(dataintdir,'instr/histalp/')
 proxypath <- paste0(dataextdir,'assimil_data/proxies/petra/')
 mxdpath <- paste0(dataextdir,'assimil_data/proxies/mxd/')
-pagespath <- paste0(dataintdir,'PAGES_DB_Raphi/')
+pagespath = '/scratch3/veronika/reuse/'
+ntrendpath = '/scratch3/veronika/reuse/'
 schweingrpath <- paste0(dataextdir,'assimil_data/proxies/schweingr/')
 nceppath <- paste0(dataintdir,'reanalysis/ncep/')
 twentycrpath <- paste0(workdir,'../comparison_data/20cr/')
@@ -1009,6 +1011,277 @@ read_proxy2 <- function(syr,eyr){
 #  t35$mr[,1] <- mr2[,1]  
   t35$var_residu <- var_residu
   invisible(t35)
+}
+
+
+
+
+# PAGES proxies are TEMPERATURE sensitive
+# PAGES year is from April to March
+# tree: regression calculated for NH from April till September, for SH from October till March
+# coral: regression is calculated by using all months (12 reg coeff-s from April till March                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   )
+# docu: save docu data as an RData file
+# inst: save inst data as an Rdata file
+# PATHES SHOULD BE MAKE MORE GENERAL!!!
+read_pages = function(fsyr,feyr,archivetype, validate) {
+  load(paste0(pagespath,'pages_proxies.RData', sep=''))
+  if(archivetype == "tree") {
+    mylist.names = c("data","time","lon","lat","archivetype","elevation")
+    p_tree = setNames(vector("list", length(mylist.names)), mylist.names)
+    # keep the data set by fsyr and feyr
+    ti <- which((pages_proxies$year >= fsyr) & (pages_proxies$year <= feyr))
+    p_tree$data = scale(pages_proxies$chronologies[ti,which(pages_proxies$archivetype =="tree")])
+    p_tree$time = pages_proxies$year[ti]
+    p_tree$lon = pages_proxies$lonlat[1, which(pages_proxies$archivetype =="tree")]
+    p_tree$lat = pages_proxies$lonlat[2, which(pages_proxies$archivetype =="tree")]
+    p_tree$archivetype = pages_proxies$archivetype[which(pages_proxies$archivetype =="tree")]
+    p_tree$elevation = pages_proxies$elevation[which(pages_proxies$archivetype =="tree")]
+    # Create a new variable for 1901-1970
+    # the period on which we will calculate the multiple lin regression -> cut out 1901-1970
+    start_yr = which(p_tree$time == "1901")
+    end_yr = which(p_tree$time == "1970")
+    mylist.names = c("data","time")
+    p_tree_1901_1970 = setNames(vector("list", length(mylist.names)), mylist.names)
+    # p_tree_1901_1970$data = scale(pages_proxies$chronologies[,which(pages_proxies$archivetype =="tree")])
+    p_tree_1901_1970$data =  p_tree$data[start_yr:end_yr,]
+    p_tree_1901_1970$time =p_tree$time[start_yr:end_yr]
+    if (validate == "CRU") {
+      nc=nc_open(paste(crupath,'/cru_allvar_abs_1901-2004.nc',sep=''), write=F)
+      t1=ncvar_get(nc, "temp2") # for CRU temp
+      t2 <- t1[,,1:852] # from year 1901 till 1971
+    } else if (validate == "GISS") {
+      nc=nc_open(paste(gisspath,'/air.2x2.250_anom_echamgrid.nc',sep=''), write=F) 
+      t1=ncvar_get(nc, "air") # for GISS air temp and SST
+      t2 <- t1[,,253:1104]
+    }
+    lonlist=ncvar_get(nc, "lon") 
+    lonlist[lonlist > 180] <- lonlist[lonlist > 180] - 360
+    latlist=ncvar_get(nc, "lat") 
+    nc_close(nc)
+    
+    # start calculation the regression for each tree data  
+    for (i in 1:length(p_tree$lon)) {
+      k=which(abs(lonlist-p_tree$lon[i]+0.001)==min(abs(lonlist-p_tree$lon[i]+0.001)))
+      l=which(abs(latlist-p_tree$lat[i])==min(abs(latlist-p_tree$lat[i])))
+      t3 <- t2[k,l,]
+      if (all(is.na(t3))) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
+        if (i==1) {
+          mr <- rep(NA,7) # repeat it 7 times (intercept + 6 reg coeff)
+          var_residu <- NA
+        } else {
+          mr <- rbind(mr,rep(NA,7))
+          var_residu <- c(var_residu,rep(NA,1)) 
+        }
+      } else { # we can calculate the regression
+        # make variable for each month
+        t5 = t3[c(4:(length(t3)-3))]
+        t4 = t(array(t5,c(12,length(t5)/12))) # 70 years from Apr-March
+        
+        if (p_tree$lon[i] > 0) { # which half a year we want to use for calculating the regression
+          unab = t4[,1:6]
+          colnames(unab) <- c('t4','t5','t6','t7','t8','t9') # NH: from April till Sept
+        } else {
+          unab = t4[,7:12]
+          colnames(unab) <- c('t10','t11','t12','t1','t2','t3') # SH: from October till March
+        }
+        # multiple linear regression
+        results <- lm(p_tree_1901_1970$data[,i]~unab,  na.action=na.exclude)
+        corr = cor.test(fitted.values(results),p_tree_1901_1970$data[,i]) 
+        # print(corr[4]) # maybe under a certain corr value we could just set it to NA?
+        if (i==1) { 
+          mr <- results$coefficients
+          var_residu <- var(results$residuals)
+        } else { 
+          mr <- rbind(mr,results$coefficients)
+          var_residu <- c(var_residu,var(results$residuals))
+        }
+      }
+    }
+    p_tree$mr <- mr
+    colnames(p_tree$mr) =c("Intercept","unab_t4/t10","unab_t5/t11", "unab_t6/t12", "unab_t7/t1", "unab_t8/t2", "unab_t9/t3")
+    p_tree$var_residu <- var_residu
+    invisible(p_tree)
+  } else if (archivetype == "coral") {
+    mylist.names = c("data","time","lon","lat","archivetype","elevation")
+    p_coral = setNames(vector("list", length(mylist.names)), mylist.names)
+    # keep the data set by fsyr and feyr
+    ti <- which((pages_proxies$year>= fsyr) & (pages_proxies$year <= feyr))
+    p_coral$data = scale(pages_proxies$chronologies[ti,which(pages_proxies$archivetype =="coral")])
+    p_coral$time = pages_proxies$year[ti]
+    p_coral$lon = pages_proxies$lonlat[1, which(pages_proxies$archivetype =="coral")]
+    p_coral$lat = pages_proxies$lonlat[2, which(pages_proxies$archivetype =="coral")]
+    p_coral$archivetype = pages_proxies$archivetype[which(pages_proxies$archivetype =="coral")]
+    p_coral$elevation = pages_proxies$elevation[which(pages_proxies$archivetype =="coral")]
+    # Create a new variable for 1901-1970
+    # the period on which we will calculate the multiple lin regression -> cut out 1901-1970
+    start_yr = which(p_coral$time == "1901")
+    end_yr = which(p_coral$time == "1970")
+    mylist.names = c("data","time")
+    p_coral_1901_1970 = setNames(vector("list", length(mylist.names)), mylist.names)
+    # p_coral_1901_1970$data = scale(pages_proxies$chronologies[,which(pages_proxies$archivetype =="coral")])
+    p_coral_1901_1970$data =  p_coral$data[start_yr:end_yr,]
+    p_coral_1901_1970$time = p_coral$time[start_yr:end_yr]
+    if (validate == "CRU") {
+      nc=nc_open(paste(crupath,'/cru_allvar_abs_1901-2004.nc',sep=''), write=F)
+      t1=ncvar_get(nc, "temp2") # for CRU temp
+      t2 <- t1[,,1:852] # from year 1901 till 1971
+    } else if (validate == "GISS") {
+      nc=nc_open(paste(gisspath,'/air.2x2.250_anom_echamgrid.nc',sep=''), write=F) 
+      t1=ncvar_get(nc, "air") # for GISS air temp and SST
+      t2 <- t1[,,253:1104]
+    }
+    lonlist=ncvar_get(nc, "lon") 
+    lonlist[lonlist > 180] <- lonlist[lonlist > 180] - 360
+    latlist=ncvar_get(nc, "lat") 
+    nc_close(nc)
+    
+    # start calculation the regression for each tree data  
+    for (i in 1:length(p_coral$lon)) {
+      if (all(is.na(p_coral_1901_1970$data[,i]))) {
+        if (i==1) {
+          mr <- rep(NA,13) # repeat it 13 times (intercept + 12 reg coeff)
+          var_residu <- NA
+        } else {
+          mr <- rbind(mr,rep(NA,13))
+          var_residu <- c(var_residu,rep(NA,1)) 
+        }
+      } else {
+        k=which(abs(lonlist-p_coral$lon[i]+0.001)==min(abs(lonlist-p_coral$lon[i]+0.001)))
+        l=which(abs(latlist-p_coral$lat[i])==min(abs(latlist-p_coral$lat[i])))
+        t3 <- t2[k,l,]
+        if (all(is.na(t3))) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
+          if (i==1) {
+            mr <- rep(NA,13) 
+            var_residu <- NA
+          } else {
+            mr <- rbind(mr,rep(NA,13))
+            var_residu <- c(var_residu,rep(NA,1)) 
+          }
+        } else { # we can calculate the regression
+          # make variable for each month
+          t5 = t3[c(4:(length(t3)-3))]
+          t4 = t(array(t5,c(12,length(t5)/12))) # 70 years from Apr-March
+          
+          unab = t4
+          colnames(unab) <- c('t4','t5','t6','t7','t8','t9','t10','t11','t12','t1','t2','t3') 
+          
+          # multiple linear regression
+          results <- lm(p_coral_1901_1970$data[,i]~unab,  na.action=na.exclude)
+          corr = cor.test(fitted.values(results),p_coral_1901_1970$data[,i]) 
+          # print(corr[4]) # correlations are very small
+          if (i==1) { 
+            mr <- results$coefficients
+            var_residu <- var(results$residuals)
+          } else { 
+            mr <- rbind(mr,results$coefficients)
+            var_residu <- c(var_residu,var(results$residuals))
+          }
+        }
+      }
+    }
+    p_coral$mr <- mr
+    p_coral$var_residu <- var_residu
+    invisible(p_coral)
+  } else if (archivetype == "documents") {
+    mylist.names = c("data","time","lon","lat","archivetype","elevation")
+    p_docu = setNames(vector("list", length(mylist.names)), mylist.names)
+    # keep the data set by fsyr and feyr
+    ti <- which((pages_proxies$year >= fsyr) & (pages_proxies$year <= feyr))
+    p_docu$data = pages_proxies$chronologies[ti,which(pages_proxies$archivetype =="documents")]
+    p_docu$time = pages_proxies$year[ti]
+    p_docu$lon = pages_proxies$lonlat[1, which(pages_proxies$archivetype =="documents")]
+    p_docu$lat = pages_proxies$lonlat[2, which(pages_proxies$archivetype =="documents")]
+    p_docu$archivetype = pages_proxies$archivetype[which(pages_proxies$archivetype =="documents")]
+    p_docu$elevation = pages_proxies$elevation[which(pages_proxies$archivetype =="documents")]
+    invisible(p_docu)
+  } else if (archivetype == "instrumental") {
+    mylist.names = c("data","time","lon","lat","archivetype","elevation")
+    p_inst = setNames(vector("list", length(mylist.names)), mylist.names)
+    # keep the data set by fsyr and feyr
+    ti <- which((pages_proxies$year>= fsyr) & (pages_proxies$year <= feyr))
+    p_inst$data = pages_proxies$chronologies[ti,which(pages_proxies$archivetype =="instrumental")]
+    p_inst$time = pages_proxies$year[ti]
+    p_inst$lon = pages_proxies$lonlat[1, which(pages_proxies$archivetype =="instrumental")]
+    p_inst$lat = pages_proxies$lonlat[2, which(pages_proxies$archivetype =="instrumental")]
+    p_inst$archivetype = pages_proxies$archivetype[which(pages_proxies$archivetype =="instrumental")]
+    p_inst$elevation = pages_proxies$elevation[which(pages_proxies$archivetype =="instrumental")]
+    invisible(p_inst)
+  }
+}
+
+
+# N-TREND proxies are TEMPERATURE sensitive 
+# NH: from May till August as in the paper of Anchukaitis et al, 2017
+# Maybe we could use the whole half year
+read_ntrend = function(fsyr,feyr, validate) {
+  load(paste0(ntrendpath,'ntrend_proxies.RData', sep=''))
+  mylist.names = c("data","time","lon","lat","archivetype","elevation","parameter")
+  ntrend = setNames(vector("list", length(mylist.names)), mylist.names)
+  ti <- which((ntrend_proxies$year >= fsyr) & (ntrend_proxies$year <= feyr))
+  ntrend$data =  scale(ntrend_proxies$chronologies[ti,])
+  ntrend$time = ntrend_proxies$year[ti]
+  ntrend$lon =  ntrend_proxies$lonlat[1,]
+  ntrend$lat =  ntrend_proxies$lonlat[2,]
+  ntrend$archivetype =  rep("tree", length(ntrend_proxies$parameter))
+  ntrend$elevation =  ntrend_proxies$elevation
+  ntrend$parameter = ntrend_proxies$parameter
+  # Create a new variable for 1901-1970
+  # the period on which we will calculate the multiple lin regression -> cut out 1901-1970
+  start_yr = which(ntrend$time == "1901")
+  end_yr = which(ntrend$time == "1970")
+  mylist.names = c("data","time")
+  ntrend_1901_1970 = setNames(vector("list", length(mylist.names)), mylist.names)
+  ntrend_1901_1970$data = ntrend$data[start_yr:end_yr,]
+  ntrend_1901_1970$time = ntrend$time[start_yr:end_yr]
+  if (validate == "CRU") {
+    nc=nc_open(paste(crupath,'/cru_allvar_abs_1901-2004.nc',sep=''), write=F)
+    t1=ncvar_get(nc, "temp2") # for CRU temp
+    t2 <- t1[,,1:840] # from year 1901 till 1970
+  } else if (validate == "GISS") {
+    nc=nc_open(paste(gisspath,'/air.2x2.250_anom_echamgrid.nc',sep=''), write=F) 
+    t1=ncvar_get(nc, "air") # for GISS air temp and SST
+    t2 <- t1[,,253:1092]
+  }
+  lonlist=ncvar_get(nc, "lon") 
+  lonlist[lonlist > 180] <- lonlist[lonlist > 180] - 360
+  latlist=ncvar_get(nc, "lat") 
+  nc_close(nc)
+  
+  # start calculation the regression for each tree data  
+  for (i in 1:length(ntrend$lon)) {
+    k=which(abs(lonlist-ntrend$lon[i]+0.001)==min(abs(lonlist-ntrend$lon[i]+0.001)))
+    l=which(abs(latlist-ntrend$lat[i])==min(abs(latlist-ntrend$lat[i])))
+    t3 <- t2[k,l,]
+    if (all(is.na(t3))) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
+      if (i==1) {
+        mr <- rep(NA,5) # repeat it 5 times (intercept + 4 reg coeff)
+        var_residu <- NA
+      } else {
+        mr <- rbind(mr,rep(NA,5))
+        var_residu <- c(var_residu,rep(NA,1)) 
+      }
+    } else { # we can calculate the regression
+      # make variable for each month
+      t4 <- t(array(t3,c(12,length(t3)/12))) # 70 years from Jan till December
+      unab <- cbind(t4[,5:8])
+      colnames(unab) <- c('t5','t6','t7','t8') # NH: from May till August 
+      # multiple linear regression
+      results <- lm(ntrend_1901_1970$data[,i]~unab,  na.action=na.exclude)
+      corr = cor.test(fitted.values(results),ntrend_1901_1970$data[,i]) 
+      # print(corr[4]) # maybe under a certain corr value we could just set it to NA?
+      if (i==1) { 
+        mr <- results$coefficients
+        var_residu <- var(results$residuals)
+      } else { 
+        mr <- rbind(mr,results$coefficients)
+        var_residu <- c(var_residu,var(results$residuals))
+      }
+    }
+  }
+  ntrend$mr <- mr
+  colnames(ntrend$mr) =c("Intercept","unab_t5", "unab_t6", "unab_t7", "unab_t8")
+  ntrend$var_residu <- var_residu
+  invisible(ntrend)
 }
 
 

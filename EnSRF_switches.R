@@ -1,4 +1,4 @@
-expname="EKF400_v1.3_test_merged_code" # "EKF400_v1.3_full_res" #
+expname="EKF400_v1.3_merged_code_landcorr_run" # "EKF400_v1.3_full_res" #
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -166,6 +166,10 @@ generate_GHCN=F        # if TRUE -> orig. GHCN stat. data is read;
 generate_GHCN_precip=F # if FALSE -> ghcn.Rdata 
 generate_DOCUM=F        # if TRUE -> yuri's docu. data collection is read 
 generate_PROXIES=F
+generate_PAGES = F      # using the screened PAGES proxy dataset
+pages_lm_fit = "CRU"   # can be CRU or GISS to calculate the reg coeff-s
+type = c("tree","coral","documents","instrumental") # select which archivetype want to be used from the PAGES dataset -> read_pages function currently only works with these 4 types
+generate_NTREND = F
 
 yuri_temp=T          # yuri's data compilation, SLP always loaded
 yuri_slp=T
@@ -214,7 +218,7 @@ if (loc) {
 }
 
 # ATTENTION: landcorrected only works with anomaly_assim==T and every2grid==T!!!
-  landcorr = F      # use simulation WITHOUT land use bug if TRUE
+  landcorr = T      # use simulation WITHOUT land use bug if TRUE
 # how to treat multiple input series in same grid box
 first_prox_per_grid=F  # first proxy per echam grid box ATTENTION: only this 
 # or second next option (avg_prox_per_grid) can be TRUE
@@ -226,8 +230,8 @@ reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=F            # calc on land only
 fasttest=F             # use even less data
-tps_only=T             # only use temp, precip and slp in state vector, remove other vars
-no_stream=F            # all echam vars but stream function as there is problem with 
+tps_only=F             # only use temp, precip and slp in state vector, remove other vars
+no_stream=T            # all echam vars but stream function as there is problem with 
 #                       # 5/9 levels, which are in lat dimension before and after 1880
 loo=F                  # leave-one-out validation 
 if (loo) {tps_only=T;no_stream=F}  # reduce state vector for faster validation
@@ -284,7 +288,7 @@ ncep_vali=F            # NCEP/NCAR reanalysis data for validation
 #####################################################################################
 # prepare plot switches
 #####################################################################################
-monthly_out=F    # if sixmonstatevector=T output is backtransformed to seasonal 
+monthly_out = T    # if sixmonstatevector=T output is backtransformed to seasonal 
                  # average or monthly data if monthly_out=T 
 calc_prepplot=F  # save half year averages calc from monthly data into /prepplot folder
   write_coor=F     # write ascii files with assimilated stations and data per ts
@@ -300,11 +304,11 @@ if (!monthly_out & write_netcdf) {
 }
 # run next option "load_prepplot" for entire validation period, usually 
 # 1902-2003, because it creates time series
-load_prepplot=F  # ATTENTION check if folder prepplot on scratch contains monthly or seasonal data!
+load_prepplot=T  # ATTENTION check if folder prepplot on scratch contains monthly or seasonal data!
                  # saves image and only needs to be run once, afterward set "load_image=T" 
 statyr=1904      # 1941 1850/69 year, when station network is kept constant
 load_image=F     # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
-calc_vali_stat=F # calculate validation statistics after preparation (set "load_image=T")
+calc_vali_stat=T # calculate validation statistics after preparation (set "load_image=T")
 vali_plots=F     # source EnSRF_plots.R script 
 ind_ECHAM=F      # delete/comment code in prepplot script and then delete switches here
 ind_recon=F      # delete/comment code in prepplot script and then delete switches here

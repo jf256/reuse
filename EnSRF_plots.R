@@ -45,8 +45,10 @@ if ((monthly)&(!sixmonstatevector)) {
 
 if ((monthly)&(sixmonstatevector)&(monthly_out)) { 
   # just plot jan und jul
+  if (!landcorrected){
   ana.spread <- ana.spread[,c(4,10)]
   ech.spread <- ech.spread[,c(4,10)]
+}
   corr.ech$ensmean <- corr.ech$ensmean[,c(4,10)]
   corr$ensmean <- corr$ensmean[,c(4,10)]
   bias.ech$ensmean <- bias.ech$ensmean[,c(4,10)]

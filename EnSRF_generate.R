@@ -190,8 +190,69 @@ if (generate_PROXIES){
 } 
 
 
+# Pathes can be modified
+if (generate_PAGES) {
+  if (any(!is.na(match(type, "tree"))) & all(is.na(match(type, "coral"))) ) {
+    print("generate_PAGES_tree")
+    p_tree = read_pages(fsyr,feyr, archivetype ="tree", validate=pages_lm_fit)
+    realprox = p_tree
+    save(realprox, file=paste0(workdir,"../pages_tree_",fsyr,"-",feyr,"_",pages_lm_fit,".Rdata"))
+  } 
+  if (any(!is.na(match(type, "coral"))) & all(is.na(match(type, "tree"))) ) {
+    print("generate_PAGES_coral")
+    p_coral = read_pages(fsyr,feyr, archivetype ="coral",validate=pages_lm_fit)
+    realprox = p_coral
+    save(realprox, file=paste0(workdir,"../pages_coral_",fsyr,"-",feyr,"_",pages_lm_fit,".Rdata"))
+  } 
+  if (any(!is.na(match(type, "documents")))) {
+    print("generate_PAGES_docu")
+    p_docu = read_pages(fsyr,feyr, archivetype ="documents",validate=pages_lm_fit) # validate doesnt matter
+    save(p_docu, file=paste0(workdir,"../pages_docu_",fsyr,"-",feyr,".Rdata"))
+  } 
+  if (any(!is.na(match(type, "instrumental")))) {
+    print("generate_PAGES_inst")
+    p_inst = read_pages(fsyr,feyr, archivetype ="instrumental", validate=pages_lm_fit) # validate doesnt matter
+    save(p_inst, file=paste0(workdir,"../pages_inst_",fsyr,"-",feyr,".Rdata"))
+  } 
+  if (any(!is.na(match(type, "tree"))) & any(!is.na(match(type, "coral"))) )  {
+    print("generate_PAGES_tree_&_coral")
+    p_tree = read_pages(fsyr,feyr, archivetype ="tree", validate=pages_lm_fit)
+    p_coral = read_pages(fsyr,feyr, archivetype ="coral", validate=pages_lm_fit)
+    realprox <- list()
+    realprox$data <- cbind(p_tree$data, p_coral$data)
+    realprox$lon <- c(p_tree$lon, p_coral$lon)
+    realprox$lat <- c(p_tree$lat, p_coral$lat)
+    realprox$time <-p_tree$time
+    if (ncol(p_tree$mr) == ncol(p_coral$mr)) {
+      realprox$mr <- rbind(p_tree$mr, p_coral$mr)
+    } else {
+      maxcol = max(ncol(p_tree$mr), ncol(p_coral$mr))
+      if (ncol(p_tree$mr) == maxcol) {
+        p_tree$mr =  p_tree$mr
+      } else {
+        plus_col = matrix(NA, nrow(p_tree$mr), ncol=(maxcol - ncol(p_tree$mr)))
+        p_tree$mr = cbind(p_tree$mr, plus_col)
+      }
+      if (ncol(p_coral$mr) == maxcol) {
+        p_coral$mr = p_coral$mr
+      } else {
+        plus_col = matrix(NA, nrow(p_coral$mr), ncol=(maxcol - ncol(p_coral$mr)))
+        p_coral$mr = cbind(p_coral$mr, plus_col)
+      }
+    }
+    realprox$mr <- rbind(p_tree$mr, p_coral$mr)
+    colnames(realprox$mr) <- c('Intercept','unabt4','unabt5','unabt6','unabt7','unabt8','unabt9','unabt10','unabt11','unabt12','unabt1','unabt2','unabt3')
+    realprox$var_residu <- c(p_tree$var_residu, p_coral$var_residu)
+    save(realprox, file=paste0(workdir,"../pages_tree_&_coral_",fsyr,"-",feyr,"_",pages_lm_fit,".Rdata"))
+  }
+}
 
-
-
+# Pathes can be modified
+if (generate_NTREND) {
+  print("generate_N-TREND")
+  ntrend = read_ntrend(fsyr,feyr, validate=pages_lm_fit)
+  realprox = ntrend
+  save(realprox, file=paste0(workdir,"../n-trend_",fsyr,"-",feyr,"_",pages_lm_fit,".Rdata"))
+}
 
 

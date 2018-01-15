@@ -154,6 +154,92 @@ if (generate_DOCUM){
   source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_AMJJA.R"))
 }
 
+if (generate_PROXIESnew){
+  
+ 
+  
+  print("generate_PROXIES")
+  read.these <- c("trw","mxd","schweingr","pages","ntrend")[c(TRW,MXD,SCHWEINGR,PAGES,NTREND)]
+  if(exists("realprox")){rm(realprox)}
+  for (varname in read.these){
+    if (varname=="trw") {
+      print("reading trw")
+      trwprox <- read_proxy2(fsyr,feyr)
+      realprox<-trwprox
+      # NEW VERSION VERONIKA: PLEASE CHECK IF YOUR VERSION IS CORRECT
+      ############# # because the dim is not equal, the year for trwprox stops in 1970, other two in 2005
+      realprox$data <- rbind(trwprox$data,matrix(data=NA, nrow=length(seq(1971,2004)), ncol=dim(trwprox$data)[2])) # 34 not very elegant
+      #############
+      realprox$time <- c(realprox$time,seq(1971,2004))
+    }
+    
+    if (varname=="mxd") {
+      
+      print("reading mxd")
+      mxdprox <- read_proxy_mxd(fsyr,feyr)
+      
+      if (exists("realprox")){
+        
+        realprox$data <- cbind(realprox$data, mxdprox$data)
+        realprox$lon <- c(realprox$lon, mxdprox$lon)
+        realprox$lat <- c(realprox$lat, mxdprox$lat)
+        realprox$mr <- rbind(realprox$mr, mxdprox$mr)
+        realprox$var_residu <- c(realprox$var_residu, mxdprox$var_residu)
+        
+      } else { realprox<-mxdprox}
+    }
+    
+    if (varname=="schweingr") {
+      
+      print("reading schweingr")
+      schprox <- read_proxy_schweingr(fsyr,feyr)
+      
+      if (exists("realprox")){
+        
+        realprox$data <- cbind(realprox$data, schprox$data)
+        realprox$lon <- c(realprox$lon, schprox$lon)
+        realprox$lat <- c(realprox$lat, schprox$lat)
+        realprox$mr <- rbind(realprox$mr, schprox$mr)
+        realprox$var_residu <- c(realprox$var_residu, schprox$var_residu)
+        
+      } else { realprox<-schprox}
+    }
+    
+    if (varname=="pages") {
+      print("reading pages")
+      pagesprox <- read_PAGES(type) 
+      
+      if (exists("realprox")){
+        
+        realprox$data <- cbind(realprox$data, pagesprox$data)
+        realprox$lon <- c(realprox$lon, pagesprox$lon)
+        realprox$lat <- c(realprox$lat, pagesprox$lat)
+        realprox$mr <- rbind(realprox$mr, pagesprox$mr)
+        realprox$var_residu <- c(realprox$var_residu, pagesprox$var_residu)
+        
+      } else { realprox<-pagesprox}
+     
+    }
+    
+    if (varname=="ntrend") {
+      print("reading ntrend")
+      ntrend = read_ntrend(fsyr,feyr, validate=pages_lm_fit)
+      
+      if (exists("realprox")){
+        
+        realprox$data <- cbind(realprox$data, ntrend$data)
+        realprox$lon <- c(realprox$lon, ntrend$lon)
+        realprox$lat <- c(realprox$lat, ntrend$lat)
+        realprox$mr <- rbind(realprox$mr, ntrend$mr)
+        realprox$var_residu <- c(realprox$var_residu, ntrend$var_residu)
+        
+      } else { realprox<-ntrend}
+    }
+    
+  }
+  save(realprox, file=paste0("../data/proxies/real_proxies_",fsyr,"-",feyr,".Rdata"))
+}
+
 if (generate_PROXIES){
   print("generate_PROXIES")
   # real trw proxy multiple regression approach

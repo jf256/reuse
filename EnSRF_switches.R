@@ -1,4 +1,4 @@
-expname="EKF400_v1.3_merged_code_landcorr_run" # "EKF400_v1.3_full_res" #
+expname="test_1850-1851" # "EKF400_v1.3_full_res" #
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -166,9 +166,37 @@ generate_GHCN=F        # if TRUE -> orig. GHCN stat. data is read;
 generate_GHCN_precip=F # if FALSE -> ghcn.Rdata 
 generate_DOCUM=F        # if TRUE -> yuri's docu. data collection is read 
 generate_PROXIES=F
-generate_PAGES = F      # using the screened PAGES proxy dataset
+
+
+# At the moment: any combination of read.these should be possible
+# To do: noch ntrend machen mit regressionmonth etc - gemacht aber ntrend proxies nicht mehr im verz.
+#        Testen: verschiedene regression_months mit und ohne t/p usw.
+#        bei read_pages ist das directory von pagesproxies noch zu verallgemeinern
+#        Abklären: ist in den jeweiligen  read_proxy_mxd zb t4 immer von t1-t12, weil sonst machen 
+#                  die colnames nicht Sinn!!!!! Zb Zeile:
+#                  Weil in Pages sind es nicht dieselben 
+generate_PROXIESnew=T
+# You can choose any combination of months and variable (T&P) for regression_months.
+# Then you can choose for each source whether it to be included or not. 
+# The resulting realprox$mr is a matrix of dimension [1:x,1:25], where x depends on your chosen sources.
+# The 25 originates from 12 months for T and 12 for P plus the intercept. 
+# The respective coloumns that were not chosen remain NA. 
+# For MXD and SCHWEINGR it only takes the temperature and leaves the precip. months NA.
+# PAGES_tree data also consists of location on the SH: if for ex. t4 (is chosen), it takes t10 (t4+6) 
+# for any locations with lat<0. 
+regression_months = c('t1','t5','t6','t7','t10','t11','t12')
+# ^ for MXD it will only take the temp. part of regression months
+# for pages trees on SH if you choose April it automatically takes October of SH
+TRW=T
+MXD=T
+SCHWEINGR=T
+PAGES=T
 pages_lm_fit = "CRU"   # can be CRU or GISS to calculate the reg coeff-s
-type = c("tree","coral","documents","instrumental") # select which archivetype want to be used from the PAGES dataset -> read_pages function currently only works with these 4 types
+type = c("coral","tree") 
+#          ^ it only works with tree and coral (and both indiviually as well)
+NTREND=T
+
+generate_PAGES = F      # using the screened PAGES proxy dataset
 generate_NTREND = F
 
 yuri_temp=T          # yuri's data compilation, SLP always loaded

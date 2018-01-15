@@ -15,8 +15,8 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
-syr=1999
-eyr=2000
+syr=1850
+eyr=1851
 
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
@@ -558,7 +558,7 @@ for (cyr in syr2:eyr) {
   # 3.1 Loading proxy data
   if (real_proxies){
     load(paste0(dataextdir,"assimil_data/rdata_files/real_proxies_",fsyr,"-",feyr,".Rdata"))  
-  
+    load(paste0("../data/proxies/real_proxies_",fsyr,"-",feyr,".Rdata"))
 
     # 3.2 Screen the proxy data
     if (check_assimdata) {
@@ -1420,15 +1420,12 @@ for (cyr in syr2:eyr) {
     etmp$lon[is.na(etmp$lon)] <- 0
     etmp$lat[is.na(etmp$lat)] <- -90
     if (instrumental) {
-      Hcal1 <- array(NA,dim=c(dim(inst$data)[1],2))
       Hcal1 <- compute_Hi_Hredux_sixmonstatevector(inst, etmp, threshold=700)
     }
     if (real_proxies) {
-      Hcal2 <- array(NA,dim=c(dim(realprox$data)[1],14))
       Hcal2 <- compute_Hi_Hredux_proxy(realprox, etmp, realprox$mr, threshold=700)
     }
     if (docum) {
-      Hcal3 <- array(NA,dim=c(dim(docall$data)[1],2))
       Hcal3 <- compute_Hi_Hredux_sixmonstatevector(docall, etmp, threshold=700)
       Hcal3[Hcal3==0] <- NA
     }
@@ -1438,13 +1435,13 @@ for (cyr in syr2:eyr) {
     } else if (instrumental & docum & sixmonstatevector & !real_proxies) {
       H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal3)),1))
     } else if (!instrumental & docum & sixmonstatevector & real_proxies) {
-      H.i <- array(NA,c((nrow(Hcal2)+nrow(Hcal3)),7))
+      H.i <- array(NA,c((nrow(Hcal2)+nrow(Hcal3)),(ncol(Hcal2))/2))
     } else if (instrumental & !docum & sixmonstatevector & real_proxies) {
-      H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal2)),7))
+      H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal2)),(ncol(Hcal2))/2))
     } else if (!instrumental & !docum & real_proxies) { #new
-      H.i <- array(NA,c(nrow(Hcal2),7))
+      H.i <- array(NA,c(nrow(Hcal2),(ncol(Hcal2))/2))
     } else { 
-      H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal2)+nrow(Hcal3)),7))
+      H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal2)+nrow(Hcal3)),(ncol(Hcal2))/2))
     }
     
     Hredux <- H.i
@@ -1453,24 +1450,24 @@ for (cyr in syr2:eyr) {
       Hredux[1:nrow(Hcal1),1] <- Hcal1[,2] 
     } 
     if (instrumental & real_proxies & docum) {
-      H.i[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,c(1,3,5,7,9,11,13)] 
-      Hredux[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,c(2,4,6,8,10,12,14)]   
+      H.i[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,seq(1,ncol(Hcal2),2)] 
+      Hredux[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,seq(2,ncol(Hcal2),2)]   
       H.i[((nrow(Hcal1)+nrow(Hcal2)+1):nrow(H.i)),1] <- Hcal3[,1]
       Hredux[((nrow(Hcal1)+nrow(Hcal2)+1):nrow(H.i)),1] <- Hcal3[,2]
     }
     if (!instrumental & real_proxies & docum) {
-      H.i[1:nrow(Hcal2),] <- Hcal2[,c(1,3,5,7,9,11,13)] 
-      Hredux[1:nrow(Hcal2),] <- Hcal2[,c(2,4,6,8,10,12,14)]   
+      H.i[1:nrow(Hcal2),] <- Hcal2[,seq(1,ncol(Hcal2),2)] 
+      Hredux[1:nrow(Hcal2),] <- Hcal2[,seq(2,ncol(Hcal2),2)]   
       H.i[((nrow(Hcal2)+1):nrow(H.i)),1] <- Hcal3[,1]
       Hredux[((nrow(Hcal2)+1):nrow(H.i)),1] <- Hcal3[,2]
     }
     if (instrumental & real_proxies & !docum) {
-      H.i[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,c(1,3,5,7,9,11,13)] 
-      Hredux[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,c(2,4,6,8,10,12,14)] 
+      H.i[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,seq(1,ncol(Hcal2),2)] 
+      Hredux[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,seq(2,ncol(Hcal2),2)] 
     }
     if (!instrumental & !docum & real_proxies){ #new
-    H.i[1:nrow(Hcal2),]<-Hcal2[,c(1,3,5,7,9,11,13)] 
-    Hredux[1:nrow(Hcal2),]<-Hcal2[,c(1,3,5,7,9,11,13)] 
+    H.i[1:nrow(Hcal2),]<-Hcal2[,seq(1,ncol(Hcal2),2)] 
+    Hredux[1:nrow(Hcal2),]<-Hcal2[,seq(2,ncol(Hcal2),2)] 
     }
     H.i[H.i==0] <- NA
     Hredux[Hredux==0] <- NA

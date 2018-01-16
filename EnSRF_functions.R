@@ -1060,6 +1060,7 @@ read_proxy2 <- function(syr,eyr){
 # PATHES SHOULD BE MAKE MORE GENERAL!!!
 read_pages = function(fsyr,feyr,archivetype, validate) {
   load(paste0(paste0(workdir,'/../pages_proxies.RData', sep='')))
+  load("/scratch3/veronika/reuse/pages_proxies.RData")
   if(archivetype == "tree") {
     if(exists("mrNH")){rm(mrNH)}
     if(exists("mrSH")){rm(mrSH)}
@@ -5580,6 +5581,205 @@ read_PAGES <- function(type){
     save(pagesprox, file=paste0(workdir,"../pages_tree_&_coral_",fsyr,"-",feyr,"_",pages_lm_fit,".Rdata"))
   }
   return(pagesprox)
+}
+
+
+## function to calculate 71 year climatology of list x
+
+calculate_climatology <- function(x,cyr,subtracted,added,source){
+  
+  ti=which(floor(x$time)>=(cyr-(subtracted)) & floor(x$time)<=(cyr+added))
+  
+  if (source=="proxy"){    
+    tiv=which(floor(x$time)==cyr)
+    sts=ti[1]
+    ets=ti[length(ti)]
+    x.clim = x
+    x.clim$data=t(x$data[sts:ets,])
+    x.clim$time=x$time[sts:ets]
+  }
+  # transform it to Oct-Septyears
+  if (source=="inst"){
+    x.clim = x
+    x.clim$data=t(x$data)
+    if (cyr < 1636) {
+      y_start = agrep(paste0(1600,'.792'),as.character(x.clim$time))
+    } else {
+      y_start = agrep(paste0(cyr-subtracted,'.792'),as.character(x.clim$time))
+    }
+    if (cyr > 1970) {
+      y_end =  grep(paste0(2005,'.708'),as.character(x.clim$time)) # 2012 should be changed to 2005, everywhere
+    } else {
+      y_end = grep(paste0(cyr+added,'.708'),as.character(x.clim$time))
+    }
+    x.clim$data = x.clim$data[,y_start:y_end]
+    x.clim$time = x.clim$time[y_start:y_end]
+    x.clim$data = t(x.clim$data)
+  }
+  return(x.clim)
+}
+
+
+## function to screen realprox data (+/- 5 std.)
+
+screenstd <- function (x,cyr,source) { #sources: proxy/inst
+  
+  
+  
+  if (source=="proxy"){
+    
+    x.clim<-calculate_climatology(x,cyr,35,35,source)
+    
+    tiv=which(floor(x$time)==cyr)  
+    x$data<-t(x$data)
+    for (i in 1:length(x$lon)) {
+      
+      rpmean<- mean(x.clim$data[i,],na.rm=T)
+      rpsd   <- sd(x.clim$data[i,],na.rm=T)
+      #rpmean <- mean(realprox$data[,i],na.rm=T)
+      #rpsd   <- sd(realprox$data[,i],na.rm=T)
+      if ((!is.na(rpmean)) & (!is.na(rpsd))) {
+        if ((!is.na(x$data[i,tiv])) & ((x$data[i,tiv] < rpmean-5*rpsd)
+                                       | (x$data[i,tiv] > rpmean+5*rpsd))) {
+          x$data[i,tiv] <- NA
+          print(paste('proxy data', i, 'out of range'))
+          write(paste('proxy data', i, 'out of range'),file=paste0('../log/',logfn),append=T)
+          
+        }
+      }
+    }
+  }
+  
+  if (source=="inst"){
+    
+    x.clim<-calculate_climatology(x,cyr,36,35,source)
+    jecham.sd<-get("echam.sd")
+    echam_clim_mon_ensmean <- get("echam_clim_mon_ensmean")
+    
+    gpos <- getgridboxnum(x,echam.sd)
+    
+    # year from Oct to Sept for the climatology
+    
+    vtmp <- array(x.clim$data,c(12, nrow(x.clim$data)/12, dim(x.clim$data)[2]))
+    stsv = round(dim(vtmp)[2]/2)
+    tiv=which(floor(x$time)==cyr)  
+    sts=tiv[1]
+    
+    for (i in 1:length(x$lon)) { 
+      if (!is.na(gpos[i])) {
+        m <- gpos[i]
+        if (!is.na(m)) {
+          
+          
+          for (j in 1:12) {
+            # if bias corrected proxy/inst is outside echam ens range +- 5SD,
+            # data point will not be assimilated at this time step
+            if (!all(is.na(vtmp[j,,i])) ) { 
+              biasm <- echam_clim_mon_ensmean[m,j] - mean(vtmp[j,,i],na.rm=T) 
+              if (!is.na(biasm) & !is.na(vtmp[j,stsv,i]) ) {  # Veronika added the second term of the if
+                #  if (((vtmp[j,((stsv-1)/12+1),i]+ biasm) < echam$ensmean[m,(j+12)]-5*echam.sd$data[m,j]) |
+                #     ((vtmp[j,((stsv-1)/12+1),i]+ biasm) > echam$ensmean[m,(j+12)]+5*echam.sd$data[m,j])) {
+                if (((vtmp[j,stsv,i]+biasm) < echam_clim_mon_ensmean[m,j]-5*echam.sd$data[m,j]) |
+                    ((vtmp[j,stsv,i]+ biasm) > echam_clim_mon_ensmean[m,j]+5*echam.sd$data[m,j])) {
+                  
+                  x$data[sts-1+j,i]<-NA
+                  print(paste('inst data',varname,'#:',i,'mon:',j,'out of range'))
+                  write(paste('inst data', varname,'#:',i,'mon:',j,'out of range'),
+                        file=paste0('../log/',logfn),append=T)
+                  write(paste('data lon/lat',var$lon[i],var$lat[i]),
+                        file=paste0('../log/',logfn),append=T)
+                  write(paste('echam lon/lat', echam.sd$lon[m],echam.sd$lat[m]),
+                        file=paste0('../log/',logfn),append=T)
+                  write(paste('bias corr. data', vtmp[j,stsv,i]+biasm),
+                        file=paste0('../log/',logfn),append=T)
+                  write(paste('echam clim', echam_clim_mon_ensmean[m,j]),
+                        file=paste0('../log/',logfn),append=T)
+                  write(paste('echam sd', echam.sd$data[m,j]),
+                        file=paste0('../log/',logfn),append=T)
+                  
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return(x)
+}
+
+
+
+screendistance <- function (echam.sd,varname) {
+  var <- get(varname)
+  gpos <- getgridboxnum(var,echam.sd)
+  for (i in 1:length(var$lon)) { # order of this and next if statement changed 2017-07-25
+    if (!is.na(gpos[i])) {
+      m <- gpos[i]
+      d <- compute_dist(var$lon[i],var$lat[i],echam.sd$lon[m],echam.sd$lat[m])
+      if ((!is.na(d)) & (d > 600)) { # check distance of assim data to next model grid box
+        m=NA
+        print(paste('inst data', varname, i, '>600km from echam grid box; set to NA'))
+        write(paste('inst data', varname, i, '>600km from echam grid box; set to NA'),
+              file=paste0('../log/',logfn),append=T)
+        var$data[,i]<-NA
+        
+        
+      }
+    }
+  }
+  return(var)
+}
+
+convert_to_sixmonstatevector <- function(x,cyr){
+  tmp21 <- array(x$data,c(dim(x$data)[1]*dim(x$data)[2],
+                          dim(x$data)[3]))
+  tmp22 <- tmp21[((9*dim(x$data)[1]+1):(dim(tmp21)[1]-(3*dim(x$data)[1]))),]
+  x$data <- array(tmp22,c(dim(tmp22)[1]/(((dim(x$data)[2]/12)-1)*2),
+                          (((dim(x$data)[2]/12)-1)*2),dim(tmp22)[2]))
+  tmp31 <- array(x$ensmean,c(dim(x$ensmean)[1]*dim(x$ensmean)[2]))
+  tmp32 <- tmp31[((9*dim(x$ensmean)[1]+1):(dim(tmp31)[1]-
+                                             (3*dim(x$ensmean)[1])))]
+  x$ensmean <- array(tmp32,c(dim(tmp32)[1]/(((dim(x$ensmean)[2]/12)-1)*2),
+                             (((dim(x$ensmean)[2]/12)-1)*2)))
+  x$time <- c(cyr,cyr+0.5)
+  return(x)
+}
+
+convert_to_2_seasons <- function(x,source){
+  fsyr<-get("fsyr")
+  feyr<-get("feyr")
+  cyr<-get("cyr")
+  if (source=="proxy"){
+    x.allts <- x
+    tmp1=t(x$data)
+    points.on.SH <- which(x$lat<0)
+    tmp2=array(NA,c(dim(tmp1)[1],2,dim(tmp1)[2]))
+    tmp2[,2,]=tmp1
+    if (!isempty(points.on.SH)){
+    tmp2[points.on.SH,1,]<-tmp2[points.on.SH,2,]
+    tmp2[points.on.SH,2,]<-NA
+    }
+    x.allts$data=array(tmp2,c(dim(tmp2)[1],dim(tmp2)[2]*dim(tmp2)[3]))
+    x.allts$time=seq(fsyr,feyr+0.5,0.5) 
+    ti=which(floor(x.allts$time)==cyr)
+    sts=ti[1]
+    ets=ti[length(ti)]      
+    x$data=x.allts$data[,sts:ets]
+    x$time=x.allts$time[sts:ets]
+    x$names=rep("prox",dim(x.allts$data)[1])
+  }
+  if (source=="doc"){
+    tmp1 <- array(t(x$data),c(dim(x$data)[1] *  dim(x$data)[2]))
+    x$data <- array(tmp1,c(dim(tmp1)[1]/(dim(x$data)[1]/6),2))
+    rm(tmp1)
+    x$time <- c(cyr,cyr+0.5)
+    x$names <- rep(x$names,6)
+    x$lon <- rep(x$lon,6)
+    x$lat <- rep(x$lat,6)
+    x$des=rep('mon',nrow(x$data))
+  }
+  return(list(x=x,x.allts=x.allts))
 }
 
 

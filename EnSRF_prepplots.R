@@ -13,8 +13,8 @@ rm(list=ls())
 #}
 
 # enter syr ane eyr manually
-syr=1980 #1902 #1941
-eyr=1981 #2003 #1970
+syr=1905 #1902 #1941
+eyr=1950 #2003 #1970
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
 args <- commandArgs(TRUE)
@@ -934,7 +934,11 @@ if (load_prepplot){
       # because proxies not in fixed grid format. Hence number of records 
       # and position/row in data/ensmean matrix changes over time
       calibrate.allts=calibrate
-      pos <- which(calibrate$sour=="inst")
+      if (substring(expname,1,12)=="proxies_only") {
+        pos <- which(calibrate$sour=="prox")
+      }else{
+        pos <- which(calibrate$sour=="inst")
+      }
       if (length(pos)==0){
         pos <- which(cali$sour=="inst")
         calibrate.allts$data=array(NA,dim=dim(cali$data[pos,]))
@@ -985,7 +989,11 @@ if (load_prepplot){
 #      ech_ind.allts$data=abind(ech_ind.allts$data,ech_ind$data,along=2)
 #      ech_ind.allts$ensmean=cbind(ech_ind.allts$ensmean,ech_ind$ensmean)
 #      ech_ind.allts$time=c(ech_ind.allts$time,ech_ind$time)
-      pos <- which(calibrate$sour=="inst")
+      if (substring(expname,1,12)=="proxies_only") {
+        pos <- which(calibrate$sour=="prox")
+      }else{
+        pos <- which(calibrate$sour=="inst")
+      }
       if (length(pos)==0){
         pos <- which(cali$sour=="inst")
         calibrate.allts$data=abind(calibrate.allts$data[pos,],
@@ -1434,6 +1442,37 @@ if (calc_vali_stat){
 #rmse <- rmse_fun(analysis_noindex, y=validate, seas=s)
 #rmse.ech <- rmse_fun(echam_noindex, y=validate, seas=s)
 if (vali) {
+  if (CRPS) {
+    
+    ## first option: make a loop
+    crps.ana <- array(NA, dim=dim(validate.anom$data))
+    crps.ech <- crps.ana
+    k=0
+    for (i in 1:nrow(analysis.anom$data)) {
+      if (i %% 100 == 0) {
+        print(paste('observation', i))
+      }
+      dressed.ana <- DressEnsemble(analysis.anom$data[i,,])
+      dressed.ech <- DressEnsemble(echam.anom$data[i,,])
+      
+      if (k==0&!any(is.na(dressed.ana$ens))){
+        PlotDressedEns(dressed.ana)  ## as an illustration
+        k=1
+      }
+      
+      crps.ana[i,] <- DressCrps(dressed.ana,validate.anom$data[i,])
+      crps.ech[i,] <- DressCrps(dressed.ech,validate.anom$data[i,])
+      
+      
+    }
+    
+    ## second option: apply - doesn't work
+    # dressed<-apply(analysis$data,1,DressEnsemble)
+    # dressed<-unlist(dressed, recursive=FALSE,use.names = T)
+    ##plot 
+    
+    
+  }
 #  rmse <- rmse_fun(analysis_noindex, y=validate, seas=s)
 #  rmse.ech <- rmse_fun(echam_noindex, y=validate, seas=s)
   rmse <- rmse_fun(analysis, y=validate, seas=s)
@@ -1768,7 +1807,8 @@ calibrate.anom$names <- as.vector(calibrate.anom$names[,1])
 #   }
 #   H
 # }
-
+if (!substring(expname,1,12)=="proxies_only") { ### this is for experiments where only proxies are used
+  
 stat=calibrate.anom
 stat$data=stat$data[which(stat$sour=="inst"),]
 stat$lon=stat$lon[which(stat$sour=="inst")]
@@ -1816,6 +1856,7 @@ for (i in 1:length(dlist)) {
 # pos=pos[-1]
 # obserr2=obserr[pos,]
 cmat <- cor(t(obserr),use="pairwise.complete.obs")   #obserr2
+}
 # there are correlated observations
 # hist(cmat,breaks=seq(-1,1,0.2))
 # for (i in 1:nrow(cmat)) {

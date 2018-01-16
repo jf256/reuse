@@ -15,8 +15,8 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
-syr=1850
-eyr=1851
+syr=1902
+eyr=1912
 
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
@@ -323,28 +323,9 @@ for (cyr in syr2:eyr) {
     # change array to have 6 months in state vector for winter and summer
     # first winter starts in oct of syr
     # 6 mon stat vectors for oct-mar and apr and sep
-    tmp21 <- array(echam$data,c(dim(echam$data)[1]*dim(echam$data)[2],
-               dim(echam$data)[3]))
-    tmp22 <- tmp21[((9*dim(echam$data)[1]+1):(dim(tmp21)[1]-(3*dim(echam$data)[1]))),]
-    echam$data <- array(tmp22,c(dim(tmp22)[1]/(((dim(echam$data)[2]/12)-1)*2),
-                    (((dim(echam$data)[2]/12)-1)*2),dim(tmp22)[2]))
-    tmp31 <- array(echam$ensmean,c(dim(echam$ensmean)[1]*dim(echam$ensmean)[2]))
-    tmp32 <- tmp31[((9*dim(echam$ensmean)[1]+1):(dim(tmp31)[1]-
-               (3*dim(echam$ensmean)[1])))]
-    echam$ensmean <- array(tmp32,c(dim(tmp32)[1]/(((dim(echam$ensmean)[2]/12)-1)*2),
-                       (((dim(echam$ensmean)[2]/12)-1)*2)))
-    echam$time <- c(cyr,cyr+0.5)
-    tmp41 <- array(echam.anom$data,c(dim(echam.anom$data)[1]*dim(echam.anom$data)[2],
-               dim(echam.anom$data)[3]))
-    tmp42 <- tmp41[((9*dim(echam.anom$data)[1]+1):(dim(tmp41)[1]-(3*dim(echam.anom$data)[1]))),]
-    echam.anom$data <- array(tmp42,c(dim(tmp42)[1]/(((dim(echam.anom$data)[2]/12)-1)*2),
-                         (((dim(echam.anom$data)[2]/12)-1)*2),dim(tmp42)[2]))
-    tmp51 <- array(echam.anom$ensmean,c(dim(echam.anom$ensmean)[1]*dim(echam.anom$ensmean)[2]))
-    tmp52 <- tmp51[((9*dim(echam.anom$ensmean)[1]+1):(dim(tmp51)[1]-
-               (3*dim(echam.anom$ensmean)[1])))]
-    echam.anom$ensmean <- array(tmp52,c(dim(tmp52)[1]/(((dim(echam.anom$ensmean)[2]/12)-1)*2),
-                            (((dim(echam.anom$ensmean)[2]/12)-1)*2)))
-    echam.anom$time <- c(cyr,cyr+0.5)
+    echam<-convert_to_sixmonstatevector(echam,cyr)
+    echam.anom <- convert_to_sixmonstatevector(echam.anom,cyr)
+    
     if (landcorr) {
       land41 <- array(landcorrected.anom$data,c(dim(landcorrected.anom$data)[1]*
                   dim(landcorrected.anom$data)[2], 1))
@@ -356,18 +337,10 @@ for (cyr in syr2:eyr) {
                                    (((dim(landcorrected.anom$data)[2]/12)-1)*2),dim(land42)[2]))
       landcorrected.anom$time <- c(cyr,cyr+0.5)
     }
-    tmp61 <- array(echam.clim$data,c(dim(echam.clim$data)[1]*dim(echam.clim$data)[2],
-               dim(echam.clim$data)[3]))
-    tmp62 <- tmp61[((9*dim(echam.clim$data)[1]+1):(dim(tmp61)[1]-(3*dim(echam.clim$data)[1]))),]
-    echam.clim$data <- array(tmp62,c(dim(tmp62)[1]/(((dim(echam.clim$data)[2]/12)-1)*2),
-                         (((dim(echam.clim$data)[2]/12)-1)*2),dim(tmp62)[2]))
-    tmp71 <- array(echam.clim$ensmean,c(dim(echam.clim$ensmean)[1]*dim(echam.clim$ensmean)[2]))
-    tmp72 <- tmp71[((9*dim(echam.clim$ensmean)[1]+1):(dim(tmp71)[1]-
-               (3*dim(echam.clim$ensmean)[1])))]
-    echam.clim$ensmean <- array(tmp72,c(dim(tmp72)[1]/(((dim(echam.clim$ensmean)[2]/12)-1)*2),
-                            (((dim(echam.clim$ensmean)[2]/12)-1)*2)))
-    echam.clim$time <- c(cyr,cyr+0.5)
+    
+    echam.clim<-convert_to_sixmonstatevector(echam.clim,cyr)
     echam.clim$names <- rep(echam.clim$names,6)
+    
     if (landcorr) {
       land61 <- array(landcorrected.clim$data,c(dim(landcorrected.clim$data)[1]*dim(landcorrected.clim$data)[2],1))
       land62 <- land61[((9*dim(landcorrected.clim$data)[1]+1):(dim(land61)[1]-(3*dim(landcorrected.clim$data)[1]))),]
@@ -378,7 +351,7 @@ for (cyr in syr2:eyr) {
       landcorrected.clim$names <- rep(landcorrected.clim$names,6)
       rm(land41);rm(land42);rm(land61);rm(land62)
     }
-    rm(tmp41);rm(tmp42);rm(tmp51);rm(tmp52);rm(tmp61);rm(tmp62);rm(tmp71);rm(tmp72)
+    # rm(tmp41);rm(tmp42);rm(tmp51);rm(tmp52);rm(tmp61);rm(tmp62);rm(tmp71);rm(tmp72)
   }
   
   # rename echam.amon to echam if anomaly_assim==T
@@ -565,41 +538,18 @@ for (cyr in syr2:eyr) {
       # correlation screening already where multiple regression coefficients are calculated
       # thus, screen if value at current time step is more than 5 std. dev. from mean
       # in this case treated as outlier and set to NA
-      for (i in 1:length(realprox$lon)) {
-        tiv=which(floor(realprox$time)==cyr)
-        ti=which(floor(realprox$time)>=(cyr-35) & floor(realprox$time)<=(cyr+35))
-        sts=ti[1]
-        ets=ti[length(ti)]
-        rpmean <- mean(realprox$data[sts:ets,i],na.rm=T)
-        rpsd   <- sd(realprox$data[sts:ets,i],na.rm=T)
-        #rpmean <- mean(realprox$data[,i],na.rm=T)
-        #rpsd   <- sd(realprox$data[,i],na.rm=T)
-        if ((!is.na(rpmean)) & (!is.na(rpsd))) {
-          if ((!is.na(realprox$data[tiv,i])) & ((realprox$data[tiv,i] < rpmean-5*rpsd)
-                                                | (realprox$data[tiv,i] > rpmean+5*rpsd))) {
-            realprox$data[,i] <- NA
-            print(paste('proxy data', i, 'out of range'))
-            write(paste('proxy data', i, 'out of range'),file=paste0('../log/',logfn),append=T)
-          }
-        }
-      }
-    }
-  
-    # 3.3 Convert to 2 season per year
-    # no scaling because regresion takes care of it
-    realprox.allts <- realprox
-    tmp1=t(realprox$data)
-    tmp2=array(NA,c(dim(tmp1)[1],2,dim(tmp1)[2]))
-    tmp2[,2,]=tmp1
-    realprox.allts$data=array(tmp2,c(dim(tmp2)[1],dim(tmp2)[2]*dim(tmp2)[3]))
-    realprox.allts$time=seq(fsyr,feyr+0.5,0.5) 
-    ti=which(floor(realprox.allts$time)==cyr)
-    sts=ti[1]
-    ets=ti[length(ti)]      
-    realprox$data=realprox.allts$data[,sts:ets]
-    realprox$time=realprox.allts$time[sts:ets]
-    realprox$names=rep("prox",dim(realprox.allts$data)[1])
-    
+      realprox <- screenstd(realprox,cyr=cyr,source="proxy")
+      realprox$data <- t(realprox$data)
+      
+      # 3.3 Convert to 2 season per year
+      # no scaling because regresion takes care of it
+      
+
+      # the function takes realprox and output is 2 season conversion and realprox.allts(which is needed below)
+      listoftwo <-convert_to_2_seasons(realprox,source="proxy")
+      realprox.allts <- listoftwo$x.allts
+      realprox <- listoftwo$x
+      
     # 3.4 Calculate the anomalies
     if (anomaly_assim){
       ti=which(floor(realprox.allts$time)>=(cyr-35) &
@@ -647,7 +597,7 @@ for (cyr in syr2:eyr) {
     if (dim(realprox$data)[1]==0) { real_proxies=F }
   }
   
-  
+  }
   
   
   
@@ -664,46 +614,30 @@ for (cyr in syr2:eyr) {
 
   if (docum) {
     # 4.1 Loading documentary data
-    load(paste0(dataextdir,"assimil_data/rdata_files/t_docu_monthly.Rdata"))
+    if (import_luca) {
+      load('../assimil_data/t_docu/t_docu_monthly_luca.Rdata')
+    }else{
+      load(paste0(dataextdir,"assimil_data/rdata_files/t_docu_monthly.Rdata"))
+    }
     if (!any(!is.na(t$data))) { docu=F }
     
     if (sixmonstatevector) {
+      
       # 4.2 Calculate the 71 anomaly from cyr-1 October to cyr September
+      
       if (anomaly_assim){
         # 4.2.1 Calculate the climatology
-        t.clim = t
-        ti=which(floor(t$time)>=(cyr-36) & floor(t$time)<=(cyr+35))
-        sts=ti[1]
-        ets=ti[length(ti)]
-        t.clim$data=t(t$data[sts:ets,])
-        t.clim$time=t$time[sts:ets]
-        # 4.2.2 Transform it to Oct-Sept years
-        if (cyr < 1636) {
-          y_start = agrep(paste0(1600,'.792'),as.character(t.clim$time))
-        } else {
-          y_start = agrep(paste0(cyr-36,'.792'),as.character(t.clim$time))
-        }
-        if (cyr > 1970) {
-          y_end =  grep(paste0(2005,'.708'),as.character(t.clim$time))
-        } else {
-          y_end = grep(paste0(cyr+35,'.708'),as.character(t.clim$time))
-        }
-        t.clim$data = t.clim$data[,y_start:y_end]
-        t.clim$time = t.clim$time[y_start:y_end]
+        
+        t.clim<-calculate_climatology(t,cyr,36,35,source="inst")
+        t.clim$data<-t(t.clim$data)
+        
         t.clim$data = apply(array(t.clim$data, c(nrow(t.clim$data), 12, ncol(t.clim$data)/12)), 1:2, mean,na.rm=T)
+        
         # 4.2.3 Cut out the cyr-1 and cyr time window
-        t.cyr = t
-        ti=which(floor(t$time)>=cyr-1 & floor(t$time)<cyr+1)
-        sts=ti[1]
-        ets=ti[length(ti)]
-        t.cyr$data=t(t$data[sts:ets,])
-        t.cyr$time=t$time[sts:ets]
-        # 4.2.4 Transform it to Oct-Sept  years
-        y_start = agrep(paste0(cyr-1,'.792'),as.character(t.cyr$time))
-        y_end = grep(paste0(cyr,'.708'),as.character(t.cyr$time))
-        t.cyr$data = t.cyr$data[,y_start:y_end]
-        t.cyr$time = t.cyr$time[y_start:y_end]
-        # 4.2.5 Calculate the anomaly for cyr
+        t.cyr<-calculate_climatology(t,cyr,1,0,source="inst")
+        t.cyr$data<-t(t.cyr$data)
+       
+         # 4.2.5 Calculate the anomaly for cyr
         t.anom <-t.cyr
         t.anom$data <- t(t.anom$data - t.clim$data)
         doc_t_mon <- t.anom
@@ -733,14 +667,10 @@ for (cyr in syr2:eyr) {
       }
         
       # 4.4 Reconvert to 2 seasons per year
-      tmp1 <- array(t(doc_t_mon$data),c(dim(doc_t_mon$data)[1] *  dim(doc_t_mon$data)[2]))
-      doc_t_mon$data <- array(tmp1,c(dim(tmp1)[1]/(dim(doc_t_mon$data)[1]/6),2))
-      rm(tmp1)
-      doc_t_mon$time <- c(cyr,cyr+0.5)
-      doc_t_mon$names <- rep(doc_t_mon$names,6)
-      doc_t_mon$lon <- rep(doc_t_mon$lon,6)
-      doc_t_mon$lat <- rep(doc_t_mon$lat,6)
-      doc_t_mon$des=rep('mon',nrow(doc_t_mon$data))
+      
+      listoftwo<-convert_to_2_seasons(doc_t_mon,source="doc")
+      doc_t_mon <- listoftwo$x
+      
     } else {
       stop("docum section currently only coded for sixmonstatevector!")
     } # end of 6monstatevector
@@ -817,85 +747,25 @@ for (cyr in syr2:eyr) {
         varlist <- c("inst_t","inst_slp","ghcn")
       }
       for (varname in varlist) {
-        var <- get(varname)
-        gpos <- getgridboxnum(var,echam.sd)
-        for (i in 1:length(gpos)) { # order of this and next if statement changed 2017-07-25
-          if (!is.na(gpos[i])) {
-            m <- gpos[i]
-            d <- compute_dist(var$lon[i],var$lat[i],echam.sd$lon[m],echam.sd$lat[m])
-            if ((!is.na(d)) & (d > 600)) { # check distance of assim data to next model grid box
-              m=NA
-              print(paste('inst data', varname, i, '>600km from echam grid box; set to NA'))
-              write(paste('inst data', varname, i, '>600km from echam grid box; set to NA'),
-                    file=paste0('../log/',logfn),append=T)
-              if (varname=="inst_t") {inst_t$data[,i] <- NA}
-              if (varname=="inst_slp") {inst_slp$data[,i] <- NA}
-              if (varname=="ghcn") {ghcn$data[,i] <- NA}
-              if (ghcn_prec){
-                if (varname=="ghcn_precip") {ghcn_precip$data[,i] <- NA}
-              }
-            }
-            if (!is.na(m)) {
-              # year from Oct to Sept for the climatology
-              ti=which(floor(var$time)>=(cyr-36) & floor(var$time)<=(cyr+35))
-              sts=ti[1]
-              ets=ti[length(ti)]
-              var.clim = var
-              var.clim$data=t(var$data[sts:ets,])
-              var.clim$time=var$time[sts:ets]
-              # transform it to Oct-Septyears
-              if (cyr < 1636) {
-                  y_start = agrep(paste0(1600,'.792'),as.character(var.clim$time))
-              } else {
-                  y_start = agrep(paste0(cyr-36,'.792'),as.character(var.clim$time))
-              }
-              if (cyr > 1970) {
-                  y_end =  grep(paste0(2005,'.708'),as.character(var.clim$time)) # 2012 should be changed to 2005, everywhere
-              } else {
-                  y_end = grep(paste0(cyr+35,'.708'),as.character(var.clim$time))
-              }
-              var.clim$data = var.clim$data[,y_start:y_end]
-              var.clim$time = var.clim$time[y_start:y_end]
-              var.clim$data = t(var.clim$data)
-              vtmp <- array(var.clim$data,c(12, nrow(var.clim$data)/12, dim(var.clim$data)[2]))
-              stsv = round(dim(vtmp)[2]/2)
-
-              for (j in 1:12) {
-                # if bias corrected proxy/inst is outside echam ens range +- 5SD,
-                # data point will not be assimilated at this time step
-                if (!all(is.na(vtmp[j,,i])) ) { 
-                  biasm <- echam_clim_mon_ensmean[m,j] - mean(vtmp[j,,i],na.rm=T) 
-                  if (!is.na(biasm) & !is.na(vtmp[j,stsv,i]) ) {  # Veronika added the second term of the if
-                  #  if (((vtmp[j,((stsv-1)/12+1),i]+ biasm) < echam$ensmean[m,(j+12)]-5*echam.sd$data[m,j]) |
-                  #     ((vtmp[j,((stsv-1)/12+1),i]+ biasm) > echam$ensmean[m,(j+12)]+5*echam.sd$data[m,j])) {
-                  if (((vtmp[j,stsv,i]+biasm) < echam_clim_mon_ensmean[m,j]-5*echam.sd$data[m,j]) |
-                       ((vtmp[j,stsv,i]+ biasm) > echam_clim_mon_ensmean[m,j]+5*echam.sd$data[m,j])) {
-                      print(paste('inst data',varname,'#:',i,'mon:',j,'out of range'))
-                      write(paste('inst data', varname,'#:',i,'mon:',j,'out of range'),
-                            file=paste0('../log/',logfn),append=T)
-                      write(paste('data lon/lat',var$lon[i],var$lat[i]),
-                            file=paste0('../log/',logfn),append=T)
-                      write(paste('echam lon/lat', echam.sd$lon[m],echam.sd$lat[m]),
-                            file=paste0('../log/',logfn),append=T)
-                      write(paste('bias corr. data', vtmp[j,stsv,i]+biasm),
-                            file=paste0('../log/',logfn),append=T)
-                      write(paste('echam clim', echam_clim_mon_ensmean[m,j]),
-                            file=paste0('../log/',logfn),append=T)
-                      write(paste('echam sd', echam.sd$data[m,j]),
-                            file=paste0('../log/',logfn),append=T)
-                      if (varname=="inst_t") {inst_t$data[,i] <- NA}
-                      if (varname=="inst_slp") {inst_slp$data[,i] <- NA}
-                      if (varname=="ghcn") {ghcn$data[,i] <- NA}
-                      if (ghcn_prec){
-                        if (varname=="ghcn_precip") {ghcn_precip$data[,i] <- NA}
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
+        
+        var<-screendistance(echam.sd,varname)
+        if (varname=="inst_t") {inst_t$data<- var$data}
+        if (varname=="inst_slp") {inst_slp$data<- var$data}
+        if (varname=="ghcn") {ghcn$data <- var$data}
+        if (ghcn_prec){
+          if (varname=="ghcn_precip") {ghcn_precip$data <- var$data}
         }
+        
+        
+        var<-screenstd(get(varname),cyr,source="inst")
+        if (varname=="inst_t") {inst_t$data <- var$data}
+        if (varname=="inst_slp") {inst_slp$data <- var$data}
+        if (varname=="ghcn") {ghcn$data<- var$data}
+        if (ghcn_prec){
+          if (varname=="ghcn_precip") {ghcn_precip$data <- var$data}
+        }
+        
+        
       }
     }
 
@@ -903,39 +773,15 @@ for (cyr in syr2:eyr) {
     if ((ghcn_temp) & (dim(ghcn$data)[2]>0)) {
       if (anomaly_assim & sixmonstatevector){
         # calculate the climatology
-        ghcn.clim=ghcn
-        ti=which(floor(ghcn$time)>=(cyr-36) & floor(ghcn$time)<=(cyr+35))
-        sts=ti[1]
-        ets=ti[length(ti)]
-        ghcn.clim$data=t(ghcn$data[sts:ets,])
-        ghcn.clim$time=ghcn$time[sts:ets]
-        # transform it to Oct-Sept  years
-        if (cyr < 1636) {
-            y_start = agrep(paste0(1600,'.792'),as.character(ghcn.clim$time))
-        } else {
-            y_start = agrep(paste0(cyr-36,'.792'),as.character(ghcn.clim$time))
-        }
-        if (cyr > 1970) {
-            y_end =  grep(paste0(2005,'.708'),as.character(ghcn.clim$time))
-        } else {
-            y_end = grep(paste0(cyr+35,'.708'),as.character(ghcn.clim$time))
-        }
-        ghcn.clim$data = ghcn.clim$data[,y_start:y_end]
-        ghcn.clim$time = ghcn.clim$time[y_start:y_end]
+        ghcn.clim<-calculate_climatology(ghcn,cyr,36,35,source="inst")
+        ghcn.clim$data<-t(ghcn.clim$data)
+        
         ghcn.clim$data = apply(array(ghcn.clim$data, c(nrow(ghcn.clim$data), 12, ncol(ghcn.clim$data)/12)), 1:2, mean,na.rm=T)
         
         # cut out the cyr-1 and cyr time window
-        ghcn.cyr = ghcn
-        ti=which(floor(ghcn$time)>=cyr-1 & floor(ghcn$time)<cyr+1)
-        sts=ti[1]
-        ets=ti[length(ti)]
-        ghcn.cyr$data=t(ghcn$data[sts:ets, ])
-        ghcn.cyr$time=ghcn$time[sts:ets]
-        # transform it to Oct-Sept  years
-        y_start = agrep(paste0(cyr-1,'.792'),as.character(ghcn.cyr$time))
-        y_end = grep(paste0(cyr,'.708'),as.character(ghcn.cyr$time))
-        ghcn.cyr$data = ghcn.cyr$data[,y_start:y_end]
-        ghcn.cyr$time = ghcn.cyr$time[y_start:y_end]
+
+        ghcn.cyr<-calculate_climatology(ghcn,cyr,1,0,source="inst")
+        ghcn.cyr$data<-t(ghcn.cyr$data)
         
         # calculate the anomaly for cyr
         ghcn.anom <-ghcn.cyr
@@ -994,38 +840,17 @@ for (cyr in syr2:eyr) {
     if ((yuri_slp) & (dim(inst_slp$data)[2]>0)) {
       if (anomaly_assim & sixmonstatevector) {
         # calculate the climatology
-        inst_slp.clim=inst_slp
-        ti=which(floor(inst_slp$time)>=(cyr-36) & floor(inst_slp$time)<=(cyr+35))
-        sts=ti[1]
-        ets=ti[length(ti)]
-        inst_slp.clim$data=t(inst_slp$data[sts:ets,])
-        inst_slp.clim$time=inst_slp$time[sts:ets]
-        # transform it to Oct-Sept  years
-        if (cyr < 1636) {
-          y_start = agrep(paste0(1600,'.792'),as.character(inst_slp.clim$time))
-        } else {
-          y_start = agrep(paste0(cyr-36,'.792'),as.character(inst_slp.clim$time))
-        }
-        if (cyr > 1970) {
-          y_end =  grep(paste0(2005,'.708'),as.character(inst_slp.clim$time))
-        } else {
-          y_end = grep(paste0(cyr+35,'.708'),as.character(inst_slp.clim$time))
-        }
-        inst_slp.clim$data = inst_slp.clim$data[,y_start:y_end]
-        inst_slp.clim$time = inst_slp.clim$time[y_start:y_end]
+        
+        inst_slp.clim<-calculate_climatology(inst_slp,cyr,36,35,source="inst")
+        inst_slp.clim$data<-t(inst_slp.clim$data)
+        
         inst_slp.clim$data = apply(array(inst_slp.clim$data, c(nrow(inst_slp.clim$data), 12, ncol(inst_slp.clim$data)/12)), 1:2, mean,na.rm=T)
+        
         # cut out the cyr-1 and cyr time window
-        inst_slp.cyr = inst_slp
-        ti=which(floor(inst_slp$time)>=cyr-1 & floor(inst_slp$time)<cyr+1)
-        sts=ti[1]
-        ets=ti[length(ti)]
-        inst_slp.cyr$data=t(inst_slp$data[sts:ets, ])
-        inst_slp.cyr$time=inst_slp$time[sts:ets]
-        # transform it to Oct-Sept  years
-        y_start = agrep(paste0(cyr-1,'.792'),as.character(inst_slp.cyr$time))
-        y_end = grep(paste0(cyr,'.708'),as.character(inst_slp.cyr$time))
-        inst_slp.cyr$data = inst_slp.cyr$data[,y_start:y_end]
-        inst_slp.cyr$time = inst_slp.cyr$time[y_start:y_end]
+        
+        inst_slp.cyr<-calculate_climatology(inst_slp,cyr,1,0,source="inst")
+        inst_slp.cyr$data<-t(inst_slp.cyr$data)
+        
         # calculate the anomaly for cyr
         inst_slp.anom <-inst_slp.cyr
         inst_slp.anom$data <- t(inst_slp.anom$data - inst_slp.clim$data)
@@ -1036,39 +861,19 @@ for (cyr in syr2:eyr) {
     }
     if ((yuri_temp) & (dim(inst_t$data)[2]>0)) {
       if (anomaly_assim & sixmonstatevector){
+        
         # calculate the climatology
-        inst_t.clim=inst_t
-        ti=which(floor(inst_t$time)>=(cyr-36) & floor(inst_t$time)<=(cyr+35))
-        sts=ti[1]
-        ets=ti[length(ti)]
-        inst_t.clim$data=t(inst_t$data[sts:ets,])
-        inst_t.clim$time=inst_t$time[sts:ets]
-        # transform it to Oct-Sept  years
-        if (cyr < 1636) {
-          y_start = agrep(paste0(1600,'.792'),as.character(inst_t.clim$time))
-        } else {
-          y_start = agrep(paste0(cyr-36,'.792'),as.character(inst_t.clim$time))
-        }
-        if (cyr > 1970) {
-          y_end =  grep(paste0(2005,'.708'),as.character(inst_t.clim$time))
-        } else {
-          y_end = grep(paste0(cyr+35,'.708'),as.character(inst_t.clim$time))
-        }
-        inst_t.clim$data = inst_t.clim$data[,y_start:y_end]
-        inst_t.clim$time = inst_t.clim$time[y_start:y_end]
+        
+        inst_t.clim<-calculate_climatology(inst_t,cyr,36,35,source="inst")
+        inst_t.clim$data<-t(inst_t.clim$data)
+        
         inst_t.clim$data = apply(array(inst_t.clim$data, c(nrow(inst_t.clim$data), 12, ncol(inst_t.clim$data)/12)), 1:2, mean,na.rm=T)
-        # cut out the cyr-1 and cyr time window
-        inst_t.cyr = inst_t
-        ti=which(floor(inst_t$time)>=cyr-1 & floor(inst_t$time)<cyr+1)
-        sts=ti[1]
-        ets=ti[length(ti)]
-        inst_t.cyr$data=t(inst_t$data[sts:ets, ])
-        inst_t.cyr$time=inst_t$time[sts:ets]
-        # transform it to Oct-Sept  years
-        y_start = agrep(paste0(cyr-1,'.792'),as.character(inst_t.cyr$time))
-        y_end = grep(paste0(cyr,'.708'),as.character(inst_t.cyr$time))
-        inst_t.cyr$data = inst_t.cyr$data[,y_start:y_end]
-        inst_t.cyr$time = inst_t.cyr$time[y_start:y_end]
+       
+         # cut out the cyr-1 and cyr time window
+        
+        inst_t.cyr<-calculate_climatology(inst_t,cyr,1,0,source="inst")
+        inst_t.cyr$data<-t(inst_t.cyr$data)
+        
         # calculate the anomaly for cyr
         inst_t.anom <- inst_t.cyr
         inst_t.anom$data <- t(inst_t.anom$data - inst_t.clim$data)

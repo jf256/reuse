@@ -158,7 +158,7 @@ if (generate_PROXIESnew){
   
  
   
-  print("generate_PROXIES")
+  print("generate_PROXIESnew")
   read.these <- c("trw","mxd","schweingr","pages","ntrend")[c(TRW,MXD,SCHWEINGR,PAGES,NTREND)]
   if(exists("realprox")){rm(realprox)}
   for (varname in read.these){

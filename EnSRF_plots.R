@@ -120,37 +120,49 @@ if (loo) {  # quick plots to check loo
 
 
 # plot sample time series for Norway lon/lat:
-if (monthly_out) {
-  pdf(paste(figpath,'/example_timeseries_scandinavia_mon.pdf',sep=''), 
-      width=4.5, height=6, paper='special')
-} else {
-  pdf(paste(figpath,'/example_timeseries_scandinavia.pdf',sep=''), 
-      width=4.5, height=6, paper='special')
-}
-par(oma=c(0,0,0,0),mar=c(2,4,2,0.5),mfrow=c(3,1))
-  pos <- 676
+# plot sample time series for Siberia lon/lat:
+stat.pos1 <- which(calibrate$lon>105&calibrate$lon<120&calibrate$lat>70&calibrate$lat<80) #sibiria
+
+for (i in 1:length(stat.pos1)){
+  if (monthly_out) {
+    pdf(paste(figpath,'/example_timeseries_scandinavia_mon.pdf',sep=''), 
+        width=4.5, height=6, paper='special')
+  } else {
+    pdf(paste(figpath,'/example_timeseries_sibiria',i,'.pdf',sep=''), 
+        width=7, height=6, paper='special')
+  }
+  par(oma=c(0,0,0,0),mar=c(2,4,2,0.5),mfrow=c(3,1))
+  stat.pos<-stat.pos1[i]  
+  pos <- getgridboxnum(calibrate,echam)[stat.pos]
+  
+  
+  par(oma=c(0,0,0,0),mar=c(2,4,2,0.5),mfrow=c(3,1))
+  
+  
+  # stat.pos <- which(calibrate$lon>5&calibrate$lon<30&calibrate$lat>56&calibrate$lat<70) #scandinavia
   if (monthly_out) {
     #3yr monthly temp
     pos2 <- seq(1,36,1)
     period <- as.Date(paste(rep(seq(from=1950,to=1952),each=12),rep(seq(1,12),3),rep(15,36),sep='-'))
   } else {
     #30yr summer temp
-    pos2 <- seq(2,58,2)
+    pos2 <- seq(2,ncol(validate$data),2)
     period <- validate$time[pos2]
   }
-  plot(period,validate$data[pos,pos2],ylim=c(min(echam$data[pos,pos2,]),
-    max(echam$data[pos,pos2,])),ty='l',col=rgb(0,0,10,10,maxColorValue=10),
-    main="Temperature",xlab='',ylab='ºC',xaxt='n')
+  plot(period,validate$data[pos,pos2],ylim=c(min(cbind(echam$data[pos,pos2,],validate$data[pos,pos2])),
+                                             max(cbind(echam$data[pos,pos2,],validate$data[pos,pos2]))),ty='l',col=rgb(0,0,10,10,maxColorValue=10),
+       main="Temperature",xlab='',ylab='ºC',xaxt='n')
   polygon(c(period,rev(period)),c(apply(echam$data[pos,pos2,],1,max),
-    rev(apply(echam$data[pos,pos2,],1,min))),density=NA,
-    col=rgb(1,1,1,3,maxColorValue=10))
+                                  rev(apply(echam$data[pos,pos2,],1,min))),density=NA,
+          col=rgb(1,1,1,3,maxColorValue=10))
   lines(period,echam$ensmean[pos,pos2],col=rgb(0,0,0,10,maxColorValue=10))
   polygon(c(period,rev(period)),c(apply(analysis$data[pos,pos2,],1,max),
-    rev(apply(analysis$data[pos,pos2,],1,min))),density=NA,
-    col=rgb(10,0,0,3,maxColorValue=10))
+                                  rev(apply(analysis$data[pos,pos2,],1,min))),density=NA,
+          col=rgb(10,0,0,3,maxColorValue=10))
   lines(period,analysis$ensmean[pos,pos2],col=rgb(10,0,0,10,maxColorValue=10))
   lines(period,validate$data[pos,pos2],ylim=c(min(echam$data[pos,pos2,]),
-    max(echam$data[pos,pos2,])),col=rgb(0,0,10,10,maxColorValue=10))
+                                              max(echam$data[pos,pos2,])),col=rgb(0,0,10,10,maxColorValue=10))
+  lines(period,calibrate$data[stat.pos,pos2]-3,col="yellow")
   
   # plot(stat$time[seq(2,48,2)],stat$data[pos,][201,seq(2,48,2)],ylim=c(min(stat$data[201,pos2]),
   #   max(stat$data[201,pos2])),ty='l',col=rgb(0,0,10,10,maxColorValue=10),
@@ -176,6 +188,8 @@ par(oma=c(0,0,0,0),mar=c(2,4,2,0.5),mfrow=c(3,1))
   lines(period,analysis$ensmean[4608+pos,pos2],col=rgb(10,0,0,10,maxColorValue=10))
   lines(period,validate$data[4608+pos,pos2],ylim=c(min(echam$data[pos,pos2,]),
     max(echam$data[4608+pos,pos2,])),col=rgb(0,0,10,10,maxColorValue=10))
+  lines(period,calibrate$data[stat.pos,pos2]+74,col="yellow")
+  # lines(period,apply(calibrate$data[stat.pos,pos2],2,mean)+74,col="yellow")
   legend("topleft", c('CRU TS3', 'CCC400', "EFK400"),col=c("blue", "black", "red"), 
          lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='white', 
          box.col='white', cex=1)
@@ -197,6 +211,7 @@ par(oma=c(0,0,0,0),mar=c(2,4,2,0.5),mfrow=c(3,1))
   #   lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='white', 
   #   box.col='white', cex=1)
 dev.off()
+}
 
 # plot sample time series for lon/lat:
 paste(validate$lon[278],validate$lat[278])
@@ -1681,3 +1696,77 @@ if (plot_dweights) {
 #           c(dim(proxies$data)[1],s)) 
 # #   } else {}
 #   }
+
+# ################################################################################
+# # Fig. 10: Continuous Ranked Probability Score (CRPS)
+pdf(paste(figpath,'CRPS_new.pdf',sep='/'), width=9, height=6, paper='special')
+layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+par(mfrow=c(2, 2))
+for (s in 1:2) { ## if s==1 then crps is crps.ana which is the score of the analysis, if s==2 crps is the difference 
+  if (s==1) {    ## in score of echam and analysis. It should be positive. 
+    crps <- crps.ana[,seq(2,ncol(crps.ana),2)] ## the one that's updated (rem: proxies only half a year)
+    crps[which(is.na(crps))]<-0
+    title<-"analysis"
+  } else { 
+    crps <- crps.ech[,seq(2,ncol(crps.ech),2)]-crps.ana[,seq(2,ncol(crps.ana),2)] ## difference of score between updated and not, should be positive
+    crps[which(is.na(crps))]<-0
+    title<-"Score Diff: CCC400 - EKF400"
+  }
+  crps.tot<-data.frame(averaged=apply(crps,1,mean))
+  crps.tot$lon<-echam$lon
+  crps.tot$lat<-echam$lat
+  crps.tot$names<-echam$names
+  
+  
+  
+  
+  crps.plot<-crps.tot[which(crps.tot$names=="temp2"),]
+  if (s==1){
+    lev <- pretty(crps.plot$averaged,12) 
+    br <- length(lev)
+    colpal <- two.colors(n=br,start="white",middle="orange", end="red", alpha=1.0)
+  }else{
+    lev <- c(-0.05,-0.04,-0.03,-0.02,-0.01,0.03,0.06,0.09,0.12,0.15)
+    br <- length(lev)
+    colpal <- two.colors(n=br-1,start="blue",middle="white", end="red", alpha=1.0)
+  }
+  
+  datcol <- colpal[as.numeric(cut(crps.plot$averaged,breaks=lev))] 
+  # png(filename=paste0(plotintdir,expname,'/map_DOC_month_',m,'.png'),width=1400,height = 800)
+  plot(crps.plot$lon, crps.plot$lat,
+       xlim=c(-180,180),ylim=c(-90,90),   
+       cex=1.2,                   # cex=point size~precip
+       pch=15,                    # point type: 15 is square with possible color filling
+       col=datcol[which(!is.na(crps.plot$averaged))],
+       xlab="Longitude",ylab="Latitude",main=paste0("Temperature, ",title))# point fill color
+  map("world",interior=F,add=T,ty='l',col='black',xlim=c(-180,180),ylim=c(-90,90))
+  legend("bottomleft", inset=0.01, as.character(lev),fill=colpal,bty="o",
+         bg="white",box.col="white",box.lwd=0,cex=0.7)
+  
+  crps.plot<-crps.tot[which(crps.tot$names=="precip"),]
+  if (s==1){
+    lev <- pretty(crps.plot$averaged,12) 
+    br <- length(lev)
+    colpal <- two.colors(n=br,start="white",middle="orange", end="red", alpha=1.0)
+  }else{
+    lev <- c(-0.5,-0.4,-0.3,-0.2,-0.1,0.3,0.6,0.9,1.2,1.5)
+    br <- length(lev)
+    colpal <- two.colors(n=br-1,start="blue",middle="white", end="red", alpha=1.0)
+  }
+  datcol <- colpal[as.numeric(cut(crps.plot$averaged,breaks=lev))] 
+  # png(filename=paste0(plotintdir,expname,'/map_DOC_month_',m,'.png'),width=1400,height = 800)
+  plot(crps.plot$lon, crps.plot$lat,
+       xlim=c(-180,180),ylim=c(-90,90),   
+       cex=1.2,                   # cex=point size~precip
+       pch=15,                    # point type: 15 is square with possible color filling
+       col=datcol[which(!is.na(crps.plot$averaged))],
+       xlab="Longitude",ylab="Latitude",main=paste0("Precip, ",title))# point fill color
+  map("world",interior=F,add=T,ty='l',col='black',xlim=c(-180,180),ylim=c(-90,90))
+  legend("bottomleft", inset=0.01, as.character(lev),fill=colpal,bty="o",
+         bg="white",box.col="white",box.lwd=0,cex=0.7)
+  # dev.off()
+  
+}
+dev.off()
+par(mfrow=c(1, 1))
+

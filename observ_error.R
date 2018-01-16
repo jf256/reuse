@@ -26,13 +26,6 @@
 ##  for (n in seq(from=1, to=nyr, by=errtime)) calculates the error with niter iterations for 2 year 
 ##  time blocks. You'll get five Rcalnew's each one a result of 3 iterations.
 
-## Addition to archive_inst.R 
-## the difference is that delta is also evaluated and in the first iteration not the analysis of 
-##the loaded data is taken but it is already calculated in the analysis section here. 
-
-
-## We have to note the fact that analysis that's loaded is slightly different than the one that is 
-## calculated here in the first iteration, probably because no proxy/docu data is used in the process.
 
 ##  data
 rm(list=ls())
@@ -125,7 +118,12 @@ for (iter in 1:niter) {
                   } else {
                     docum=T
                   }
-      load(paste0(ana_dir,'analysis_',syr-1+r,'_2ndgrid.Rdata'))
+                  if (import_luca==TRUE & syr-1+r>1740 & syr-1+r<1900) {
+                    load(paste0(workdir,'../data/analysis/new_data_luca_1740-1899/analysis_',syr-1+r,'_2ndgrid.Rdata'))
+                    docum=T
+                  }else{
+                    load(paste0(ana_dir,'analysis_',syr-1+r,'_2ndgrid.Rdata'))
+                  }
         echam <- echam.anom
         analysis <- analysis.anom
         rm(echam.abs,echam.anom)
@@ -581,8 +579,7 @@ print(paste("time for sigma calc:",(proc.time() -ptm)[3]))
 
 ##save and load ##
 save(calc.delta,initsyr,initeyr,errtime,sigma.time,sigma.doctime,delta.time,archive.alltime, Rcalnew.time, file=paste0(dataintdir,expname,'/sigma.Rdata'))
-# load(paste0(workdir,'../data/analysis/archive/',expname,'/data.Rdata'))
-
+load(paste0(dataintdir,expname,'/sigma.Rdata'))
 ##variable description ####
 
 # variable                 dim               Error Variance             averaged over               T/SLP
@@ -1235,7 +1232,7 @@ for (n in seq(from=1, to=nyr, by=errtime)){ # calculates the error of errtime ye
   
 } # end of errtime loop
 
-if (errtimeloop==TRUE&length(which(nrobs!=0))!=0){
+if (errtimeloop==TRUE&length(which(nrobs!=0))!=0&length(which(!is.na(coef.alltime)))!=0){
   x <- seq(from=initsyr, to=initeyr, by=errtime)+errtime/2
   # png(filename=paste0(plotintdir,expname,'/',expname2,'/extrapolation_',savein,'_Evolution.png'),width=1400,height = 800)
   op <- par(mar = c(5,4,4,4) + 0.1)

@@ -13,8 +13,8 @@ rm(list=ls())
 #}
 
 # enter syr ane eyr manually
-syr=1905 #1902 #1941
-eyr=1950 #2003 #1970
+syr=1903 #1902 #1941
+eyr=1960 #2003 #1970
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
 args <- commandArgs(TRUE)
@@ -1450,7 +1450,7 @@ if (vali) {
     k=0
     for (i in 1:nrow(analysis.anom$data)) {
       if (i %% 100 == 0) {
-        print(paste('observation', i))
+        print(paste('analysis', i))
       }
       dressed.ana <- DressEnsemble(analysis.anom$data[i,,])
       dressed.ech <- DressEnsemble(echam.anom$data[i,,])
@@ -1466,13 +1466,15 @@ if (vali) {
       
     }
     
-    ## second option: apply - doesn't work
-    # dressed<-apply(analysis$data,1,DressEnsemble)
-    # dressed<-unlist(dressed, recursive=FALSE,use.names = T)
-    ##plot 
+    crps.ana.winter <- apply(crps.ana[,seq(1,ncol(crps.ana),2)],1,mean)
+    crps.ana.summer <- apply(crps.ana[,seq(2,ncol(crps.ana),2)],1,mean)
+    crps.ech.winter <- apply(crps.ech[,seq(1,ncol(crps.ech),2)],1,mean)
+    crps.ech.summer <- apply(crps.ech[,seq(2,ncol(crps.ech),2)],1,mean)
     
     
   }
+  
+  
 #  rmse <- rmse_fun(analysis_noindex, y=validate, seas=s)
 #  rmse.ech <- rmse_fun(echam_noindex, y=validate, seas=s)
   rmse <- rmse_fun(analysis, y=validate, seas=s)
@@ -1894,7 +1896,7 @@ cmat <- cor(t(obserr),use="pairwise.complete.obs")   #obserr2
 
 
 print("calc validation statistics")
-print(proc.time() - ptm1)
+# print(proc.time() - ptm1)
 
 
 

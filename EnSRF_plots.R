@@ -1699,74 +1699,154 @@ if (plot_dweights) {
 
 # ################################################################################
 # # Fig. 10: Continuous Ranked Probability Score (CRPS)
-pdf(paste(figpath,'CRPS_new.pdf',sep='/'), width=9, height=6, paper='special')
-layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-par(mfrow=c(2, 2))
-for (s in 1:2) { ## if s==1 then crps is crps.ana which is the score of the analysis, if s==2 crps is the difference 
-  if (s==1) {    ## in score of echam and analysis. It should be positive. 
-    crps <- crps.ana[,seq(2,ncol(crps.ana),2)] ## the one that's updated (rem: proxies only half a year)
-    crps[which(is.na(crps))]<-0
-    title<-"analysis"
-  } else { 
-    crps <- crps.ech[,seq(2,ncol(crps.ech),2)]-crps.ana[,seq(2,ncol(crps.ana),2)] ## difference of score between updated and not, should be positive
-    crps[which(is.na(crps))]<-0
-    title<-"Score Diff: CCC400 - EKF400"
-  }
-  crps.tot<-data.frame(averaged=apply(crps,1,mean))
-  crps.tot$lon<-echam$lon
-  crps.tot$lat<-echam$lat
-  crps.tot$names<-echam$names
-  
-  
-  
-  
-  crps.plot<-crps.tot[which(crps.tot$names=="temp2"),]
-  if (s==1){
-    lev <- pretty(crps.plot$averaged,12) 
-    br <- length(lev)
-    colpal <- two.colors(n=br,start="white",middle="orange", end="red", alpha=1.0)
-  }else{
-    lev <- c(-0.05,-0.04,-0.03,-0.02,-0.01,0.03,0.06,0.09,0.12,0.15)
-    br <- length(lev)
-    colpal <- two.colors(n=br-1,start="blue",middle="white", end="red", alpha=1.0)
-  }
-  
-  datcol <- colpal[as.numeric(cut(crps.plot$averaged,breaks=lev))] 
-  # png(filename=paste0(plotintdir,expname,'/map_DOC_month_',m,'.png'),width=1400,height = 800)
-  plot(crps.plot$lon, crps.plot$lat,
-       xlim=c(-180,180),ylim=c(-90,90),   
-       cex=1.2,                   # cex=point size~precip
-       pch=15,                    # point type: 15 is square with possible color filling
-       col=datcol[which(!is.na(crps.plot$averaged))],
-       xlab="Longitude",ylab="Latitude",main=paste0("Temperature, ",title))# point fill color
-  map("world",interior=F,add=T,ty='l',col='black',xlim=c(-180,180),ylim=c(-90,90))
-  legend("bottomleft", inset=0.01, as.character(lev),fill=colpal,bty="o",
-         bg="white",box.col="white",box.lwd=0,cex=0.7)
-  
-  crps.plot<-crps.tot[which(crps.tot$names=="precip"),]
-  if (s==1){
-    lev <- pretty(crps.plot$averaged,12) 
-    br <- length(lev)
-    colpal <- two.colors(n=br,start="white",middle="orange", end="red", alpha=1.0)
-  }else{
-    lev <- c(-0.5,-0.4,-0.3,-0.2,-0.1,0.3,0.6,0.9,1.2,1.5)
-    br <- length(lev)
-    colpal <- two.colors(n=br-1,start="blue",middle="white", end="red", alpha=1.0)
-  }
-  datcol <- colpal[as.numeric(cut(crps.plot$averaged,breaks=lev))] 
-  # png(filename=paste0(plotintdir,expname,'/map_DOC_month_',m,'.png'),width=1400,height = 800)
-  plot(crps.plot$lon, crps.plot$lat,
-       xlim=c(-180,180),ylim=c(-90,90),   
-       cex=1.2,                   # cex=point size~precip
-       pch=15,                    # point type: 15 is square with possible color filling
-       col=datcol[which(!is.na(crps.plot$averaged))],
-       xlab="Longitude",ylab="Latitude",main=paste0("Precip, ",title))# point fill color
-  map("world",interior=F,add=T,ty='l',col='black',xlim=c(-180,180),ylim=c(-90,90))
-  legend("bottomleft", inset=0.01, as.character(lev),fill=colpal,bty="o",
-         bg="white",box.col="white",box.lwd=0,cex=0.7)
-  # dev.off()
-  
-}
-dev.off()
-par(mfrow=c(1, 1))
+# pdf(paste(figpath,'CRPS_new.pdf',sep='/'), width=9, height=6, paper='special')
+# layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+# par(mfrow=c(2, 2))
+# for (s in 1:2) { ## if s==1 then crps is crps.ana which is the score of the analysis, if s==2 crps is the difference 
+#   if (s==1) {    ## in score of echam and analysis. It should be positive. 
+#     crps <- crps.ana[,seq(2,ncol(crps.ana),2)] ## the one that's updated (rem: proxies only half a year)
+#     crps[which(is.na(crps))]<-0
+#     title<-"analysis"
+#   } else { 
+#     crps <- crps.ech[,seq(2,ncol(crps.ech),2)]-crps.ana[,seq(2,ncol(crps.ana),2)] ## difference of score between updated and not, should be positive
+#     if (PAGES){
+#       crps <- crps.ech-crps.ana
+#     }
+#     crps[which(is.na(crps))]<-0
+#     title<-"Score Diff: CCC400 - EKF400"
+#   }
+#   crps.tot<-data.frame(averaged=apply(crps,1,mean))
+#   crps.tot$lon<-echam$lon
+#   crps.tot$lat<-echam$lat
+#   crps.tot$names<-echam$names
+#   
+#   
+#   
+#   
+#   crps.plot<-crps.tot[which(crps.tot$names=="temp2"),]
+#   if (s==1){
+#     lev <- pretty(crps.plot$averaged,12) 
+#     br <- length(lev)
+#     colpal <- two.colors(n=br,start="white",middle="orange", end="red", alpha=1.0)
+#   }else{
+#     # lev <- c(-0.05,-0.04,-0.03,-0.02,-0.01,0.03,0.06,0.09,0.12,0.15)
+#     lev <- pretty(crps.plot$averaged,12) # for PAGES and NTREND
+#     br <- length(lev)
+#     colpal <- two.colors(n=br,start="blue",middle="white", end="red", alpha=1.0)
+#   }
+#   
+#   datcol <- colpal[as.numeric(cut(crps.plot$averaged,breaks=lev))] 
+#   datcol[which(crps.plot$averaged>(-0.02)&crps.plot$averaged<0.02)]<-"#FFFFFF" #NTREND
+#   
+#   # png(filename=paste0(plotintdir,expname,'/map_DOC_month_',m,'.png'),width=1400,height = 800)
+#   plot(crps.plot$lon, crps.plot$lat,
+#        xlim=c(-180,180),ylim=c(-90,90),   
+#        cex=1.2,                   # cex=point size~precip
+#        pch=15,                    # point type: 15 is square with possible color filling
+#        col=datcol[which(!is.na(crps.plot$averaged))],
+#        xlab="Longitude",ylab="Latitude",main=paste0("Temperature, ",title))# point fill color
+#   map("world",interior=F,add=T,ty='l',col='black',xlim=c(-180,180),ylim=c(-90,90))
+#   legend("bottomleft", inset=0.01, as.character(lev),fill=colpal,bty="o",
+#          bg="white",box.col="white",box.lwd=0,cex=0.7)
+#   
+#   crps.plot<-crps.tot[which(crps.tot$names=="precip"),]
+#   if (s==1){
+#     lev <- pretty(crps.plot$averaged,12) 
+#     br <- length(lev)
+#     colpal <- two.colors(n=br,start="white",middle="orange", end="red", alpha=1.0)
+#   }else{
+#     # lev <- c(-0.5,-0.4,-0.3,-0.2,-0.1,0.3,0.6,0.9,1.2,1.5) # for normal proxies
+#     # lev <- c(-2.2,-2,-1.8,-1.6,-1.4,-1.2,-1,-0.8,-0.6,-0.4,-0.2,0,0.2,0.4,0.6,0.8,1,1.2,1.6,1.8,2,2.2) # for PAGES
+#     lev <- c(-1.2,-1,-0.8,-0.6,-0.4,-0.2,0.2,0.4,0.6,0.8,1,1.2) #NTREND
+#     br <- length(lev)
+#     colpal <- two.colors(n=br,start="blue",middle="white", end="red", alpha=1.0)
+#   }
+#   datcol <- colpal[as.numeric(cut(crps.plot$averaged,breaks=lev))] 
+#   datcol[which(crps.plot$averaged>(-0.2)&crps.plot$averaged<0.2)]<-"#FFFFFF" #NTREND
+#   # png(filename=paste0(plotintdir,expname,'/map_DOC_month_',m,'.png'),width=1400,height = 800)
+#   plot(crps.plot$lon, crps.plot$lat,
+#        xlim=c(-180,180),ylim=c(-90,90),   
+#        cex=1.2,                   # cex=point size~precip
+#        pch=15,                    # point type: 15 is square with possible color filling
+#        col=datcol[which(!is.na(crps.plot$averaged))],
+#        xlab="Longitude",ylab="Latitude",main=paste0("Precip, ",title))# point fill color
+#   map("world",interior=F,add=T,ty='l',col='black',xlim=c(-180,180),ylim=c(-90,90))
+#   legend("bottomleft", inset=0.01, as.character(lev),fill=colpal,bty="o",
+#          bg="white",box.col="white",box.lwd=0,cex=0.7)
+#   # dev.off()
+#   
+# }
+# dev.off()
+# par(mfrow=c(1, 1))
 
+
+
+### plot CRPS with plot_echam Temp
+
+
+crps <- echam
+
+crps$data<-array(cbind(crps.ana.winter,crps.ana.summer),c(dim(echam$ensmean)[1], 1, 2))
+
+pdf(paste(figpath,'crps.ana.clim_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
+
+layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+
+par(oma=c(0,0,0,0))
+levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+
+plot_echam(crps, cex.pt=1.5, names=pnames[1:dim(crps$data)[3]], lev=levs, st.col=NULL, 
+           stations=calibrate,add=TRUE)
+
+dev.off()
+
+### plot CRPS with plot_echam Precip
+
+pdf(paste(figpath,'crps.ana.clim_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
+
+layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+
+par(oma=c(0,0,0,0))
+levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+
+plot_echam(crps, varname='precip', cex.pt=1.5, names=pnames[1:dim(crps$data)[3]], lev=levs, st.col=NULL, 
+           stations=calibrate,add=TRUE)
+
+dev.off()
+
+### plot CRPS score difference ech-ana (positive values are good) with plot_echam: Temp
+
+crps <- echam
+
+
+crps_ech_ana.winter <- crps.ech.winter-crps.ana.winter
+crps_ech_ana.summer <- crps.ech.summer-crps.ana.summer
+
+
+crps$data<-array(cbind(crps_ech_ana.winter,crps_ech_ana.summer),c(dim(echam$ensmean)[1], 1, 2))
+
+pdf(paste(figpath,'crps.clim_ech-ana_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
+
+layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+
+par(oma=c(0,0,0,0))
+levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.01,0.02,0.04,0.08,0.1,0.12)
+
+plot_echam(crps, cex.pt=1.5, names=pnames[1:dim(crps$data)[3]], lev=levs, st.col=NULL, 
+           stations=calibrate,add=TRUE)
+
+dev.off()
+
+### plot CRPS score difference ech-ana (positive values are good) with plot_echam: Precip
+
+pdf(paste(figpath,'crps.clim_ech-ana_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
+
+layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+
+par(oma=c(0,0,0,0))
+levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+
+plot_echam(crps,varname="precip", cex.pt=1.5, names=pnames[1:dim(crps$data)[3]], lev=levs, st.col=NULL, 
+           stations=calibrate,add=TRUE)
+
+dev.off()

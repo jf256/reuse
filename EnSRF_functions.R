@@ -678,10 +678,11 @@ read_proxy_mxd <- function(syr,eyr){
     t3 <- t2[k,l,]
     # make variable for each month
     t4 <- t(array(t3,c(12,length(t3)/12)))
-    unab <- t4
-    colnames(unab) <- c('t1','t2','t3','t4','t5','t6','t7','t8','t9','t10','t11','t12')
-    whattotake<-regression_months[grep("t",regression_months)]
-    unab <- unab[,match(whattotake,colnames(unab))]
+    unab <- t4[,4:9]
+    colnames(unab) <-c("t.first","t.second","t.third","t.fourth","t.fifth","t.sixth")
+    
+    onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
+    unab <- unab[,match(onlytemp,colnames(unab))]
     results <- lm(regdata[,i]~unab)
     corr <- cor(results$coefficients[1]+results$coefficients[2]*t4[,5]+
                    results$coefficients[3]*t4[,6]+results$coefficients[4]*t4[,7]+
@@ -730,13 +731,13 @@ read_proxy_mxd <- function(syr,eyr){
     }    
   }
   
-  mrtmp<-matrix(NA, nrow(mr),25)
-  colnames(mrtmp) <- c("(Intercept)","unabt4","unabt5","unabt6","unabt7","unabt8","unabt9","unabp4","unabp5","unabp6","unabp7","unabp8","unabp9",
-                       "unabt10","unabt11","unabt12","unabt1","unabt2","unabt3","unabp10","unabp11","unabp12","unabp1","unabp2","unabp3")
+  mrtmp<-matrix(NA, nrow(mr),13)
+  colnames(mrtmp) <-c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabp.first","unabp.second","unabp.third","unabp.fourth","unabp.fifth","unabp.sixth")
+  
   mrtmp[,match(colnames(mr),colnames(mrtmp))]<-mr
   
   
-  mxd$mr <- mrtmp # gives 26 possible coefficients
+  mxd$mr <- mrtmp
   # print(mxd$mr[,1]-mr2[,1])
 #  mxd$mr[,1] <- mr2[,1]
   mxd$var_residu <- var_residu
@@ -815,10 +816,10 @@ read_proxy_schweingr <- function(syr,eyr){
     # make variable for each month
     
     t4 <- t(array(t3,c(12,length(t3)/12)))
-    unab <- t4
-    colnames(unab) <- c('t1','t2','t3','t4','t5','t6','t7','t8','t9','t10','t11','t12')
-    whattotake<-regression_months[grep("t",regression_months)]
-    unab <- unab[,match(whattotake,colnames(unab))]
+    unab <- t4[,4:9]
+    colnames(unab) <-c("t.first","t.second","t.third","t.fourth","t.fifth","t.sixth")
+    onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)] 
+    unab <- unab[,match(onlytemp,colnames(unab))]
 
     results <- lm(regdata[,i]~unab)
     corr <- cor(results$coefficients[1]+results$coefficients[2]*t4[,5]+
@@ -890,9 +891,9 @@ read_proxy_schweingr <- function(syr,eyr){
   }
   
   
-  mrtmp<-matrix(NA, nrow(mr),25)
-  colnames(mrtmp) <- c("(Intercept)","unabt4","unabt5","unabt6","unabt7","unabt8","unabt9","unabp4","unabp5","unabp6","unabp7","unabp8","unabp9",
-                       "unabt10","unabt11","unabt12","unabt1","unabt2","unabt3","unabp10","unabp11","unabp12","unabp1","unabp2","unabp3")
+  mrtmp<-matrix(NA, nrow(mr),13)
+  colnames(mrtmp) <-c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabp.first","unabp.second","unabp.third","unabp.fourth","unabp.fifth","unabp.sixth")
+  
   mrtmp[,match(colnames(mr),colnames(mrtmp))]<-mr
   
   mxd$mr <- mrtmp # gives 25 possible coefficients
@@ -964,10 +965,10 @@ read_proxy2 <- function(syr,eyr){
     # make variable for each month
     t4 <- t(array(t3,c(12,length(t3)/12)))
     p4 <- t(array(p3,c(12,length(p3)/12)))
-#    unab <- cbind(t4[,4:9],p4[,4:9])
-#    colnames(unab) <- c('t4','t5','t6','t7','t8','t9','p4','p5','p6','p7','p8','p9')
-    unab <- cbind(t4,p4)
-    colnames(unab) <- c('t1','t2','t3','t4','t5','t6','t7','t8','t9','t10','t11','t12','p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12')
+    unab <- cbind(t4[,4:9],p4[,4:9]) # from April to September
+
+    colnames(unab) <-c("t.first","t.second","t.third","t.fourth","t.fifth","t.sixth","p.first","p.second","p.third","p.fourth","p.fifth","p.sixth")
+
     unab <- unab[,match(regression_months,colnames(unab))]
     results <- lm(trw$data[,i]~unab)
     corr <- cor.test((results$coefficients[1]+results$coefficients[2]*t4[,5]+
@@ -1035,13 +1036,12 @@ read_proxy2 <- function(syr,eyr){
       }
     }
   }
-  ## this part adds the months into the right coloumn of a 25 coloumn matrix
-  mrtmp<-matrix(NA, nrow(mr),25)
-  colnames(mrtmp) <- c("(Intercept)","unabt4","unabt5","unabt6","unabt7","unabt8","unabt9","unabp4","unabp5","unabp6","unabp7","unabp8","unabp9",
-                       "unabt10","unabt11","unabt12","unabt1","unabt2","unabt3","unabp10","unabp11","unabp12","unabp1","unabp2","unabp3")
+
+  mrtmp<-matrix(NA, nrow(mr),13)
+  colnames(mrtmp) <-c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabp.first","unabp.second","unabp.third","unabp.fourth","unabp.fifth","unabp.sixth")
   mrtmp[,match(colnames(mr),colnames(mrtmp))]<-mr
   
-  t35$mr <- mrtmp # gives 25 possible coefficients
+  t35$mr <- mrtmp 
   # print(t35$mr[,1]-mr2[,1])
 #  t35$mr[,1] <- mr2[,1]  
   t35$var_residu <- var_residu
@@ -1059,8 +1059,9 @@ read_proxy2 <- function(syr,eyr){
 # inst: save inst data as an Rdata file
 # PATHES SHOULD BE MAKE MORE GENERAL!!!
 read_pages = function(fsyr,feyr,archivetype, validate) {
-  load(paste0(paste0(workdir,'/../pages_proxies.RData', sep='')))
+  # load(paste0(paste0(workdir,'/../pages_proxies.RData', sep='')))
   load("/scratch3/veronika/reuse/pages_proxies.RData")
+
   if(archivetype == "tree") {
     if(exists("mrNH")){rm(mrNH)}
     if(exists("mrSH")){rm(mrSH)}
@@ -1106,38 +1107,35 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
       if (all(is.na(t3))) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
         if (p_tree$lat[i] > 0){
           if (!exists("mrNH")) {
-            mrNH <- rep(NA,(length(grep("t",regression_months))+1)) #nr of coeff + intercept
+            mrNH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) #nr of coeff + intercept
             var_residuNH <- NA
           } else {
-            mrNH <- rbind(mrNH,rep(NA,(length(grep("t",regression_months))+1)))#nr of coeff + intercept
+            mrNH <- rbind(mrNH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))#nr of coeff + intercept
             var_residuNH <- c(var_residuNH,rep(NA,1)) }
         }else if (!exists("mrSH")){
-            mrSH <- rep(NA,(length(grep("t",regression_months))+1)) # nr of coeff + intercept
+            mrSH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # nr of coeff + intercept
             var_residuSH <- NA
         }else{
-            mrSH <- rbind(mrSH,rep(NA,(length(grep("t",regression_months))+1)))
+            mrSH <- rbind(mrSH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))
             var_residuSH <- c(var_residuSH,rep(NA,1)) 
           }
       }else{ # we can calculate the regression
         # make variable for each month
         t5 = t3[c(4:(length(t3)-3))]
-        t4 = t(array(t5,c(12,length(t5)/12))) # 70 years from Apr-March
+        t4 = t(array(t5,c(6,length(t5)/6))) #makes half year bunches
+        tSH = t4[seq(2,nrow(t4),2),] #takes the months from Oct to March
+        tNH = t4[seq(1,nrow(t4),2),][-c(1),] #takes the months from April to September
+        # t4 = t(array(t5,c(12,length(t5)/12))) # 70 years from Apr-March, cuts the last half year without warning
         
         if (p_tree$lat[i] > 0) { # which half a year we want to use for calculating the regression
-          
-          unab <- t4
-          colnames(unab) <- c('t4','t5','t6','t7','t8','t9','t10','t11','t12','t1','t2','t3')
-          whattotake<-regression_months[grep("t",regression_months)]
-          unab <- unab[,match(whattotake,colnames(unab))]
+          unab <- tNH
         } else {
-          unab <- t4
-          ##Luca: HERE SMALL TRICK :) : changed colnames: t4->t10, t5->t11 etc. so it always 
-          ##                            takes the other half year when it matches below.
-          ##                            To change it back just uncomment part below that says Backward Trick                            
-          colnames(unab) <- c('t10','t11','t12','t1','t2','t3','t4','t5','t6','t7','t8','t9')
-          whattotake<-regression_months[grep("t",regression_months)]
-          unab <- unab[,match(whattotake,colnames(unab))]
-        }
+          unab <- tSH
+        }                  
+          colnames(unab) <- c('t.first','t.second','t.third','t.fourth','t.fifth','t.sixth')
+          onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
+          unab <- unab[,match(onlytemp,colnames(unab))]
+        
         # multiple linear regression
         results <- lm(p_tree_1901_1970$data[,i]~unab,  na.action=na.exclude)
         corr = cor.test(fitted.values(results),p_tree_1901_1970$data[,i]) 
@@ -1162,27 +1160,19 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
       }
     }
     
-    
- # ## Backwards Trick: this is the second part where the coloumn names are changes again from t10->t4 etc. 
- #    mrtmpSH<-matrix(NA, nrow(mrSH),13)
- #    colnames(mrtmpSH) <- c("(Intercept)","unabt10","unabt11","unabt12","unabt1","unabt2","unabt3","unabt4","unabt5","unabt6","unabt7","unabt8","unabt9")
- #    mrtmpSH[,match(colnames(mrSH),colnames(mrtmpSH))]<-mrSH
- #    colnames(mrtmpSH) <- c("(Intercept)","unabt4","unabt5","unabt6","unabt7","unabt8","unabt9","unabt10","unabt11","unabt12","unabt1","unabt2","unabt3")
- #    mrSH<-mrtmpSH[,colSums(!is.na(mrtmpSH)) > 0]
-
-    
-    
-    
-    mrtmp<-matrix(NA, nrow(mrNH)+nrow(mrSH),25)
-    colnames(mrtmp) <- c("(Intercept)","unabt4","unabt5","unabt6","unabt7","unabt8","unabt9","unabp4","unabp5","unabp6","unabp7","unabp8","unabp9",
-                           "unabt10","unabt11","unabt12","unabt1","unabt2","unabt3","unabp10","unabp11","unabp12","unabp1","unabp2","unabp3")
+    mrtmp<-matrix(NA, nrow(mrNH)+nrow(mrSH),13)
+    colnames(mrtmp) <- c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabp.first","unabp.second","unabp.third","unabp.fourth","unabp.fifth","unabp.sixth")
     mrtmp[1:nrow(mrNH),match(colnames(mrNH),colnames(mrtmp))]<-mrNH 
     mrtmp[(nrow(mrNH)+1):nrow(mrtmp),match(colnames(mrSH),colnames(mrtmp))]<-mrSH
     
-    p_tree$mr <- mrtmp # gives 25 possible coefficients
+    p_tree$mr <- mrtmp 
     p_tree$var_residu <- c(var_residuNH,var_residuSH)
     invisible(p_tree)
+    
+    
   } else if (archivetype == "coral") {
+    if(exists("mrNH")){rm(mrNH)}
+    if(exists("mrSH")){rm(mrSH)}
     mylist.names = c("data","time","lon","lat","archivetype","elevation")
     p_coral = setNames(vector("list", length(mylist.names)), mylist.names)
     # keep the data set by fsyr and feyr
@@ -1219,57 +1209,88 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
     # start calculation the regression for each tree data  
     for (i in 1:length(p_coral$lon)) {
       if (all(is.na(p_coral_1901_1970$data[,i]))) {
-        if (i==1) {
-          mr <- rep(NA,(length(grep("t",regression_months))+1)) # number of coef. + intercept
-          var_residu <- NA
-        } else {
-          mr <- rbind(mr,rep(NA,(length(grep("t",regression_months))+1)))
-          var_residu <- c(var_residu,rep(NA,1)) 
+        if (p_coral$lat[i] > 0){
+          if (!exists("mrNH")) {
+            mrNH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) #nr of coeff + intercept
+            var_residuNH <- NA
+          } else {
+            mrNH <- rbind(mrNH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))#nr of coeff + intercept
+            var_residuNH <- c(var_residuNH,rep(NA,1)) }
+        }else if (!exists("mrSH")){
+          mrSH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # nr of coeff + intercept
+          var_residuSH <- NA
+        }else{
+          mrSH <- rbind(mrSH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))
+          var_residuSH <- c(var_residuSH,rep(NA,1)) 
         }
       } else {
         k=which(abs(lonlist-p_coral$lon[i]+0.001)==min(abs(lonlist-p_coral$lon[i]+0.001)))
         l=which(abs(latlist-p_coral$lat[i])==min(abs(latlist-p_coral$lat[i])))
         t3 <- t2[k,l,]
         if (all(is.na(t3))) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
-          if (i==1) {
-            mr <- rep(NA,(length(grep("t",regression_months))+1)) 
-            var_residu <- NA
-          } else {
-            mr <- rbind(mr,rep(NA,(length(grep("t",regression_months))+1)))
-            var_residu <- c(var_residu,rep(NA,1)) 
+          if (p_coral$lat[i] > 0){
+            if (!exists("mrNH")) {
+              mrNH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) #nr of coeff + intercept
+              var_residuNH <- NA
+            } else {
+              mrNH <- rbind(mrNH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))#nr of coeff + intercept
+              var_residuNH <- c(var_residuNH,rep(NA,1)) }
+          }else if (!exists("mrSH")){
+            mrSH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # nr of coeff + intercept
+            var_residuSH <- NA
+          }else{
+            mrSH <- rbind(mrSH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))
+            var_residuSH <- c(var_residuSH,rep(NA,1)) 
           }
         } else { # we can calculate the regression
           # make variable for each month
           t5 = t3[c(4:(length(t3)-3))]
-          t4 = t(array(t5,c(12,length(t5)/12))) # 70 years from Apr-March
+          t4 = t(array(t5,c(6,length(t5)/6))) #makes half year bunches
+          tSH = t4[seq(2,nrow(t4),2),] #takes the months from Oct to March
+          tNH = t4[seq(1,nrow(t4),2),][-c(1),] #takes the months from April to September
+          # t4 = t(array(t5,c(12,length(t5)/12))) # 70 years from Apr-March
           
-          unab = t4
-          colnames(unab) <- c('t4','t5','t6','t7','t8','t9','t10','t11','t12','t1','t2','t3') 
-          whattotake<-regression_months[grep("t",regression_months)]
-          unab <- unab[,match(whattotake,colnames(unab))]
+          if (p_coral$lat[i] > 0) { # which half a year we want to use for calculating the regression
+            unab <- tNH
+          } else {
+            unab <- tSH
+          }                  
+          colnames(unab) <- c('t.first','t.second','t.third','t.fourth','t.fifth','t.sixth')
+          onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
+          unab <- unab[,match(onlytemp,colnames(unab))]
           
           # multiple linear regression
           results <- lm(p_coral_1901_1970$data[,i]~unab,  na.action=na.exclude)
           corr = cor.test(fitted.values(results),p_coral_1901_1970$data[,i]) 
           # print(corr[4]) # correlations are very small
-          if (i==1) { 
-            mr <- results$coefficients
-            var_residu <- var(results$residuals)
-          } else { 
-            mr <- rbind(mr,results$coefficients)
-            var_residu <- c(var_residu,var(results$residuals))
+          if (p_coral$lat[i] > 0){ 
+            if (!exists("mrNH")) { 
+              mrNH <- results$coefficients
+              var_residuNH <- var(results$residuals)
+            } else { 
+              mrNH <- rbind(mrNH,results$coefficients)
+              var_residuNH <- c(var_residuNH,var(results$residuals))
+            }
+          }else{
+            if (!exists("mrSH")) { 
+              mrSH <- results$coefficients
+              var_residuSH <- var(results$residuals)
+            } else { 
+              mrSH <- rbind(mrSH,results$coefficients)
+              var_residuSH <- c(var_residuSH,var(results$residuals))
+            }
           }
         }
       }
     }
     
-    mrtmp<-matrix(NA, nrow(mr),25)
-    colnames(mrtmp) <- c("(Intercept)","unabt4","unabt5","unabt6","unabt7","unabt8","unabt9","unabp4","unabp5","unabp6","unabp7","unabp8","unabp9",
-                         "unabt10","unabt11","unabt12","unabt1","unabt2","unabt3","unabp10","unabp11","unabp12","unabp1","unabp2","unabp3")
-    mrtmp[,match(colnames(mr),colnames(mrtmp))]<-mr
+    mrtmp<-matrix(NA, nrow(mrNH)+nrow(mrSH),13)
+    colnames(mrtmp) <- c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabp.first","unabp.second","unabp.third","unabp.fourth","unabp.fifth","unabp.sixth")
+    mrtmp[1:nrow(mrNH),match(colnames(mrNH),colnames(mrtmp))]<-mrNH 
+    mrtmp[(nrow(mrNH)+1):nrow(mrtmp),match(colnames(mrSH),colnames(mrtmp))]<-mrSH
     
     p_coral$mr <- mrtmp
-    p_coral$var_residu <- var_residu
+    p_coral$var_residu <- c(var_residuNH,var_residuSH)
     invisible(p_coral)
   } else if (archivetype == "documents") {
     mylist.names = c("data","time","lon","lat","archivetype","elevation")
@@ -1343,19 +1364,20 @@ read_ntrend = function(fsyr,feyr, validate) {
     t3 <- t2[k,l,]
     if (all(is.na(t3))) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
       if (i==1) {
-        mr <- rep(NA,(length(grep("t",regression_months))+1)) # coeff +intercept
+        mr <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # coeff +intercept
         var_residu <- NA
       } else {
-        mr <- rbind(mr,rep(NA,(length(grep("t",regression_months))+1)))
+        mr <- rbind(mr,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))
         var_residu <- c(var_residu,rep(NA,1)) 
       }
     } else { # we can calculate the regression
       # make variable for each month
       t4 <- t(array(t3,c(12,length(t3)/12))) # 70 years from Jan till December
-      unab <- t4
-      colnames(unab) <- c('t1','t2','t3','t4','t5','t6','t7','t8','t9','t10','t11','t12')
-      whattotake<-regression_months[grep("t",regression_months)]
-      unab <- unab[,match(whattotake,colnames(unab))]
+      unab <- t4[,4:9] # 70 years from April to September
+      
+      colnames(unab) <- c("t.first","t.second","t.third","t.fourth","t.fifth","t.sixth")
+      onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
+      unab <- unab[,match(onlytemp,colnames(unab))]
       # multiple linear regression
       results <- lm(ntrend_1901_1970$data[,i]~unab,  na.action=na.exclude)
       corr = cor.test(fitted.values(results),ntrend_1901_1970$data[,i]) 
@@ -1370,9 +1392,8 @@ read_ntrend = function(fsyr,feyr, validate) {
     }
   }
   
-  mrtmp<-matrix(NA, nrow(mr),25)
-  colnames(mrtmp) <- c("(Intercept)","unabt4","unabt5","unabt6","unabt7","unabt8","unabt9","unabp4","unabp5","unabp6","unabp7","unabp8","unabp9",
-                       "unabt10","unabt11","unabt12","unabt1","unabt2","unabt3","unabp10","unabp11","unabp12","unabp1","unabp2","unabp3")
+  mrtmp<-matrix(NA, nrow(mr),13)
+  colnames(mrtmp) <-c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabp.first","unabp.second","unabp.third","unabp.fourth","unabp.fifth","unabp.sixth")
   mrtmp[,match(colnames(mr),colnames(mrtmp))]<-mr
   
   
@@ -1401,7 +1422,7 @@ compute_Hi_Hredux_proxy <- function(stations, echam, regcoef=NULL, threshold=700
       # H[i, which.min(dist)] <- if (min(dist) < threshold) regcoef[i,1] else 0 # NO coeff for t_apr
       # May T
       if (min(dist) < threshold) {
-        #t4-t9
+        #Temperature
         H[i,1] <- if (!is.na(regcoef[i,2])) which.min(dist) else NA 
         H[i,2] <- if (!is.na(regcoef[i,2])) regcoef[i,2]  else NA
         H[i,3] <- if (!is.na(regcoef[i,3])) which.min(dist)+((dim(echam$data)[1]/6)) else NA
@@ -1414,7 +1435,7 @@ compute_Hi_Hredux_proxy <- function(stations, echam, regcoef=NULL, threshold=700
         H[i,10] <- if (!is.na(regcoef[i,6])) regcoef[i,6] else NA
         H[i,11] <- if (!is.na(regcoef[i,7])) which.min(dist)+(5*(dim(echam$data)[1]/6))+nech else NA
         H[i,12] <- if (!is.na(regcoef[i,7])) regcoef[i,7] else NA
-        #p4-p9
+        #Precipitation
         H[i,13] <- if (!is.na(regcoef[i,8])) which.min(dist)+nech else NA
         H[i,14] <- if (!is.na(regcoef[i,8])) regcoef[i,8] else NA
         H[i,15] <- if (!is.na(regcoef[i,9])) which.min(dist)+((dim(echam$data)[1]/6))+nech else NA
@@ -1427,32 +1448,7 @@ compute_Hi_Hredux_proxy <- function(stations, echam, regcoef=NULL, threshold=700
         H[i,22] <- if (!is.na(regcoef[i,12])) regcoef[i,12] else NA
         H[i,23] <- if (!is.na(regcoef[i,13])) which.min(dist)+(5*(dim(echam$data)[1]/6))+nech else NA
         H[i,24] <- if (!is.na(regcoef[i,13])) regcoef[i,13] else NA
-        #t10-t3
-        H[i,25] <- if (!is.na(regcoef[i,14])) which.min(dist) else NA
-        H[i,26] <- if (!is.na(regcoef[i,14])) regcoef[i,14] else NA
-        H[i,27] <- if (!is.na(regcoef[i,15])) which.min(dist)+((dim(echam$data)[1]/6)) else NA
-        H[i,28] <- if (!is.na(regcoef[i,15])) regcoef[i,15] else NA
-        H[i,29] <- if (!is.na(regcoef[i,16])) which.min(dist)+(2*(dim(echam$data)[1]/6)) else NA
-        H[i,30] <- if (!is.na(regcoef[i,16])) regcoef[i,16] else NA
-        H[i,31] <- if (!is.na(regcoef[i,17])) which.min(dist)+(3*(dim(echam$data)[1]/6)) else NA
-        H[i,32] <- if (!is.na(regcoef[i,17])) regcoef[i,17] else NA
-        H[i,33] <- if (!is.na(regcoef[i,18])) which.min(dist)+(4*(dim(echam$data)[1]/6)) else NA
-        H[i,34] <- if (!is.na(regcoef[i,18])) regcoef[i,18] else NA
-        H[i,35] <- if (!is.na(regcoef[i,19])) which.min(dist)+(5*(dim(echam$data)[1]/6)) else NA
-        H[i,36] <- if (!is.na(regcoef[i,19])) regcoef[i,19] else NA
-        #p10-p3
-        H[i,37] <- if (!is.na(regcoef[i,20])) which.min(dist)+nech else NA
-        H[i,38] <- if (!is.na(regcoef[i,20])) regcoef[i,20] else NA
-        H[i,39] <- if (!is.na(regcoef[i,21])) which.min(dist)+((dim(echam$data)[1]/6))+nech else NA
-        H[i,40] <- if (!is.na(regcoef[i,21])) regcoef[i,21] else NA
-        H[i,41] <- if (!is.na(regcoef[i,22])) which.min(dist)+(2*(dim(echam$data)[1]/6))+nech else NA
-        H[i,42] <- if (!is.na(regcoef[i,22])) regcoef[i,22] else NA
-        H[i,43] <- if (!is.na(regcoef[i,23])) which.min(dist)+(3*(dim(echam$data)[1]/6))+nech else NA
-        H[i,44] <- if (!is.na(regcoef[i,23])) regcoef[i,23] else NA
-        H[i,45] <- if (!is.na(regcoef[i,24])) which.min(dist)+(4*(dim(echam$data)[1]/6))+nech else NA
-        H[i,46] <- if (!is.na(regcoef[i,24])) regcoef[i,24] else NA
-        H[i,47] <- if (!is.na(regcoef[i,25])) which.min(dist)+(5*(dim(echam$data)[1]/6))+nech else NA
-        H[i,48] <- if (!is.na(regcoef[i,25])) regcoef[i,25] else NA
+       
 
       }
     }   
@@ -5731,6 +5727,10 @@ screendistance <- function (echam.sd,varname) {
   return(var)
 }
 
+# change array to have 6 months in state vector for winter and summer
+# first winter starts in oct of syr
+# 6 mon stat vectors for oct-mar and apr and sep
+# works for echam format
 convert_to_sixmonstatevector <- function(x,cyr){
   tmp21 <- array(x$data,c(dim(x$data)[1]*dim(x$data)[2],
                           dim(x$data)[3]))
@@ -5746,6 +5746,7 @@ convert_to_sixmonstatevector <- function(x,cyr){
   return(x)
 }
 
+# takes realprox-data and converts it into a [x,1:2] matrix for the two seasons
 convert_to_2_seasons <- function(x,source){
   fsyr<-get("fsyr")
   feyr<-get("feyr")

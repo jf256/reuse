@@ -1,4 +1,4 @@
-expname="test_1850-1851" # "EKF400_v1.3_full_res" #
+expname="proxies_only_NTREND_1-6th_profilingtest" # "EKF400_v1.3_full_res" #
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -176,6 +176,7 @@ generate_PROXIES=F
 #                  die colnames nicht Sinn!!!!! Zb Zeile:
 #                  Weil in Pages sind es nicht dieselben 
 generate_PROXIESnew=T
+if (generate_PROXIESnew==T) {
 # You can choose any combination of months and variable (T&P) for regression_months.
 # Then you can choose for each source whether it to be included or not. 
 # The resulting realprox$mr is a matrix of dimension [1:x,1:25], where x depends on your chosen sources.
@@ -184,20 +185,32 @@ generate_PROXIESnew=T
 # For MXD and SCHWEINGR it only takes the temperature and leaves the precip. months NA.
 # PAGES_tree data also consists of location on the SH: if for ex. t4 (is chosen), it takes t10 (t4+6) 
 # for any locations with lat<0. 
-regression_months = c('t1','t5','t6','t7','t10','t11','t12')
+regression_months = c('t.first','t.second','t.third','t.fourth','t.fifth','t.sixth')
 # ^ for MXD it will only take the temp. part of regression months
-# for pages trees on SH if you choose April it automatically takes October of SH
-TRW=T
-MXD=T
-SCHWEINGR=T
-PAGES=T
+# for pages trees on SH if you choose first April it automatically takes October of SH
+  TRW=F
+  MXD=F
+  SCHWEINGR=F
+  PAGES=F
 pages_lm_fit = "CRU"   # can be CRU or GISS to calculate the reg coeff-s
 type = c("coral","tree") 
 #          ^ it only works with tree and coral (and both indiviually as well)
 NTREND=T
+} 
 
 generate_PAGES = F      # using the screened PAGES proxy dataset
 generate_NTREND = F
+
+if ((generate_PAGES & PAGES) | (generate_NTREND & NTREND) | generate_PROXIES & generate_PROXIESnew){
+  stop("WATCH! These switches should not be set to TRUE simultaneously: 
+
+       generate_PROXIES & generate_PROXIESnew 
+       generate_PAGES   & PAGES
+       generate_NTRED   & NTREND")
+}
+
+
+
 
 yuri_temp=T          # yuri's data compilation, SLP always loaded
 yuri_slp=T
@@ -246,7 +259,7 @@ if (loc) {
 }
 
 # ATTENTION: landcorrected only works with anomaly_assim==T and every2grid==T!!!
-  landcorr = T      # use simulation WITHOUT land use bug if TRUE
+  landcorr = F      # use simulation WITHOUT land use bug if TRUE
 # how to treat multiple input series in same grid box
 first_prox_per_grid=F  # first proxy per echam grid box ATTENTION: only this 
 # or second next option (avg_prox_per_grid) can be TRUE
@@ -316,9 +329,9 @@ ncep_vali=F            # NCEP/NCAR reanalysis data for validation
 #####################################################################################
 # prepare plot switches
 #####################################################################################
-monthly_out = T    # if sixmonstatevector=T output is backtransformed to seasonal 
+monthly_out = F    # if sixmonstatevector=T output is backtransformed to seasonal 
                  # average or monthly data if monthly_out=T 
-calc_prepplot=F  # save half year averages calc from monthly data into /prepplot folder
+calc_prepplot=T  # save half year averages calc from monthly data into /prepplot folder
   write_coor=F     # write ascii files with assimilated stations and data per ts
 # maybe change files names for new EKF400 version "1.0" to "1.1"
 # write_netcdf requires to run calc_prepplot before 
@@ -335,8 +348,9 @@ if (!monthly_out & write_netcdf) {
 load_prepplot=T  # ATTENTION check if folder prepplot on scratch contains monthly or seasonal data!
                  # saves image and only needs to be run once, afterward set "load_image=T" 
 statyr=1904      # 1941 1850/69 year, when station network is kept constant
-load_image=F     # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
+load_image=T     # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
 calc_vali_stat=T # calculate validation statistics after preparation (set "load_image=T")
+CRPS = TRUE      # calculate Continuous Ranked Probability Score
 vali_plots=F     # source EnSRF_plots.R script 
 ind_ECHAM=F      # delete/comment code in prepplot script and then delete switches here
 ind_recon=F      # delete/comment code in prepplot script and then delete switches here

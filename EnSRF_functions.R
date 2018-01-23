@@ -22,6 +22,7 @@ schweingrpath <- paste0(dataextdir,'assimil_data/proxies/schweingr/')
 nceppath <- paste0(dataintdir,'reanalysis/ncep/')
 twentycrpath <- paste0(workdir,'../comparison_data/20cr/')
 
+
 # install.packages("akima")
 # install.packages("maps")
 # install.packages("mapdata")
@@ -5199,7 +5200,7 @@ read_pdsi <- function(filehead, path=echpath, xlim=c(-180,180), ylim=c(-90,90), 
 
 
 
-read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,90), timlim=c(1980, 2000), small=F, landonly=F){
+read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,90), timlim=c(1980, 2000), small=F, landonly=F,calc_ensmean=FALSE){ #if calc_ensmean=T then it calculates the ensmean
   
   # read in the land-sea mask of echam
   # mask out sea grid boxes (no variability)
@@ -5256,7 +5257,7 @@ read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,
     ti <- which(tim >= timlim[1] & tim < (timlim[2]+1))
     outdata <- NULL
     names <- NULL
-    for (varname in c('temp2', 'precip', 'slp')){
+    for (varname in c('temp2', 'precip', 'slp','air','prate')){
       if (varname %in% names(nc$var)){
         if (length(nc$var[[varname]]$dim) == 3){
           if (length(ti)==1) {
@@ -5311,9 +5312,13 @@ read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,
     } else {  
       print(dim(outdata))
     }
-    if (f != files[length(files)]) ensmean <- ensmean + outdata
+    if (calc_ensmean==T) {
+     if (f != files[length(files)]){ ensmean <- ensmean + outdata }
+    }
   }
+  if (calc_ensmean==T) {
   ensmean <- ensmean/(length(tmp)) #-1) why -1 ???
+  }
   if (landonly) {
     if (length(ti)==1) {
       data <- list(data=unlist(tmp),
@@ -5331,13 +5336,13 @@ read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,
   } else {
     if (length(ti)==1) {
       data <- list(data=unlist(tmp),
-                   ensmean=ensmean, lon=rep(lon[loi], length(lai)),
+                   if(calc_ensmean){ensmean=ensmean}, lon=rep(lon[loi], length(lai)),
                    lat=rep(lat[lai], each=length(loi)), 
                    height=rep(-999,(length(loi)*length(lai))), 
                    lsm.i=rep(-999,(length(loi)*length(lai))), time=time, names=names) 
     } else {  
       data <- list(data=array(unlist(tmp), c(dim(tmp[[1]]), length(files))),
-                 ensmean=ensmean, lon=rep(lon[loi], length(lai)),
+                ensmean=ifelse(calc_ensmean,ensmean,NaN), lon=rep(lon[loi], length(lai)),
                  lat=rep(lat[lai], each=length(loi)), 
                  height=rep(-999,(length(loi)*length(lai))), 
                  lsm.i=rep(-999,(length(loi)*length(lai))), time=time, names=names)

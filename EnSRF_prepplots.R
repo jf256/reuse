@@ -252,58 +252,16 @@ for (cyr in syr:eyr) {
     if (monthly_out) {
       print(paste('seasons =',s))
       s=12 # set back to 12 months for plotting
-      echam$data <- array(echam$data,c((dim(echam$data)[1]/6),dim(echam$data)[2]*6,
-                                       dim(echam$data)[3]))
-      echam$ensmean <- array(echam$ensmean,c((dim(echam$ensmean)[1]/6),
-                                             dim(echam$ensmean)[2]*6))
       tmptime <- seq(syr,(eyr+1),by=1/12)
-      echam$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-      echam$names <- echam$names[1:dim(echam$data)[1]]
-      echam$lon <- echam$lon[1:(dim(echam$data)[1])] #/length(unique(echam$names)))]
-      echam$lat <- echam$lat[1:(dim(echam$data)[1])] #/length(unique(echam$names)))]
-      echam.anom$data <- array(echam.anom$data,c((dim(echam.anom$data)[1]/6),dim(echam.anom$data)[2]*6,
-                                       dim(echam.anom$data)[3]))
-      echam.anom$ensmean <- array(echam.anom$ensmean,c((dim(echam.anom$ensmean)[1]/6),
-                                             dim(echam.anom$ensmean)[2]*6))
-      echam.anom$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-      echam.anom$names <- echam.anom$names[1:dim(echam.anom$data)[1]]
-      echam.anom$lon <- echam.anom$lon[1:(dim(echam.anom$data)[1])] #/length(unique(echam.anom$names)))]
-      echam.anom$lat <- echam.anom$lat[1:(dim(echam.anom$data)[1])] #/length(unique(echam.anom$names)))]
+      echam<-convert_to_monthly(echam)
+      analysis<-convert_to_monthly(analysis)
+      echam.anom<-convert_to_monthly(echam.anom)
+      analysis.anom<-convert_to_monthly(analysis.anom)
+      
       if (ind_ECHAM) {
-        ech_ind$data <- array(ech_ind$data,c((dim(ech_ind$data)[1]/6),dim(ech_ind$data)[2]*6,
-                                           dim(ech_ind$data)[3]))
-        ech_ind$ensmean <- array(ech_ind$ensmean,c((dim(ech_ind$ensmean)[1]/6),
-                                                 dim(ech_ind$ensmean)[2]*6))    
-        ech_ind$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-        ech_ind$names <- ech_ind$names[1:dim(ech_ind$data)[1]]
-        ech_ind$lon <- ech_ind$lon[1:(dim(ech_ind$data)[1])] #/length(unique(ech_ind$names)))]
-        ech_ind$lat <- ech_ind$lat[1:(dim(ech_ind$data)[1])]
+        ech_ind<-convert_to_monthly(ech_ind)
+        ana_ind<-convert_to_monthly(ana_ind)
       }
-      analysis$data <- array(analysis$data,c((dim(analysis$data)[1]/6),
-                                             dim(analysis$data)[2]*6,dim(analysis$data)[3]))
-      analysis$ensmean <- array(analysis$ensmean,c((dim(analysis$ensmean)[1]/6),
-                                                   dim(analysis$ensmean)[2]*6))
-      analysis$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-      analysis$names <- analysis$names[1:dim(analysis$data)[1]]
-      analysis$lon <- analysis$lon[1:(dim(analysis$data)[1])] #/length(unique(analysis$names)))]
-      analysis$lat <- analysis$lat[1:(dim(analysis$data)[1])] 
-      analysis.anom$data <- array(analysis.anom$data,c((dim(analysis.anom$data)[1]/6),
-                                             dim(analysis.anom$data)[2]*6,dim(analysis.anom$data)[3]))
-      analysis.anom$ensmean <- array(analysis.anom$ensmean,c((dim(analysis.anom$ensmean)[1]/6),
-                                                   dim(analysis.anom$ensmean)[2]*6))
-      analysis.anom$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-      analysis.anom$names <- analysis.anom$names[1:dim(analysis.anom$data)[1]]
-      analysis.anom$lon <- analysis.anom$lon[1:(dim(analysis.anom$data)[1])] #/length(unique(analysis.anom$names)))]
-      analysis.anom$lat <- analysis.anom$lat[1:(dim(analysis.anom$data)[1])] 
-      if (ind_ECHAM) {
-        ana_ind$data <- array(ana_ind$data,c((dim(ana_ind$data)[1]/6),dim(ana_ind$data)[2]*6,
-                                         dim(ana_ind$data)[3]))
-        ana_ind$ensmean <- array(ana_ind$ensmean,c((dim(ana_ind$ensmean)[1]/6),
-                                                 dim(ana_ind$ensmean)[2]*6))    
-        ana_ind$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-        ana_ind$names <- ana_ind$names[1:dim(ana_ind$data)[1]]
-        ana_ind$lon <- ana_ind$lon[1:(dim(ana_ind$data)[1])] #/length(unique(ana_ind$names)))]
-        ana_ind$lat <- ana_ind$lat[1:(dim(ana_ind$data)[1])]
       }
       if (vali) {
         if (!recon_vali) {
@@ -311,14 +269,7 @@ for (cyr in syr:eyr) {
 #            validate$data <- cbind(rep(NA,length(validate$data)),validate$data)
 #            validate$ensmean <- cbind(rep(NA,length(validate$ensmean)),validate$ensmean)
 #          }
-          validate$data <- array(validate$data,c((dim(validate$data)[1]/6),
-                                                 dim(validate$data)[2]*6))
-          validate$ensmean <- array(validate$ensmean,c((dim(validate$ensmean)[1]/6),
-                                                       dim(validate$ensmean)[2]*6))
-          validate$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-          validate$names <- validate$names[1:dim(validate$data)[1]]
-          validate$lon <- validate$lon[1:(dim(validate$data)[1])] #/length(unique(validate$names)))]
-          validate$lat <- validate$lat[1:(dim(validate$data)[1])]
+          validate<-convert_to_monthly(validate)
           if (ind_recon) {
 #          vali_ind$data <- array(vali_ind$data,c((dim(vali_ind$data)[1]/6),dim(vali_ind$data)[2]*6,
 #                                                 dim(vali_ind$data)[3]))

@@ -14,7 +14,7 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 syr=1903 #1902 #1941
-eyr=1960 #2003 #1970
+eyr=1904 #2003 #1970
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
 args <- commandArgs(TRUE)
@@ -33,9 +33,10 @@ if (user=="veronika") {
   workdir='/scratch3/joerg/projects/reuse/reuse_git/'
 } else if (user=="lucaf") {
     workdir='/scratch4/lucaf/reuse/reuse_git/'
+} else if (user == "nevin"){
+  workdir = '/scratch3/nevin/reuse/reuse_git/'
 } else {
   stop("Unknown user!")
-
 }
 dataextdir='/mnt/climstor/giub/EKF400/'
 dataintdir=paste0(workdir,'../data/')

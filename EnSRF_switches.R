@@ -1,4 +1,4 @@
-expname="test_nevin" # "EKF400_v1.3_full_res" #
+expname="test_climcal" # "EKF400_v1.3_full_res" #
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment

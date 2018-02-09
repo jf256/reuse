@@ -365,6 +365,7 @@ for (cyr in syr2:eyr) {
   # convert lon, lat, names sixmonstatevector data format
   # ACHTUNG: only 11 vars withOUT stream function included so far
   if (sixmonstatevector) {
+    one_var_dim<-length(echam$lon)
     numvar <- length(unique(echam$names)) 
     echam$lon <-  c(rep(echam$lon, (numvar*6)))
     echam$lat <- c(rep(echam$lat, (numvar*6)))

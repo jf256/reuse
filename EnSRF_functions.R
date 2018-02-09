@@ -1480,11 +1480,11 @@ compute_Hi_Hredux_proxy <- function(stations, echam, regcoef=NULL, threshold=700
          regcoef[i,4] else 0
        H[i, which.min(dist)+(4*(dim(echam$data)[1]/6))] <- if (min(dist) < threshold)
          regcoef[i,5] else 0
-       H[i, which.min(dist)+(length(echam$lsm.i))] <- if (min(dist) < threshold) 
+       H[i, which.min(dist)+(one_var_dim)] <- if (min(dist) < threshold) 
          regcoef[i,6] else 0     
-       H[i, which.min(dist)+(dim(echam$data)[1]/6)+length(echam$lsm.i)] <- if 
+       H[i, which.min(dist)+(dim(echam$data)[1]/6)+one_var_dim] <- if 
          (min(dist) < threshold) regcoef[i,7] else 0     
-       H[i, which.min(dist)+(2*(dim(echam$data)[1]/6))+length(echam$lsm.i)] <- if 
+       H[i, which.min(dist)+(2*(dim(echam$data)[1]/6))+one_var_dim] <- if 
          (min(dist) < threshold) regcoef[i,8] else 0     
      }
    }   
@@ -1671,53 +1671,53 @@ compute_H_sixmonstatevector <- function(stations, echam, threshold=700){
     }
     if (stations$names[i] == 'precip') {
       if (i < nstat+1) {
-        H[i, which.min(dist)+(0*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+        H[i, which.min(dist)+(0*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
       }
       if ((i > nstat) & (i < (2*nstat+1))) {
-        H[i, which.min(dist)+(1*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+        H[i, which.min(dist)+(1*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
       }
       if ((i > (2*nstat)) & (i < (3*nstat+1))) {
-        H[i, which.min(dist)+(2*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+        H[i, which.min(dist)+(2*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
       }
       if ((i > (3*nstat)) & (i < (4*nstat+1))) {
-        H[i, which.min(dist)+(3*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+        H[i, which.min(dist)+(3*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
       }
       if ((i > (4*nstat)) & (i < (5*nstat+1))) {
-        H[i, which.min(dist)+(4*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+        H[i, which.min(dist)+(4*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
       }
       if ((i > (5*nstat)) & (i < (6*nstat+1))) {
-        H[i, which.min(dist)+(5*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+        H[i, which.min(dist)+(5*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
       }
     }
     if (stations$names[i] == 'slp') {
       if (i < nstat+1) {
-        H[i, which.min(dist)+(0*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+        H[i, which.min(dist)+(0*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
         (min(dist) < threshold) 1 else 0
       }
       if ((i > nstat) & (i < (2*nstat+1))) {
-        H[i, which.min(dist)+(1*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+        H[i, which.min(dist)+(1*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
         (min(dist) < threshold) 1 else 0
       }
       if ((i > (2*nstat)) & (i < (3*nstat+1))) {
-        H[i, which.min(dist)+(2*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+        H[i, which.min(dist)+(2*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
         (min(dist) < threshold) 1 else 0
       }
       if ((i > (3*nstat)) & (i < (4*nstat+1))) {
-        H[i, which.min(dist)+(3*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+        H[i, which.min(dist)+(3*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
         (min(dist) < threshold) 1 else 0
       }
       if ((i > (4*nstat)) & (i < (5*nstat+1))) {
-        H[i, which.min(dist)+(4*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+        H[i, which.min(dist)+(4*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
         (min(dist) < threshold) 1 else 0
       }
       if ((i > (5*nstat)) & (i < (6*nstat+1))) {
-        H[i, which.min(dist)+(5*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+        H[i, which.min(dist)+(5*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
         (min(dist) < threshold) 1 else 0
       }
     }
@@ -1766,53 +1766,53 @@ compute_H_sixmonstatevector_docu <- function(stations, echam, threshold=700){
       }
       if (stations$names[i] == 'precip') {
         if (i < nstat+1) {
-          H[i, which.min(dist)+(0*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+          H[i, which.min(dist)+(0*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
         }
         if ((i > nstat) & (i < (2*nstat+1))) {
-          H[i, which.min(dist)+(1*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+          H[i, which.min(dist)+(1*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
         }
         if ((i > (2*nstat)) & (i < (3*nstat+1))) {
-          H[i, which.min(dist)+(2*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+          H[i, which.min(dist)+(2*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
         }
         if ((i > (3*nstat)) & (i < (4*nstat+1))) {
-          H[i, which.min(dist)+(3*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+          H[i, which.min(dist)+(3*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
         }
         if ((i > (4*nstat)) & (i < (5*nstat+1))) {
-          H[i, which.min(dist)+(4*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+          H[i, which.min(dist)+(4*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
         }
         if ((i > (5*nstat)) & (i < (6*nstat+1))) {
-          H[i, which.min(dist)+(5*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+          H[i, which.min(dist)+(5*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
         }
       }
       if (stations$names[i] == 'slp') {
         if (i < nstat+1) {
-          H[i, which.min(dist)+(0*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+          H[i, which.min(dist)+(0*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
           (min(dist) < threshold) 1 else 0
         }
         if ((i > nstat) & (i < (2*nstat+1))) {
-          H[i, which.min(dist)+(1*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+          H[i, which.min(dist)+(1*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
           (min(dist) < threshold) 1 else 0
         }
         if ((i > (2*nstat)) & (i < (3*nstat+1))) {
-          H[i, which.min(dist)+(2*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+          H[i, which.min(dist)+(2*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
           (min(dist) < threshold) 1 else 0
         }
         if ((i > (3*nstat)) & (i < (4*nstat+1))) {
-          H[i, which.min(dist)+(3*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+          H[i, which.min(dist)+(3*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
           (min(dist) < threshold) 1 else 0
         }
         if ((i > (4*nstat)) & (i < (5*nstat+1))) {
-          H[i, which.min(dist)+(4*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+          H[i, which.min(dist)+(4*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
           (min(dist) < threshold) 1 else 0
         }  
         if ((i > (5*nstat)) & (i < (6*nstat+1))) {
-          H[i, which.min(dist)+(5*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+          H[i, which.min(dist)+(5*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
           (min(dist) < threshold) 1 else 0
         }
       }
@@ -3305,7 +3305,7 @@ compute_H_temp_precip <- function(stations, echam, threshold=700){
       H[i, which.min(dist)] <- if (min(dist) < threshold) 1 else 0
     }
     if (stations$names[i] == 'precip') {
-      H[i, which.min(dist)+length(echam$lsm.i)] <- if (min(dist) < threshold) 1 else 0
+      H[i, which.min(dist)+one_var_dim] <- if (min(dist) < threshold) 1 else 0
     }
   }
   H
@@ -3381,10 +3381,10 @@ compute_H_temp_precip_slp <- function(stations, echam, threshold=700){
       H[i, which.min(dist)] <- if (min(dist) < threshold) 1 else 0
     }
     if (stations$names[i] == 'precip') {
-      H[i, which.min(dist)+length(echam$lsm.i)] <- if (min(dist) < threshold) 1 else 0
+      H[i, which.min(dist)+one_var_dim] <- if (min(dist) < threshold) 1 else 0
     }
     if (stations$names[i] == 'slp') {
-      H[i, which.min(dist)+(2*length(echam$lsm.i))] <- if (min(dist) < threshold) 1 else 0
+      H[i, which.min(dist)+(2*one_var_dim)] <- if (min(dist) < threshold) 1 else 0
     }
   }
   H
@@ -3445,7 +3445,7 @@ compute_giorgi_H_sixmon <- function(giorgi, echam) { #}, numvar){
   weights}, y=echam))
   # stitch together to form the full giorgi_H
   nreg <- nrow(giorgi.arr)
-  #  ndim <- length(echam$lsm.i)
+  #  ndim <- one_var_dim
   ndim <- length(which(echam$names=='temp2'))
   nvar <- floor(nrow(echam$data)/ndim)
 #  nvar <- numvar
@@ -3470,7 +3470,7 @@ compute_giorgi_H_numvar <- function(giorgi, echam, numvar){
     weights}, y=echam))
   # stitch together to form the full giorgi_H
   nreg <- nrow(giorgi.arr)
-  ndim <- length(echam$lsm.i)
+  ndim <- one_var_dim
   #  nvar <- floor(nrow(echam$data)/ndim)
   nvar <- numvar
   H.giorgi <- array(0, c(nreg*nvar, nrow(echam$data)))
@@ -4569,9 +4569,9 @@ getgridboxnum <- function(stat, echam) {
 #      print("mtmp > 0")
       m[i] <- mtmp
       try(if (stat$names[i]=="precip") {
-        m[i] <- m[i]+length(echam$lsm.i)
+        m[i] <- m[i]+one_var_dim
       } else if (stat$names[i]=="slp") {
-        m[i] <- m[i]+(2*length(echam$lsm.i))
+        m[i] <- m[i]+(2*one_var_dim)
       },silent = T)
     } else { m[i] <- NA }
   }

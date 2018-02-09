@@ -5789,6 +5789,7 @@ convert_to_monthly <- function(dataset) {
   eyr<-get("eyr")
   s<-12 # set back to 12 months for plotting
   tmptime <-  get("tmptime")
+  season<-get("season")
   #reshape dataset
   dataset$data <- array(dataset$data, c((dim(dataset$data)[1]/6), dim(dataset$data)[2]*6, dim(dataset$data)[3]))
   dataset$ensmean <- array(dataset$ensmean, c((dim(dataset$ensmean)[1]/6), dim(dataset$ensmean)[2]*6))

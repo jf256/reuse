@@ -1,4 +1,4 @@
-expname="proxies_only_NTREND_1-6th_profilingtest" # "EKF400_v1.3_full_res" #
+expname="test_nevin" # "EKF400_v1.3_full_res" #
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -271,8 +271,8 @@ reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=F            # calc on land only
 fasttest=F             # use even less data
-tps_only=F             # only use temp, precip and slp in state vector, remove other vars
-no_stream=T            # all echam vars but stream function as there is problem with 
+tps_only=T             # only use temp, precip and slp in state vector, remove other vars
+no_stream=F            # all echam vars but stream function as there is problem with 
 #                       # 5/9 levels, which are in lat dimension before and after 1880
 loo=F                  # leave-one-out validation 
 if (loo) {tps_only=T;no_stream=F}  # reduce state vector for faster validation
@@ -329,7 +329,7 @@ ncep_vali=F            # NCEP/NCAR reanalysis data for validation
 #####################################################################################
 # prepare plot switches
 #####################################################################################
-monthly_out = F    # if sixmonstatevector=T output is backtransformed to seasonal 
+monthly_out = T    # if sixmonstatevector=T output is backtransformed to seasonal 
                  # average or monthly data if monthly_out=T 
 calc_prepplot=T  # save half year averages calc from monthly data into /prepplot folder
   write_coor=F     # write ascii files with assimilated stations and data per ts
@@ -347,10 +347,10 @@ if (!monthly_out & write_netcdf) {
 # 1902-2003, because it creates time series
 load_prepplot=T  # ATTENTION check if folder prepplot on scratch contains monthly or seasonal data!
                  # saves image and only needs to be run once, afterward set "load_image=T" 
-statyr=1904      # 1941 1850/69 year, when station network is kept constant
+statyr=1903      # 1941 1850/69 year, when station network is kept constant
 load_image=T     # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
 calc_vali_stat=T # calculate validation statistics after preparation (set "load_image=T")
-CRPS = TRUE      # calculate Continuous Ranked Probability Score
+CRPS = F      # calculate Continuous Ranked Probability Score
 vali_plots=F     # source EnSRF_plots.R script 
 ind_ECHAM=F      # delete/comment code in prepplot script and then delete switches here
 ind_recon=F      # delete/comment code in prepplot script and then delete switches here
@@ -359,7 +359,7 @@ ind_recon=F      # delete/comment code in prepplot script and then delete switch
 #####################################################################################
 # plot switches
 #####################################################################################
-monthly=F
+monthly=T
 pseudoproxy=F
 plot_dweights=F
 write_nc=F

@@ -22,6 +22,7 @@ schweingrpath <- paste0(dataextdir,'assimil_data/proxies/schweingr/')
 nceppath <- paste0(dataintdir,'reanalysis/ncep/')
 twentycrpath <- paste0(workdir,'../comparison_data/20cr/')
 
+
 # install.packages("akima")
 # install.packages("maps")
 # install.packages("mapdata")
@@ -55,7 +56,7 @@ suppressMessages(library(caTools))
 suppressMessages(library(pracma))        # for wind vectors
 suppressMessages(library(easyVerification)) # spread-error ratio
 suppressMessages(library(fields))        # for designer colors and raster maps
-suppressMessages(library(doParallel))
+# suppressMessages(library(doParallel))
 suppressMessages(library(reshape2))
 suppressMessages(library(ggplot2))
 suppressMessages(library(grid))
@@ -684,10 +685,10 @@ read_proxy_mxd <- function(syr,eyr){
     onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
     unab <- unab[,match(onlytemp,colnames(unab))]
     results <- lm(regdata[,i]~unab)
-    corr <- cor(results$coefficients[1]+results$coefficients[2]*t4[,5]+
-                   results$coefficients[3]*t4[,6]+results$coefficients[4]*t4[,7]+
-                   results$coefficients[5]*t4[,8],
-                   regdata[,i])
+    # corr <- cor(results$coefficients[1]+results$coefficients[2]*t4[,5]+
+    #                results$coefficients[3]*t4[,6]+results$coefficients[4]*t4[,7]+
+    #                results$coefficients[5]*t4[,8],
+    #                regdata[,i])
     # print(corr)
     if (i==1) { 
       mr <- results$coefficients 
@@ -720,10 +721,10 @@ read_proxy_mxd <- function(syr,eyr){
     unab2 <- cbind(t40[,5:8]) 
     colnames(unab2) <- c('t5','t6','t7','t8') 
     results2 <- lm(regdata[,i]~unab2)
-    corr <- cor(results2$coefficients[1]+results2$coefficients[2]*t4[,5]+
-                     results2$coefficients[3]*t4[,6]+results2$coefficients[4]*t4[,7]+
-                     results2$coefficients[5]*t4[,8], 
-                     regdata[,i])
+    # corr <- cor(results2$coefficients[1]+results2$coefficients[2]*t4[,5]+
+    #                  results2$coefficients[3]*t4[,6]+results2$coefficients[4]*t4[,7]+
+    #                  results2$coefficients[5]*t4[,8], 
+    #                  regdata[,i])
     if (i==1) { 
       mr2 <- results2$coefficients 
     } else { 
@@ -822,10 +823,10 @@ read_proxy_schweingr <- function(syr,eyr){
     unab <- unab[,match(onlytemp,colnames(unab))]
 
     results <- lm(regdata[,i]~unab)
-    corr <- cor(results$coefficients[1]+results$coefficients[2]*t4[,5]+
-                  results$coefficients[3]*t4[,6]+results$coefficients[4]*t4[,7]+
-                  results$coefficients[5]*t4[,8],
-                regdata[,i])
+    # corr <- cor(results$coefficients[1]+results$coefficients[2]*t4[,5]+
+    #               results$coefficients[3]*t4[,6]+results$coefficients[4]*t4[,7]+
+    #               results$coefficients[5]*t4[,8],
+    #             regdata[,i])
     # print(corr)
 #    tmp <- as.vector(results$coefficients[1]+results$coefficients[2]*t4[,5]+
 #              results$coefficients[3]*t4[,6]+results$coefficients[4]*t4[,7]+
@@ -971,10 +972,10 @@ read_proxy2 <- function(syr,eyr){
 
     unab <- unab[,match(regression_months,colnames(unab))]
     results <- lm(trw$data[,i]~unab)
-    corr <- cor.test((results$coefficients[1]+results$coefficients[2]*t4[,5]+
-               results$coefficients[3]*t4[,6]+results$coefficients[4]*t4[,7]+
-               results$coefficients[5]*t4[,8]+results$coefficients[6]*p4[,4]+
-               results$coefficients[7]*p4[,5]+results$coefficients[8]*p4[,6]),
+    corr <- cor.test((results$coefficients[1]+results$coefficients[2]*t4[,1]+
+               results$coefficients[3]*t4[,2]+results$coefficients[4]*t4[,3]+
+               results$coefficients[5]*t4[,4]+results$coefficients[6]*t4[,5]+
+               results$coefficients[7]*t4[,6]),
                trw$data[,i])
     # print(corr[4])
     if (corr[3] < 0.05) {
@@ -1480,11 +1481,11 @@ compute_Hi_Hredux_proxy <- function(stations, echam, regcoef=NULL, threshold=700
          regcoef[i,4] else 0
        H[i, which.min(dist)+(4*(dim(echam$data)[1]/6))] <- if (min(dist) < threshold)
          regcoef[i,5] else 0
-       H[i, which.min(dist)+(length(echam$lsm.i))] <- if (min(dist) < threshold) 
+       H[i, which.min(dist)+(one_var_dim)] <- if (min(dist) < threshold) 
          regcoef[i,6] else 0     
-       H[i, which.min(dist)+(dim(echam$data)[1]/6)+length(echam$lsm.i)] <- if 
+       H[i, which.min(dist)+(dim(echam$data)[1]/6)+one_var_dim] <- if 
          (min(dist) < threshold) regcoef[i,7] else 0     
-       H[i, which.min(dist)+(2*(dim(echam$data)[1]/6))+length(echam$lsm.i)] <- if 
+       H[i, which.min(dist)+(2*(dim(echam$data)[1]/6))+one_var_dim] <- if 
          (min(dist) < threshold) regcoef[i,8] else 0     
      }
    }   
@@ -1671,53 +1672,53 @@ compute_H_sixmonstatevector <- function(stations, echam, threshold=700){
     }
     if (stations$names[i] == 'precip') {
       if (i < nstat+1) {
-        H[i, which.min(dist)+(0*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+        H[i, which.min(dist)+(0*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
       }
       if ((i > nstat) & (i < (2*nstat+1))) {
-        H[i, which.min(dist)+(1*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+        H[i, which.min(dist)+(1*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
       }
       if ((i > (2*nstat)) & (i < (3*nstat+1))) {
-        H[i, which.min(dist)+(2*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+        H[i, which.min(dist)+(2*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
       }
       if ((i > (3*nstat)) & (i < (4*nstat+1))) {
-        H[i, which.min(dist)+(3*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+        H[i, which.min(dist)+(3*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
       }
       if ((i > (4*nstat)) & (i < (5*nstat+1))) {
-        H[i, which.min(dist)+(4*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+        H[i, which.min(dist)+(4*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
       }
       if ((i > (5*nstat)) & (i < (6*nstat+1))) {
-        H[i, which.min(dist)+(5*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+        H[i, which.min(dist)+(5*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
       }
     }
     if (stations$names[i] == 'slp') {
       if (i < nstat+1) {
-        H[i, which.min(dist)+(0*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+        H[i, which.min(dist)+(0*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
         (min(dist) < threshold) 1 else 0
       }
       if ((i > nstat) & (i < (2*nstat+1))) {
-        H[i, which.min(dist)+(1*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+        H[i, which.min(dist)+(1*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
         (min(dist) < threshold) 1 else 0
       }
       if ((i > (2*nstat)) & (i < (3*nstat+1))) {
-        H[i, which.min(dist)+(2*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+        H[i, which.min(dist)+(2*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
         (min(dist) < threshold) 1 else 0
       }
       if ((i > (3*nstat)) & (i < (4*nstat+1))) {
-        H[i, which.min(dist)+(3*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+        H[i, which.min(dist)+(3*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
         (min(dist) < threshold) 1 else 0
       }
       if ((i > (4*nstat)) & (i < (5*nstat+1))) {
-        H[i, which.min(dist)+(4*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+        H[i, which.min(dist)+(4*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
         (min(dist) < threshold) 1 else 0
       }
       if ((i > (5*nstat)) & (i < (6*nstat+1))) {
-        H[i, which.min(dist)+(5*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+        H[i, which.min(dist)+(5*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
         (min(dist) < threshold) 1 else 0
       }
     }
@@ -1766,53 +1767,53 @@ compute_H_sixmonstatevector_docu <- function(stations, echam, threshold=700){
       }
       if (stations$names[i] == 'precip') {
         if (i < nstat+1) {
-          H[i, which.min(dist)+(0*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+          H[i, which.min(dist)+(0*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
         }
         if ((i > nstat) & (i < (2*nstat+1))) {
-          H[i, which.min(dist)+(1*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+          H[i, which.min(dist)+(1*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
         }
         if ((i > (2*nstat)) & (i < (3*nstat+1))) {
-          H[i, which.min(dist)+(2*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+          H[i, which.min(dist)+(2*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
         }
         if ((i > (3*nstat)) & (i < (4*nstat+1))) {
-          H[i, which.min(dist)+(3*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+          H[i, which.min(dist)+(3*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
         }
         if ((i > (4*nstat)) & (i < (5*nstat+1))) {
-          H[i, which.min(dist)+(4*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+          H[i, which.min(dist)+(4*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
         }
         if ((i > (5*nstat)) & (i < (6*nstat+1))) {
-          H[i, which.min(dist)+(5*(dim(echam$data)[1]/6)+length(echam$lsm.i))] <- if 
+          H[i, which.min(dist)+(5*(dim(echam$data)[1]/6)+one_var_dim)] <- if 
           (min(dist) < threshold) 1 else 0
         }
       }
       if (stations$names[i] == 'slp') {
         if (i < nstat+1) {
-          H[i, which.min(dist)+(0*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+          H[i, which.min(dist)+(0*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
           (min(dist) < threshold) 1 else 0
         }
         if ((i > nstat) & (i < (2*nstat+1))) {
-          H[i, which.min(dist)+(1*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+          H[i, which.min(dist)+(1*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
           (min(dist) < threshold) 1 else 0
         }
         if ((i > (2*nstat)) & (i < (3*nstat+1))) {
-          H[i, which.min(dist)+(2*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+          H[i, which.min(dist)+(2*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
           (min(dist) < threshold) 1 else 0
         }
         if ((i > (3*nstat)) & (i < (4*nstat+1))) {
-          H[i, which.min(dist)+(3*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+          H[i, which.min(dist)+(3*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
           (min(dist) < threshold) 1 else 0
         }
         if ((i > (4*nstat)) & (i < (5*nstat+1))) {
-          H[i, which.min(dist)+(4*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+          H[i, which.min(dist)+(4*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
           (min(dist) < threshold) 1 else 0
         }  
         if ((i > (5*nstat)) & (i < (6*nstat+1))) {
-          H[i, which.min(dist)+(5*(dim(echam$data)[1]/6)+(2*length(echam$lsm.i)))] <- if 
+          H[i, which.min(dist)+(5*(dim(echam$data)[1]/6)+(2*one_var_dim))] <- if 
           (min(dist) < threshold) 1 else 0
         }
       }
@@ -3024,8 +3025,18 @@ plot_echam3 <- function(x, levs, varname='temp2', type='data',  ti=1,
 
 
 # plot_echam4 based on plot_echam3 to overlay wind vectors
-# + additional zonal mean on side of plot, layout need to be adjusted
-plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=1, 
+# + additional zonal mean on side of plot, layout need to be adjuste
+
+# levs: is the only parameter that has to be specified before calling the function
+# type: can either be data or ensmean, currently all plots produced are of type ensmean. 
+# ti: if not specified:gives the coloumns that are used in the plotting process: if monthly_out=F then 
+#     ti is all coloumns of x$ensmean and if monthly_out=T then it depends on the NHseason. 
+#     if specified: if for eg: ti=(8,9), then it takes months 8 and 9 from october counting (may,juli)
+# NHseason: specifies the NorthernHemispherical season to be plotted - when monthly_out=F then
+#           NHseason should be NULL
+# plots: currently the plots are in two different options, if monthly_out=F then with two coloumns and 
+#        if monthly_out=T then in 6 coloumns. 
+plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$ensmean)), 
                         stations=NULL,statpanel=NULL, #centercol=NULL,
                         symmetric=T, siglev=0.05, names=NULL, main='', units='', 
                         cex.pt=2, st.cex=cex.pt*0.25, st.col=NULL, add=FALSE, 
@@ -3034,8 +3045,24 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=1,
                         addcontours=F, contvarname='gph500', conttype='data', contcol='black',
                         contlev=levs, addvectors=F, vecnames=NULL, #vectortype='data',
                         veccol='black', veclen=0.03, vecscale=0.3, vecwd=0.75, every_x_vec=4,
-                        wcol='black', zonalmean=F, zmvarname='gph500', colorbar=T){
-  oldpar <- par(no.readonly=TRUE)
+                        wcol='black', zonalmean=F, zmvarname='gph500', colorbar=T,NHseason,plotname,paper){
+
+   oldpar <- par(no.readonly=TRUE)
+  if (monthly_out & s.plot==12 & length(ti)==24){
+    if (NHseason=="winter") {
+    ti=c(seq(1,ncol(x$ensmean)/4),seq((ncol(x$ensmean)/2)+1,ncol(x$ensmean)/4*3))
+    }else if(NHseason=="summer"){
+    ti=c(seq((ncol(x$ensmean)/4)+1,ncol(x$ensmean)/2),seq((ncol(x$ensmean)/4*3)+1,ncol(x$ensmean)))
+    }
+  } else if (monthly_out & s.plot==12 & length(ti)==12){
+    if (NHseason=="winter") {
+    ti=seq(1,ncol(x$ensmean)/2)
+    } else if (NHseason=="summer"){
+      ti=seq((ncol(x$ensmean)/2)+1,ncol(x$ensmean))
+    }
+  } else if (monthly_out & (length(ti)!=12 | length(ti)!=24)) {
+      ti=c(ti,(ti+12))
+  }
   # plot specific lat range  
   # latpos <- match(which(x$lat>latlim[1]),which(x$lat<latlim[2]))
   for (i in 1:4) {
@@ -3093,6 +3120,9 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=1,
   } else {
     stop("Only 'data' and 'ensmean' are implemented as type")
   }
+
+  
+  
   if (length(dat.i) == 1){
     if (length(seas) > 1) {
       if (is.null(cols)){
@@ -3125,19 +3155,50 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=1,
       }
     }
   } else {
+    
+    
     nmod <- ncol(plotdata)
-    nrow <- ceiling(nmod/4)
-    ncol <- ceiling(nmod/nrow)+1
-    nn <- nrow*(ncol-1)
-    if (!add){
-      dd <- lcm(2)
-      if (nmod == 1) dd <- lcm(2.8)
-      layout(matrix(c(1:nmod, rep(nmod+2, nn-nmod), rep(nmod+1, nrow)),
-                    ncol, nrow, byrow=T), height=c(rep(5, ncol-1),dd))
+    
+    if (monthly_out & (nmod==12 | nmod==6)){ #if for eg only one mon was chosen then it's FALSE
+      ncol <- 6
+      nrow <- ifelse(ncol(x$ensmean)==24,3,2)
+      width <- 15
+    }else if (monthly_out) {                # if ti is less than six months
+      ncol <- length(ti)/2
+      nrow <- 3
+      width <- 5
+    }else {
+      ncol <- 2
+      nrow<- ifelse(ncol(x$ensmean)==4,3,2)
+      width <- 9
+    }
+    
+    nn <- ncol*(nrow-1)
+    
+    height=(nrow-1)*2+1
+    # height=3
+    if (monthly_out){
+      pdf(paste( get("figpath"),plotname,sep='/'), width=width, height=height, paper=paper)
+    }else{           
+      pdf(paste( get("figpath"),plotname,sep='/'), width=width, height=height, paper= paper)
+    }
+    
+    dd <- lcm(2)
+    if (nmod == 1) dd <- lcm(2.8)
+    
+    if (!add & !monthly_out){
+      if (ncol(x$ensmean)==4) {dd <- lcm(2)} else{dd <- lcm(2.2)}
+      layout(matrix(c(1:nmod, rep(nmod+2, nn-nmod), rep(nmod+1, ncol)),
+                    nrow, ncol, byrow=T), height=c(rep(5, nrow-1),dd))
+      
       oma <- rep(0, 4)
       if (!is.null(rownames)) oma[3] <- 3
       if (!is.null(colnames)) oma[2] <- 3
       par(oma=oma)
+    }
+    if (monthly_out){
+      layout(matrix(c(1:nmod, rep(nmod+2, nn-nmod), rep(nmod+1, ncol)),
+                    nrow, ncol, byrow=T), height=c(rep(5, nrow-1),dd))  
     }
     par(mar=rep(0.5,4), cex.axis=1.4, cex.lab=1.4)
     
@@ -3163,7 +3224,8 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=1,
     #      } else {
     #        cols[ceiling(length(cols)/2)] <- centercol
     #      }
-    #    }  
+    #    } 
+    
     for (i in 1:nmod){
       #      plot(0, type='n', xlim=range(x$lon), ylim=range(x$lat),
       #           axes=F, xlab='', ylab='')      
@@ -3266,6 +3328,7 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=1,
     }
     mtext(main, side=3, line=2, outer=TRUE, font=1, cex=1.4)
     if (!add) par(oldpar)
+    dev.off()
   }
 }
 
@@ -3305,7 +3368,7 @@ compute_H_temp_precip <- function(stations, echam, threshold=700){
       H[i, which.min(dist)] <- if (min(dist) < threshold) 1 else 0
     }
     if (stations$names[i] == 'precip') {
-      H[i, which.min(dist)+length(echam$lsm.i)] <- if (min(dist) < threshold) 1 else 0
+      H[i, which.min(dist)+one_var_dim] <- if (min(dist) < threshold) 1 else 0
     }
   }
   H
@@ -3381,10 +3444,10 @@ compute_H_temp_precip_slp <- function(stations, echam, threshold=700){
       H[i, which.min(dist)] <- if (min(dist) < threshold) 1 else 0
     }
     if (stations$names[i] == 'precip') {
-      H[i, which.min(dist)+length(echam$lsm.i)] <- if (min(dist) < threshold) 1 else 0
+      H[i, which.min(dist)+one_var_dim] <- if (min(dist) < threshold) 1 else 0
     }
     if (stations$names[i] == 'slp') {
-      H[i, which.min(dist)+(2*length(echam$lsm.i))] <- if (min(dist) < threshold) 1 else 0
+      H[i, which.min(dist)+(2*one_var_dim)] <- if (min(dist) < threshold) 1 else 0
     }
   }
   H
@@ -3445,7 +3508,7 @@ compute_giorgi_H_sixmon <- function(giorgi, echam) { #}, numvar){
   weights}, y=echam))
   # stitch together to form the full giorgi_H
   nreg <- nrow(giorgi.arr)
-  #  ndim <- length(echam$lsm.i)
+  #  ndim <- one_var_dim
   ndim <- length(which(echam$names=='temp2'))
   nvar <- floor(nrow(echam$data)/ndim)
 #  nvar <- numvar
@@ -3470,7 +3533,7 @@ compute_giorgi_H_numvar <- function(giorgi, echam, numvar){
     weights}, y=echam))
   # stitch together to form the full giorgi_H
   nreg <- nrow(giorgi.arr)
-  ndim <- length(echam$lsm.i)
+  ndim <- one_var_dim
   #  nvar <- floor(nrow(echam$data)/ndim)
   nvar <- numvar
   H.giorgi <- array(0, c(nreg*nvar, nrow(echam$data)))
@@ -4569,9 +4632,9 @@ getgridboxnum <- function(stat, echam) {
 #      print("mtmp > 0")
       m[i] <- mtmp
       try(if (stat$names[i]=="precip") {
-        m[i] <- m[i]+length(echam$lsm.i)
+        m[i] <- m[i]+one_var_dim
       } else if (stat$names[i]=="slp") {
-        m[i] <- m[i]+(2*length(echam$lsm.i))
+        m[i] <- m[i]+(2*one_var_dim)
       },silent = T)
     } else { m[i] <- NA }
   }
@@ -5199,7 +5262,7 @@ read_pdsi <- function(filehead, path=echpath, xlim=c(-180,180), ylim=c(-90,90), 
 
 
 
-read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,90), timlim=c(1980, 2000), small=F, landonly=F){
+read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,90), timlim=c(1980, 2000), small=F, landonly=F,calc_ensmean=FALSE){ #if calc_ensmean=T then it calculates the ensmean
   
   # read in the land-sea mask of echam
   # mask out sea grid boxes (no variability)
@@ -5256,7 +5319,7 @@ read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,
     ti <- which(tim >= timlim[1] & tim < (timlim[2]+1))
     outdata <- NULL
     names <- NULL
-    for (varname in c('temp2', 'precip', 'slp')){
+    for (varname in c('temp2', 'precip', 'slp','air','prate','hgt','omega','geopoth')){
       if (varname %in% names(nc$var)){
         if (length(nc$var[[varname]]$dim) == 3){
           if (length(ti)==1) {
@@ -5289,8 +5352,18 @@ read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,
           }
         }
         if (path == twentycrpath) {
-          if (varname == 'precip') data <- data * 3600 * 24 * 30
-          if (varname == 'slp') data <- data / 100
+          if (varname == 'precip'){
+            data <- data * 3600 * 24 * 30
+            print(paste("unit conversion for ",varname," done"))}
+          if (varname == 'slp'){
+            data <- data / 100
+            print(paste("unit conversion for ",varname," done"))}
+          if (varname == 'temp2'){
+            data <- data - 273.15
+            print(paste("unit conversion for ",varname," done"))}
+          if (varname == 'omega'){
+            data <- data/100
+            print(paste("unit conversion for ",varname," done"))}
         }
         # compute seasonal averages
         #dat <- array(data[,11:(ncol(data)-2)], c(nrow(data), 6, ncol(data)/6 - 2))
@@ -5303,6 +5376,8 @@ read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,
         names <- c(names, rep(varname, nrow(data)))
         #rm(data, dat)
       }
+      
+
     }
     time <- tim[ti]
     tmp[[which(files == f)]] <- outdata
@@ -5311,9 +5386,13 @@ read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,
     } else {  
       print(dim(outdata))
     }
-    if (f != files[length(files)]) ensmean <- ensmean + outdata
+    if (calc_ensmean==T) {
+     if (f != files[length(files)]){ ensmean <- ensmean + outdata }
+    }
   }
+  if (calc_ensmean==T) {
   ensmean <- ensmean/(length(tmp)) #-1) why -1 ???
+  }
   if (landonly) {
     if (length(ti)==1) {
       data <- list(data=unlist(tmp),
@@ -5331,13 +5410,13 @@ read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,
   } else {
     if (length(ti)==1) {
       data <- list(data=unlist(tmp),
-                   ensmean=ensmean, lon=rep(lon[loi], length(lai)),
+                   if(calc_ensmean){ensmean=ensmean}, lon=rep(lon[loi], length(lai)),
                    lat=rep(lat[lai], each=length(loi)), 
                    height=rep(-999,(length(loi)*length(lai))), 
                    lsm.i=rep(-999,(length(loi)*length(lai))), time=time, names=names) 
     } else {  
       data <- list(data=array(unlist(tmp), c(dim(tmp[[1]]), length(files))),
-                 ensmean=ensmean, lon=rep(lon[loi], length(lai)),
+                ensmean=ifelse(calc_ensmean,ensmean,NaN), lon=rep(lon[loi], length(lai)),
                  lat=rep(lat[lai], each=length(loi)), 
                  height=rep(-999,(length(loi)*length(lai))), 
                  lsm.i=rep(-999,(length(loi)*length(lai))), time=time, names=names)
@@ -5586,7 +5665,7 @@ calculate_climatology <- function(x,cyr,subtracted,added,source){
   
   ti=which(floor(x$time)>=(cyr-(subtracted)) & floor(x$time)<=(cyr+added))
   
-  if (source=="proxy"){    
+  if (source=="proxy"){
     tiv=which(floor(x$time)==cyr)
     sts=ti[1]
     ets=ti[length(ti)]
@@ -5598,14 +5677,22 @@ calculate_climatology <- function(x,cyr,subtracted,added,source){
   if (source=="inst"){
     x.clim = x
     x.clim$data=t(x$data)
-    if (cyr < 1636) {
-      y_start = agrep(paste0(1600,'.792'),as.character(x.clim$time))
+    if (added != 0 ) {
+      if (cyr < 1636) {
+        y_start = agrep(paste0(1600,'.792'),as.character(x.clim$time))
+      } else {
+        y_start =
+          agrep(paste0(cyr-subtracted,'.792'),as.character(x.clim$time))
+      }
+      if (cyr > 1970) {
+        y_end = grep(paste0(2005,'.708'),as.character(x.clim$time)) #
+        # 2012 should be changed to 2005, everywhere
+      } else {
+        y_end = grep(paste0(cyr+added,'.708'),as.character(x.clim$time))
+      }
     } else {
-      y_start = agrep(paste0(cyr-subtracted,'.792'),as.character(x.clim$time))
-    }
-    if (cyr > 1970) {
-      y_end =  grep(paste0(2005,'.708'),as.character(x.clim$time)) # 2012 should be changed to 2005, everywhere
-    } else {
+      y_start =
+        agrep(paste0(cyr-subtracted,'.792'),as.character(x.clim$time))
       y_end = grep(paste0(cyr+added,'.708'),as.character(x.clim$time))
     }
     x.clim$data = x.clim$data[,y_start:y_end]
@@ -5649,7 +5736,7 @@ screenstd <- function (x,cyr,source) { #sources: proxy/inst
   if (source=="inst"){
     
     x.clim<-calculate_climatology(x,cyr,36,35,source)
-    jecham.sd<-get("echam.sd")
+    echam.sd<-get("echam.sd")
     echam_clim_mon_ensmean <- get("echam_clim_mon_ensmean")
     
     gpos <- getgridboxnum(x,echam.sd)
@@ -5727,26 +5814,9 @@ screendistance <- function (echam.sd,varname) {
   return(var)
 }
 
-# change array to have 6 months in state vector for winter and summer
-# first winter starts in oct of syr
-# 6 mon stat vectors for oct-mar and apr and sep
-# works for echam format
-convert_to_sixmonstatevector <- function(x,cyr){
-  tmp21 <- array(x$data,c(dim(x$data)[1]*dim(x$data)[2],
-                          dim(x$data)[3]))
-  tmp22 <- tmp21[((9*dim(x$data)[1]+1):(dim(tmp21)[1]-(3*dim(x$data)[1]))),]
-  x$data <- array(tmp22,c(dim(tmp22)[1]/(((dim(x$data)[2]/12)-1)*2),
-                          (((dim(x$data)[2]/12)-1)*2),dim(tmp22)[2]))
-  tmp31 <- array(x$ensmean,c(dim(x$ensmean)[1]*dim(x$ensmean)[2]))
-  tmp32 <- tmp31[((9*dim(x$ensmean)[1]+1):(dim(tmp31)[1]-
-                                             (3*dim(x$ensmean)[1])))]
-  x$ensmean <- array(tmp32,c(dim(tmp32)[1]/(((dim(x$ensmean)[2]/12)-1)*2),
-                             (((dim(x$ensmean)[2]/12)-1)*2)))
-  x$time <- c(cyr,cyr+0.5)
-  return(x)
-}
 
-# takes realprox-data and converts it into a [x,1:2] matrix for the two seasons
+
+# takes realprox-data or echam and converts it into a [x,1:2] matrix for the two seasons oct-mar/apr-sept
 convert_to_2_seasons <- function(x,source){
   fsyr<-get("fsyr")
   feyr<-get("feyr")
@@ -5769,6 +5839,7 @@ convert_to_2_seasons <- function(x,source){
     x$data=x.allts$data[,sts:ets]
     x$time=x.allts$time[sts:ets]
     x$names=rep("prox",dim(x.allts$data)[1])
+    return(list(x=x,x.allts=x.allts))
   }
   if (source=="doc"){
     tmp1 <- array(t(x$data),c(dim(x$data)[1] *  dim(x$data)[2]))
@@ -5779,8 +5850,22 @@ convert_to_2_seasons <- function(x,source){
     x$lon <- rep(x$lon,6)
     x$lat <- rep(x$lat,6)
     x$des=rep('mon',nrow(x$data))
+    return(list(x=x))
   }
-  return(list(x=x,x.allts=x.allts))
+  if (source=="echam"){
+    tmp21 <- array(x$data,c(dim(x$data)[1]*dim(x$data)[2],
+                            dim(x$data)[3]))
+    tmp22 <- tmp21[((9*dim(x$data)[1]+1):(dim(tmp21)[1]-(3*dim(x$data)[1]))),]
+    x$data <- array(tmp22,c(dim(tmp22)[1]/(((dim(x$data)[2]/12)-1)*2),
+                            (((dim(x$data)[2]/12)-1)*2),dim(tmp22)[2]))
+    tmp31 <- array(x$ensmean,c(dim(x$ensmean)[1]*dim(x$ensmean)[2]))
+    tmp32 <- tmp31[((9*dim(x$ensmean)[1]+1):(dim(tmp31)[1]-
+                                               (3*dim(x$ensmean)[1])))]
+    x$ensmean <- array(tmp32,c(dim(tmp32)[1]/(((dim(x$ensmean)[2]/12)-1)*2),
+                               (((dim(x$ensmean)[2]/12)-1)*2)))
+    x$time <- c(cyr,cyr+0.5)
+    return(x)
+  }
 }
 
 

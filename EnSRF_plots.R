@@ -14,14 +14,63 @@
 #       calibrate$lat[which(calibrate$sour=="prox")],pch=1,col='red',cex=0.5)
 # points(analysis$lon[H.i[,1]],analysis$lat[H.i[,1]],col='blue',cex=0.5,pch=20) # nur die proxies sind in H.i
 
-figpath=paste0('../figures/',expname,'_',syr,'-',eyr,'/') #format(Sys.time(), "%Y%m%d_%H-%M_")
+
+rm(list=ls())
+
+syr=1930
+eyr=1960
+
+user <- system("echo $USER",intern=T)
+print(paste('User:',user))
+if (user=="veronika") {
+  # workdir('/scratch/veronika/rerun/r_code')
+  workdir ='/scratch3/veronika/reuse/reuse_git/' # where are the scripts from github
+} else if (user=="joerg") {
+  workdir='/scratch3/joerg/projects/reuse/reuse_git/'
+} else if (user=="lucaf") {
+  workdir='/scratch3/lucaf/reuse/reuse_git/'
+} else {
+  stop("Unknown user!")
+  
+}
+dataextdir='/mnt/climstor/giub/EKF400/'
+dataintdir=paste0(workdir,'../data/')
+setwd(workdir)
+
+source('EnSRF_switches.R')
+source('EnSRF_functions.R')
+
+## CHOOSE THE VALIDATION DATA SET IN SWITCHES (validation_set), PLOTS SCRIPT HAS TO BE RUN FOR VALIDATION SETS SEPARATELY
+if (every2grid) {
+  if (monthly_out) {
+    load(file=paste0("../data/image/",expname,"/prepplot_",validation_set,"_vali_calc_vali_stat_image_",
+                           syr,"-",eyr,"_monthly_2ndgrid.Rdata"))  
+  } else {
+    load(file=paste0("../data/image/",expname,"/prepplot_",validation_set,"_vali_calc_vali_stat_image_",
+                           syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
+  }  
+} else {
+  if (monthly_out) {
+    load(file=paste("../data/image/",expname,"/prepplot_",validation_set,"_vali_calc_vali_stat_image_",
+                          syr,"-",eyr,"_monthly.Rdata",sep=""))
+  } else {
+    load(file=paste("../data/image/",expname,"/prepplot_",validation_set,"_vali_calc_vali_stat_image_",
+                          syr,"-",eyr,"_seasonal.Rdata",sep=""))
+  }
+}
+
+source('EnSRF_switches.R') ## validation set might be saved differently in loaded file, therefore run switches again
+
+figpath=paste0('../figures/',expname,'_',syr,'-',eyr) #format(Sys.time(), "%Y%m%d_%H-%M_")
+dir.create(figpath)
+figpath=paste0(figpath,'/',validation_set)
 dir.create(figpath)
 
 pnames <- paste(c('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'), ')', sep='')
 data.dim <- dim(echam$data)[c(1,2,2,3)]
-data.dim[2:3] <- c(s,data.dim[3]/s)
-ens.dim <- c(nrow(echam$ensmean), s, ncol(echam$ensmean)/s)
-
+data.dim[2:3] <- c(s.plot,data.dim[3]/s.plot)
+ens.dim <- c(nrow(echam$ensmean), s.plot, ncol(echam$ensmean)/s.plot)
+print(paste0("monthly_out: ",monthly_out))
 #####################################################################################
 #if (recalc){
 #  source('EnSRF_data.R')
@@ -749,6 +798,13 @@ dev.off()
 
 corr.tot <- echam
 corr.tot$data <- array(cbind(corr.ech$ensmean,corr$ensmean),c(dim(corr$ensmean)[1],1,dim(corr$ensmean)[2]*2)) #[,,1:2,drop=F]
+## it doesn't make sense to put $ensmean into $data
+## and the choosing type='data'
+## different approach: put $ensmean into $ensmean and 
+## choose type='ensmean'
+corr.tot$ensmean <- array(cbind(corr.ech$ensmean,corr$ensmean),c(dim(corr$ensmean)[1],dim(corr$ensmean)[2]*2)) #[,,1:2,drop=F]
+
+
 #corr.ech <- corr               # analysis vs. validate
 #corr.ech$Analysis <- corr.ech  # echam vs. validate
 #names(corr.ech) <- c('echam', 'analysis_localized')
@@ -757,28 +813,42 @@ corr.tot$data <- array(cbind(corr.ech$ensmean,corr$ensmean),c(dim(corr$ensmean)[
 #corr.tot$data <- array(corr.tot$data[,,5:8], c(nrow(corr[[1]]$ensmean), 1, 4))
 #corr.tot$data <- array(corr.tot$data[,,], c(nrow(corr[[1]]$ensmean), 1, 4))
 
-pdf(paste(figpath,'corr_echam_anal-cru_temp.pdf',sep='/'), width=9, height=6, paper='special')
+# pdf(paste(figpath,'corr_echam_anal-cru_temp.pdf',sep='/'), width=9, height=5, paper='special')
 #pdf(paste(figpath,'corr_echam_anal-cru_temp.pdf',sep='/'), width=9, height=12, paper='special')
-layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-#layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
-par(oma=c(0,0,0,0))
+# layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+
+# layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
+# par(oma=c(0,0,0,0))
 levs <- c(-1,seq(-0.9,0.9,0.2),1)
 #levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.1,0.2,0.3, 0.5, 0.7, 1)
-plot_echam(corr.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat,add=TRUE)
+
+  if (monthly_out) {
+  plot_echam4(corr.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname='corr_echam_anal-cru_temp_summer.pdf', paper='special')
+  plot_echam4(corr.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname='corr_echam_anal-cru_temp_winter.pdf', paper='special')
+  } else {
+  plot_echam4(corr.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname='TEST_corr_echam_anal-cru_temp.pdf', paper='special')
+  }
+
 #plot_echam(corr.tot, cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs, st.col=1, stations=plstat,add=TRUE)
-dev.off()
+# dev.off()
 #    \caption{temp corr echam ens mean with cru validation (top) and analysis ens mean with cru validation (bottom). Winter left, summer right.}
 
 
 ################################################################################
 # Fig. 4b: average precip corr echam and analysis vs validation wrt ens. mean 
 
-pdf(paste(figpath,'corr_echam_anal-cru_precip.pdf',sep='/'), width=9, height=6, paper='special')
-layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-par(oma=c(0,0,0,0))
+# pdf(paste(figpath,'corr_echam_anal-cru_precip.pdf',sep='/'), width=9, height=6, paper='special')
+# layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+# par(oma=c(0,0,0,0))
 levs <- c(-1,seq(-0.9,0.9,0.2),1)
-plot_echam(corr.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat, add=TRUE)
-dev.off()
+
+if (monthly_out){
+plot_echam4(corr.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname='corr_echam_anal-cru_precip_summer.pdf', paper='special')
+plot_echam4(corr.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname='corr_echam_anal-cru_precip_winter.pdf', paper='special')
+}else{
+  plot_echam4(corr.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname='corr_echam_anal-cru_precip.pdf', paper='special')
+}
+# dev.off()
 #    \caption{precip corr echam ens mean with cru validation (top) and analysis ens mean with cru validation (bottom). Winter left, summer right.}
 
 
@@ -857,6 +927,17 @@ RE.tot <- echam
 #RE <- RE.bkp
 #anomalies and only 1 analysis with distance weighting
 RE.tot$data <- array(RE.anom$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$ensmean)[2]))
+RE.tot$ensmean <- array(RE.anom$ensmean,c(dim(RE$ensmean)[1], dim(RE$ensmean)[2]))
+
+levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+
+if (monthly_out){
+plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname='re_anom_echam_anal-cru_temp_summer.pdf', paper='special')
+plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname='re_anom_echam_anal-cru_temp_winter.pdf', paper='special')
+}else{
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname='re_anom_echam_anal-cru_temp.pdf', paper='special')
+}
+
 #RE.tot$data <- array(cbind(RE.anom$ensmean,RE.ech.clim.anom$ensmean), 
 #                     c(dim(RE$ensmean)[1], 1, (dim(RE$ensmean)[2]*2)))
 #RE.tot$data <- array((rmse.anom$ensmean-rmse.clim.anom$ensmean), 
@@ -867,39 +948,46 @@ RE.tot$data <- array(RE.anom$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$ensmean)[2]
 #}
 #RE.tot$data <- array(sapply(RE, function(x) x$ensmean), c(nrow(RE[[1]]$ensmean), 1, ncol(RE[[1]]$ensmean)*length(RE)))
 
-# only pseudoproxies including noise 
-#RE.tot$data <- array(RE.tot$data[,,5:8], c(nrow(RE[[1]]$ensmean), 1, 4)) 
-# instrumental data (only 4 fields (winter,summer,w/o and w localisation) because no noise added)
-#RE.tot$data <- array(RE.tot$data[,,1:4], c(nrow(RE[[1]]$ensmean), 1, 4))
-pdf(paste(figpath,'re_anom_echam_anal-cru_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
-#pdf(paste(figpath,'re_clim_echam-cru_temp.pdf',sep='/'), width=9, height=6, paper='special')
-#pdf(paste(figpath,'re_echam_anal-cru_temp_12mon.pdf',sep='/'), width=9, height=12, paper='special')
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-#layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-#layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
-#levs <- c(-Inf,seq(-1,1,0.2),Inf)
-plot_echam(RE.tot, cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, 
-           stations=calibrate,add=TRUE)
-#plot_echam(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=1, stations=plstat,add=TRUE)
-dev.off()
-#    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
+# # only pseudoproxies including noise
+# #RE.tot$data <- array(RE.tot$data[,,5:8], c(nrow(RE[[1]]$ensmean), 1, 4))
+# # instrumental data (only 4 fields (winter,summer,w/o and w localisation) because no noise added)
+# #RE.tot$data <- array(RE.tot$data[,,1:4], c(nrow(RE[[1]]$ensmean), 1, 4))
+# pdf(paste(figpath,'re_anom_echam_anal-cru_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
+# #pdf(paste(figpath,'re_clim_echam-cru_temp.pdf',sep='/'), width=9, height=6, paper='special')
+# #pdf(paste(figpath,'re_echam_anal-cru_temp_12mon.pdf',sep='/'), width=9, height=12, paper='special')
+# layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+# #layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+# #layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
+# par(oma=c(0,0,0,0))
+# levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+# #levs <- c(-Inf,seq(-1,1,0.2),Inf)
+# plot_echam(RE.tot, cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL,
+#            stations=calibrate,add=TRUE)
+# #plot_echam(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=1, stations=plstat,add=TRUE)
+# dev.off()
+# #    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
 
 
 
 ################################################################################
 # Fig. 6b: average precip RE wrt ens. mean 
 #<<label=rmse, echo=FALSE, fig=TRUE, width=8, height=9, results=hide, eps=FALSE>>=
+if (monthly_out){
+plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname='re_anom_echam_anal-cru_precip_summer.pdf', paper='special')
+plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname='re_anom_echam_anal-cru_precip_winter.pdf', paper='special')
+}else{
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname='re_anom_echam_anal-cru_precip.pdf', paper='special')
+}
 
-pdf(paste(figpath,'re_anom_echam_anal-cru_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-#layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
-plot_echam(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat,add=TRUE)
-dev.off()
-#    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
+# 
+# pdf(paste(figpath,'re_anom_echam_anal-cru_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
+# layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+# #layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+# par(oma=c(0,0,0,0))
+# levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
+# plot_echam(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat,add=TRUE)
+# dev.off()
+# #    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
 
 
 ################################################################################
@@ -927,6 +1015,16 @@ RE.tot <- echam
 #RE <- RE.bkp
 #anomalies and only 1 analysis with distance weighting
 RE.tot$data <- array(RE$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$ensmean)[2]))
+RE.tot$ensmean <- array(RE$ensmean,c(dim(RE$ensmean)[1], dim(RE$ensmean)[2]))
+
+
+levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+if (monthly_out){
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname='re_echam_anal-cru_temp_summer.pdf', paper='special')
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname='re_echam_anal-cru_temp_winter.pdf', paper='special')
+}else{
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname='re_echam_anal-cru_temp.pdf', paper='special')
+}
 #RE.tot$data <- array(cbind(RE.anom$ensmean,RE.ech.clim.anom$ensmean), 
 #                     c(dim(RE$ensmean)[1], 1, (dim(RE$ensmean)[2]*2)))
 #RE.tot$data <- array((rmse.anom$ensmean-rmse.clim.anom$ensmean), 
@@ -937,24 +1035,24 @@ RE.tot$data <- array(RE$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$ensmean)[2]))
 #}
 #RE.tot$data <- array(sapply(RE, function(x) x$ensmean), c(nrow(RE[[1]]$ensmean), 1, ncol(RE[[1]]$ensmean)*length(RE)))
 
-# only pseudoproxies including noise 
-#RE.tot$data <- array(RE.tot$data[,,5:8], c(nrow(RE[[1]]$ensmean), 1, 4)) 
-# instrumental data (only 4 fields (winter,summer,w/o and w localisation) because no noise added)
-#RE.tot$data <- array(RE.tot$data[,,1:4], c(nrow(RE[[1]]$ensmean), 1, 4))
-pdf(paste(figpath,'re_echam_anal-cru_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
-#pdf(paste(figpath,'re_clim_echam-cru_temp.pdf',sep='/'), width=9, height=6, paper='special')
-#pdf(paste(figpath,'re_echam_anal-cru_temp_12mon.pdf',sep='/'), width=9, height=12, paper='special')
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-#layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-#layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
-#levs <- c(-Inf,seq(-1,1,0.2),Inf)
-plot_echam(RE.tot, cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, 
-           stations=calibrate,add=TRUE)
-#plot_echam(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=1, stations=plstat,add=TRUE)
-dev.off()
-#    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
+# # only pseudoproxies including noise 
+# #RE.tot$data <- array(RE.tot$data[,,5:8], c(nrow(RE[[1]]$ensmean), 1, 4)) 
+# # instrumental data (only 4 fields (winter,summer,w/o and w localisation) because no noise added)
+# #RE.tot$data <- array(RE.tot$data[,,1:4], c(nrow(RE[[1]]$ensmean), 1, 4))
+# pdf(paste(figpath,'re_echam_anal-cru_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
+# #pdf(paste(figpath,'re_clim_echam-cru_temp.pdf',sep='/'), width=9, height=6, paper='special')
+# #pdf(paste(figpath,'re_echam_anal-cru_temp_12mon.pdf',sep='/'), width=9, height=12, paper='special')
+# layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+# #layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+# #layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
+# par(oma=c(0,0,0,0))
+# levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+# #levs <- c(-Inf,seq(-1,1,0.2),Inf)
+# plot_echam(RE.tot, cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, 
+#            stations=calibrate,add=TRUE)
+# #plot_echam(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=1, stations=plstat,add=TRUE)
+# dev.off()
+# #    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
 
 
 
@@ -962,14 +1060,22 @@ dev.off()
 # Fig. 6b: average precip RE wrt ens. mean 
 #<<label=rmse, echo=FALSE, fig=TRUE, width=8, height=9, results=hide, eps=FALSE>>=
 
-pdf(paste(figpath,'re_echam_anal-cru_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-#layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
-plot_echam(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat,add=TRUE)
-dev.off()
-#    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
+if (monthly_out){
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname='re_echam_anal-cru_precip_summer.pdf', paper='special')
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname='re_echam_anal-cru_precip_winter.pdf', paper='special')
+}else{
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname='re_echam_anal-cru_precip.pdf', paper='special')
+}
+# 
+# 
+# pdf(paste(figpath,'re_echam_anal-cru_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
+# layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+# #layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+# par(oma=c(0,0,0,0))
+# levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
+# plot_echam(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat,add=TRUE)
+# dev.off()
+# #    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
 
 
 ################################################################################
@@ -996,6 +1102,17 @@ RE.tot <- echam
 #RE <- RE.bkp
 #anomalies and only 1 analysis with distance weighting
 RE.tot$data <- array(RE.echam.clim$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$ensmean)[2]))
+RE.tot$ensmean <- array(RE.echam.clim$ensmean,c(dim(RE$ensmean)[1],dim(RE$ensmean)[2]))
+
+
+levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+
+if (monthly_out){
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname='re_clim_echam_anal-cru_temp_summer.pdf', paper='special')
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname='re_clim_echam_anal-cru_temp_winter.pdf', paper='special')
+}else{
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname='re_clim_echam_anal-cru_temp.pdf', paper='special')
+}
 #RE.tot$data <- array(cbind(RE.anom$ensmean,RE.ech.clim.anom$ensmean), 
 #                     c(dim(RE$ensmean)[1], 1, (dim(RE$ensmean)[2]*2)))
 #RE.tot$data <- array((rmse.anom$ensmean-rmse.clim.anom$ensmean), 
@@ -1010,20 +1127,20 @@ RE.tot$data <- array(RE.echam.clim$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$ensme
 #RE.tot$data <- array(RE.tot$data[,,5:8], c(nrow(RE[[1]]$ensmean), 1, 4)) 
 # instrumental data (only 4 fields (winter,summer,w/o and w localisation) because no noise added)
 #RE.tot$data <- array(RE.tot$data[,,1:4], c(nrow(RE[[1]]$ensmean), 1, 4))
-pdf(paste(figpath,'re_clim_echam_anal-cru_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
-#pdf(paste(figpath,'re_clim_echam-cru_temp.pdf',sep='/'), width=9, height=6, paper='special')
-#pdf(paste(figpath,'re_echam_anal-cru_temp_12mon.pdf',sep='/'), width=9, height=12, paper='special')
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-#layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-#layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
-#levs <- c(-Inf,seq(-1,1,0.2),Inf)
-plot_echam(RE.tot, cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, 
-           stations=calibrate,add=TRUE)
-#plot_echam(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=1, stations=plstat,add=TRUE)
-dev.off()
-#    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
+# pdf(paste(figpath,'re_clim_echam_anal-cru_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
+# #pdf(paste(figpath,'re_clim_echam-cru_temp.pdf',sep='/'), width=9, height=6, paper='special')
+# #pdf(paste(figpath,'re_echam_anal-cru_temp_12mon.pdf',sep='/'), width=9, height=12, paper='special')
+# layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+# #layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+# #layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
+# par(oma=c(0,0,0,0))
+# levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+# #levs <- c(-Inf,seq(-1,1,0.2),Inf)
+# plot_echam(RE.tot, cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, 
+#            stations=calibrate,add=TRUE)
+# #plot_echam(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=1, stations=plstat,add=TRUE)
+# dev.off()
+# #    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
 
 
 
@@ -1031,13 +1148,21 @@ dev.off()
 # Fig. 6b: average precip RE wrt ens. mean 
 #<<label=rmse, echo=FALSE, fig=TRUE, width=8, height=9, results=hide, eps=FALSE>>=
 
-pdf(paste(figpath,'re_clim_echam_anal-cru_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-#layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
-plot_echam(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat,add=TRUE)
-dev.off()
+if (monthly_out){
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname='re_clim_echam_anal-cru_precip_summer.pdf', paper='special')
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname='re_clim_echam_anal-cru_precip_winter.pdf', paper='special')
+}else{
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname='re_clim_echam_anal-cru_precip.pdf', paper='special')
+}
+
+# 
+# pdf(paste(figpath,'re_clim_echam_anal-cru_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
+# layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+# #layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+# par(oma=c(0,0,0,0))
+# levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
+# plot_echam(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat,add=TRUE)
+# dev.off()
 #    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
 
 
@@ -1059,6 +1184,16 @@ RE.tot <- echam
 #RE <- RE.bkp
 #anomalies and only 1 analysis with distance weighting
 RE.tot$data <- array(RE.echam.clim.anom$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$ensmean)[2]))
+RE.tot$ensmean <- array(RE.echam.clim.anom$ensmean,c(dim(RE$ensmean)[1], dim(RE$ensmean)[2]))
+
+levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+
+if (monthly_out){
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname='re_clim_anom_echam_anal-cru_temp_summer.pdf', paper='special')
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname='re_clim_anom_echam_anal-cru_temp_winter.pdf', paper='special')
+}else{
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname='re_clim_anom_echam_anal-cru_temp.pdf', paper='special')
+}
 #RE.tot$data <- array(cbind(RE.anom$ensmean,RE.ech.clim.anom$ensmean), 
 #                     c(dim(RE$ensmean)[1], 1, (dim(RE$ensmean)[2]*2)))
 #RE.tot$data <- array((rmse.anom$ensmean-rmse.clim.anom$ensmean), 
@@ -1069,24 +1204,24 @@ RE.tot$data <- array(RE.echam.clim.anom$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$
 #}
 #RE.tot$data <- array(sapply(RE, function(x) x$ensmean), c(nrow(RE[[1]]$ensmean), 1, ncol(RE[[1]]$ensmean)*length(RE)))
 
-# only pseudoproxies including noise 
-#RE.tot$data <- array(RE.tot$data[,,5:8], c(nrow(RE[[1]]$ensmean), 1, 4)) 
-# instrumental data (only 4 fields (winter,summer,w/o and w localisation) because no noise added)
-#RE.tot$data <- array(RE.tot$data[,,1:4], c(nrow(RE[[1]]$ensmean), 1, 4))
-pdf(paste(figpath,'re_clim_anom_echam_anal-cru_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
-#pdf(paste(figpath,'re_clim_echam-cru_temp.pdf',sep='/'), width=9, height=6, paper='special')
-#pdf(paste(figpath,'re_echam_anal-cru_temp_12mon.pdf',sep='/'), width=9, height=12, paper='special')
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-#layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-#layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
-#levs <- c(-Inf,seq(-1,1,0.2),Inf)
-plot_echam(RE.tot, cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, 
-           stations=calibrate,add=TRUE)
-#plot_echam(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=1, stations=plstat,add=TRUE)
-dev.off()
-#    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
+# # only pseudoproxies including noise 
+# #RE.tot$data <- array(RE.tot$data[,,5:8], c(nrow(RE[[1]]$ensmean), 1, 4)) 
+# # instrumental data (only 4 fields (winter,summer,w/o and w localisation) because no noise added)
+# #RE.tot$data <- array(RE.tot$data[,,1:4], c(nrow(RE[[1]]$ensmean), 1, 4))
+# pdf(paste(figpath,'re_clim_anom_echam_anal-cru_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
+# #pdf(paste(figpath,'re_clim_echam-cru_temp.pdf',sep='/'), width=9, height=6, paper='special')
+# #pdf(paste(figpath,'re_echam_anal-cru_temp_12mon.pdf',sep='/'), width=9, height=12, paper='special')
+# layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+# #layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+# #layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
+# par(oma=c(0,0,0,0))
+# levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+# #levs <- c(-Inf,seq(-1,1,0.2),Inf)
+# plot_echam(RE.tot, cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, 
+#            stations=calibrate,add=TRUE)
+# #plot_echam(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=1, stations=plstat,add=TRUE)
+# dev.off()
+# #    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
 
 
 
@@ -1094,14 +1229,22 @@ dev.off()
 # Fig. 6b: average precip RE wrt ens. mean 
 #<<label=rmse, echo=FALSE, fig=TRUE, width=8, height=9, results=hide, eps=FALSE>>=
 
-pdf(paste(figpath,'re_clim_anom_echam_anal-cru_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-#layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
-plot_echam(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat,add=TRUE)
-dev.off()
-#    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
+if (monthly_out){
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname='re_clim_anom_echam_anal-cru_precip_summer.pdf', paper='special')
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname='re_clim_anom_echam_anal-cru_precip_winter.pdf', paper='special')
+}else{
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname='re_clim_anom_echam_anal-cru_precip.pdf', paper='special')
+}
+
+# 
+# pdf(paste(figpath,'re_clim_anom_echam_anal-cru_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
+# layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+# #layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+# par(oma=c(0,0,0,0))
+# levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
+# plot_echam(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat,add=TRUE)
+# dev.off()
+# #    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
 
 
 ################################################################################
@@ -1700,153 +1843,32 @@ if (plot_dweights) {
 # ################################################################################
 # # Fig. 10: Continuous Ranked Probability Score (CRPS)
 # pdf(paste(figpath,'CRPS_new.pdf',sep='/'), width=9, height=6, paper='special')
-# layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-# par(mfrow=c(2, 2))
-# for (s in 1:2) { ## if s==1 then crps is crps.ana which is the score of the analysis, if s==2 crps is the difference 
-#   if (s==1) {    ## in score of echam and analysis. It should be positive. 
-#     crps <- crps.ana[,seq(2,ncol(crps.ana),2)] ## the one that's updated (rem: proxies only half a year)
-#     crps[which(is.na(crps))]<-0
-#     title<-"analysis"
-#   } else { 
-#     crps <- crps.ech[,seq(2,ncol(crps.ech),2)]-crps.ana[,seq(2,ncol(crps.ana),2)] ## difference of score between updated and not, should be positive
-#     if (PAGES){
-#       crps <- crps.ech-crps.ana
-#     }
-#     crps[which(is.na(crps))]<-0
-#     title<-"Score Diff: CCC400 - EKF400"
-#   }
-#   crps.tot<-data.frame(averaged=apply(crps,1,mean))
-#   crps.tot$lon<-echam$lon
-#   crps.tot$lat<-echam$lat
-#   crps.tot$names<-echam$names
-#   
-#   
-#   
-#   
-#   crps.plot<-crps.tot[which(crps.tot$names=="temp2"),]
-#   if (s==1){
-#     lev <- pretty(crps.plot$averaged,12) 
-#     br <- length(lev)
-#     colpal <- two.colors(n=br,start="white",middle="orange", end="red", alpha=1.0)
-#   }else{
-#     # lev <- c(-0.05,-0.04,-0.03,-0.02,-0.01,0.03,0.06,0.09,0.12,0.15)
-#     lev <- pretty(crps.plot$averaged,12) # for PAGES and NTREND
-#     br <- length(lev)
-#     colpal <- two.colors(n=br,start="blue",middle="white", end="red", alpha=1.0)
-#   }
-#   
-#   datcol <- colpal[as.numeric(cut(crps.plot$averaged,breaks=lev))] 
-#   datcol[which(crps.plot$averaged>(-0.02)&crps.plot$averaged<0.02)]<-"#FFFFFF" #NTREND
-#   
-#   # png(filename=paste0(plotintdir,expname,'/map_DOC_month_',m,'.png'),width=1400,height = 800)
-#   plot(crps.plot$lon, crps.plot$lat,
-#        xlim=c(-180,180),ylim=c(-90,90),   
-#        cex=1.2,                   # cex=point size~precip
-#        pch=15,                    # point type: 15 is square with possible color filling
-#        col=datcol[which(!is.na(crps.plot$averaged))],
-#        xlab="Longitude",ylab="Latitude",main=paste0("Temperature, ",title))# point fill color
-#   map("world",interior=F,add=T,ty='l',col='black',xlim=c(-180,180),ylim=c(-90,90))
-#   legend("bottomleft", inset=0.01, as.character(lev),fill=colpal,bty="o",
-#          bg="white",box.col="white",box.lwd=0,cex=0.7)
-#   
-#   crps.plot<-crps.tot[which(crps.tot$names=="precip"),]
-#   if (s==1){
-#     lev <- pretty(crps.plot$averaged,12) 
-#     br <- length(lev)
-#     colpal <- two.colors(n=br,start="white",middle="orange", end="red", alpha=1.0)
-#   }else{
-#     # lev <- c(-0.5,-0.4,-0.3,-0.2,-0.1,0.3,0.6,0.9,1.2,1.5) # for normal proxies
-#     # lev <- c(-2.2,-2,-1.8,-1.6,-1.4,-1.2,-1,-0.8,-0.6,-0.4,-0.2,0,0.2,0.4,0.6,0.8,1,1.2,1.6,1.8,2,2.2) # for PAGES
-#     lev <- c(-1.2,-1,-0.8,-0.6,-0.4,-0.2,0.2,0.4,0.6,0.8,1,1.2) #NTREND
-#     br <- length(lev)
-#     colpal <- two.colors(n=br,start="blue",middle="white", end="red", alpha=1.0)
-#   }
-#   datcol <- colpal[as.numeric(cut(crps.plot$averaged,breaks=lev))] 
-#   datcol[which(crps.plot$averaged>(-0.2)&crps.plot$averaged<0.2)]<-"#FFFFFF" #NTREND
-#   # png(filename=paste0(plotintdir,expname,'/map_DOC_month_',m,'.png'),width=1400,height = 800)
-#   plot(crps.plot$lon, crps.plot$lat,
-#        xlim=c(-180,180),ylim=c(-90,90),   
-#        cex=1.2,                   # cex=point size~precip
-#        pch=15,                    # point type: 15 is square with possible color filling
-#        col=datcol[which(!is.na(crps.plot$averaged))],
-#        xlab="Longitude",ylab="Latitude",main=paste0("Precip, ",title))# point fill color
-#   map("world",interior=F,add=T,ty='l',col='black',xlim=c(-180,180),ylim=c(-90,90))
-#   legend("bottomleft", inset=0.01, as.character(lev),fill=colpal,bty="o",
-#          bg="white",box.col="white",box.lwd=0,cex=0.7)
-#   # dev.off()
-#   
-# }
-# dev.off()
-# par(mfrow=c(1, 1))
 
-
-
-### plot CRPS with plot_echam Temp
-
-
-crps <- echam
-
-crps$data<-array(cbind(crps.ana.winter,crps.ana.summer),c(dim(echam$ensmean)[1], 1, 2))
-
-pdf(paste(figpath,'crps.ana.clim_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
-
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
-
-plot_echam(crps, cex.pt=1.5, names=pnames[1:dim(crps$data)[3]], lev=levs, st.col=NULL, 
-           stations=calibrate,add=TRUE)
-
-dev.off()
-
-### plot CRPS with plot_echam Precip
-
-pdf(paste(figpath,'crps.ana.clim_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
-
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
-
-plot_echam(crps, varname='precip', cex.pt=1.5, names=pnames[1:dim(crps$data)[3]], lev=levs, st.col=NULL, 
-           stations=calibrate,add=TRUE)
-
-dev.off()
 
 ### plot CRPS score difference ech-ana (positive values are good) with plot_echam: Temp
 
-crps <- echam
+crps <- crps.ech-crps.ana
+crps.tot <- echam
+crps.tot$ensmean <- crps
+
+levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.01,0.02,0.04,0.08,0.1,Inf)
+
+if (monthly_out){
+plot_echam4(crps.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname='crps_anom_echam_anal-cru_temp_summer.pdf', paper='special')
+plot_echam4(crps.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname='crps_anom_echam_anal-cru_temp_winter.pdf', paper='special')
+}else{
+plot_echam4(crps.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname='crps_anom_echam_anal-cru_temp.pdf', paper='special')
+}
 
 
-crps_ech_ana.winter <- crps.ech.winter-crps.ana.winter
-crps_ech_ana.summer <- crps.ech.summer-crps.ana.summer
 
-
-crps$data<-array(cbind(crps_ech_ana.winter,crps_ech_ana.summer),c(dim(echam$ensmean)[1], 1, 2))
-
-pdf(paste(figpath,'crps.clim_ech-ana_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
-
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.01,0.02,0.04,0.08,0.1,0.12)
-
-plot_echam(crps, cex.pt=1.5, names=pnames[1:dim(crps$data)[3]], lev=levs, st.col=NULL, 
-           stations=calibrate,add=TRUE)
-
-dev.off()
 
 ### plot CRPS score difference ech-ana (positive values are good) with plot_echam: Precip
 
-pdf(paste(figpath,'crps.clim_ech-ana_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
-
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
-
-plot_echam(crps,varname="precip", cex.pt=1.5, names=pnames[1:dim(crps$data)[3]], lev=levs, st.col=NULL, 
-           stations=calibrate,add=TRUE)
-
-dev.off()
+levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,Inf)
+if (monthly_out) {
+plot_echam4(crps.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname='crps_anom_echam_anal-cru_precip_summer.pdf', paper='special')
+plot_echam4(crps.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname='crps_anom_echam_anal-cru_precip_winter.pdf', paper='special')
+}else{
+  plot_echam4(crps.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname='crps_anom_echam_anal-cru_precip.pdf', paper='special')
+}

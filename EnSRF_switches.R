@@ -271,8 +271,8 @@ reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=F            # calc on land only
 fasttest=F             # use even less data
-tps_only=T             # only use temp, precip and slp in state vector, remove other vars
-no_stream=F            # all echam vars but stream function as there is problem with 
+tps_only=F             # only use temp, precip and slp in state vector, remove other vars (no_stream is set automatically)
+
 #                       # 5/9 levels, which are in lat dimension before and after 1880
 loo=F                  # leave-one-out validation 
 if (loo) {tps_only=T;no_stream=F}  # reduce state vector for faster validation
@@ -286,11 +286,6 @@ no_forc_big_ens=F      # use all years as one big ensemble regardless of forcing
 #  anom_reload=F
 #  anom_save=F}
 check_assimdata=T      # screen assimilation data before using it
-
-if (no_stream & tps_only) {
-  tps_only = F
-  print('ACHTUNG: tps_only was set to FALSE')
-}
 
 
 # other options

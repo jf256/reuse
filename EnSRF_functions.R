@@ -21,6 +21,8 @@ ntrendpath = '/scratch3/veronika/reuse/'
 schweingrpath <- paste0(dataextdir,'assimil_data/proxies/schweingr/')
 nceppath <- paste0(dataintdir,'reanalysis/ncep/')
 twentycrpath <- paste0(workdir,'../comparison_data/20cr/')
+indicespath <- paste0(dataextdir,'vali_data/indices/')
+
 
 # install.packages("akima")
 # install.packages("maps")
@@ -5586,7 +5588,7 @@ calculate_climatology <- function(x,cyr,subtracted,added,source){
   
   ti=which(floor(x$time)>=(cyr-(subtracted)) & floor(x$time)<=(cyr+added))
   
-  if (source=="proxy"){    
+  if (source=="proxy"){
     tiv=which(floor(x$time)==cyr)
     sts=ti[1]
     ets=ti[length(ti)]
@@ -5598,14 +5600,22 @@ calculate_climatology <- function(x,cyr,subtracted,added,source){
   if (source=="inst"){
     x.clim = x
     x.clim$data=t(x$data)
-    if (cyr < 1636) {
-      y_start = agrep(paste0(1600,'.792'),as.character(x.clim$time))
+    if (added != 0 ) {
+      if (cyr < 1636) {
+        y_start = agrep(paste0(1600,'.792'),as.character(x.clim$time))
+      } else {
+        y_start =
+          agrep(paste0(cyr-subtracted,'.792'),as.character(x.clim$time))
+      }
+      if (cyr > 1970) {
+        y_end = grep(paste0(2005,'.708'),as.character(x.clim$time)) #
+        # 2012 should be changed to 2005, everywhere
+      } else {
+        y_end = grep(paste0(cyr+added,'.708'),as.character(x.clim$time))
+      }
     } else {
-      y_start = agrep(paste0(cyr-subtracted,'.792'),as.character(x.clim$time))
-    }
-    if (cyr > 1970) {
-      y_end =  grep(paste0(2005,'.708'),as.character(x.clim$time)) # 2012 should be changed to 2005, everywhere
-    } else {
+      y_start =
+        agrep(paste0(cyr-subtracted,'.792'),as.character(x.clim$time))
       y_end = grep(paste0(cyr+added,'.708'),as.character(x.clim$time))
     }
     x.clim$data = x.clim$data[,y_start:y_end]
@@ -5791,8 +5801,16 @@ convert_to_monthly <- function(dataset) {
   tmptime <-  get("tmptime")
   season<-get("season")
   #reshape dataset
-  dataset$data <- array(dataset$data, c((dim(dataset$data)[1]/6), dim(dataset$data)[2]*6, dim(dataset$data)[3]))
+  
+  if (length(dim(dataset$data))==3){ 
+    dataset$data <- array(dataset$data, c((dim(dataset$data)[1]/6), dim(dataset$data)[2]*6, dim(dataset$data)[3]))
+  }
+  else{ #validate and calibrate do not have multiple ensemble members (one dim less)
+    dataset$data <- array(dataset$data, c((dim(dataset$data)[1]/6), dim(dataset$data)[2]*6))  
+  }
+  if ("ensmean" %in% names(dataset)){  #some datasets do not have ensmean
   dataset$ensmean <- array(dataset$ensmean, c((dim(dataset$ensmean)[1]/6), dim(dataset$ensmean)[2]*6))
+  }
   dataset$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
   dataset$names <- dataset$names[1:dim(dataset$data)[1]]
   dataset$lon <- dataset$lon[1:(dim(dataset$data)[1])] #/length(unique(dataset$names)))]

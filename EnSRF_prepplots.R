@@ -13,8 +13,8 @@ rm(list=ls())
 #}
 
 # enter syr ane eyr manually
-syr=1903 #1902 #1941
-eyr=1905 #2003 #1970
+syr=1930 #1902 #1941
+eyr=1935 #2003 #1970
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
 args <- commandArgs(TRUE)
@@ -259,23 +259,8 @@ if (calc_prepplot) {
         analysis<-convert_to_monthly(analysis)
         analysis.anom<-convert_to_monthly(analysis.anom)
         if (ind_ECHAM) {
-          ech_ind$data <- array(ech_ind$data,c((dim(ech_ind$data)[1]/6),dim(ech_ind$data)[2]*6,
-                                               dim(ech_ind$data)[3]))
-          ech_ind$ensmean <- array(ech_ind$ensmean,c((dim(ech_ind$ensmean)[1]/6),
-                                                     dim(ech_ind$ensmean)[2]*6))    
-          ech_ind$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-          ech_ind$names <- ech_ind$names[1:dim(ech_ind$data)[1]]
-          ech_ind$lon <- ech_ind$lon[1:(dim(ech_ind$data)[1])] #/length(unique(ech_ind$names)))]
-          ech_ind$lat <- ech_ind$lat[1:(dim(ech_ind$data)[1])]
-
-          ana_ind$data <- array(ana_ind$data,c((dim(ana_ind$data)[1]/6),dim(ana_ind$data)[2]*6,
-                                               dim(ana_ind$data)[3]))
-          ana_ind$ensmean <- array(ana_ind$ensmean,c((dim(ana_ind$ensmean)[1]/6),
-                                                     dim(ana_ind$ensmean)[2]*6))    
-          ana_ind$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-          ana_ind$names <- ana_ind$names[1:dim(ana_ind$data)[1]]
-          ana_ind$lon <- ana_ind$lon[1:(dim(ana_ind$data)[1])] #/length(unique(ana_ind$names)))]
-          ana_ind$lat <- ana_ind$lat[1:(dim(ana_ind$data)[1])]
+          ech_ind<-convert_to_monthly(ech_ind)
+          ana_ind<-convert_to_monthly(ana_ind)
         }
         if (vali) {
           if (!recon_vali) {
@@ -283,23 +268,9 @@ if (calc_prepplot) {
             #            validate$data <- cbind(rep(NA,length(validate$data)),validate$data)
             #            validate$ensmean <- cbind(rep(NA,length(validate$ensmean)),validate$ensmean)
             #          }
-            validate$data <- array(validate$data,c((dim(validate$data)[1]/6),
-                                                   dim(validate$data)[2]*6))
-            validate$ensmean <- array(validate$ensmean,c((dim(validate$ensmean)[1]/6),
-                                                         dim(validate$ensmean)[2]*6))
-            validate$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-            validate$names <- validate$names[1:dim(validate$data)[1]]
-            validate$lon <- validate$lon[1:(dim(validate$data)[1])] #/length(unique(validate$names)))]
-            validate$lat <- validate$lat[1:(dim(validate$data)[1])]
+            validate<-convert_to_monthly(validate)
             if (ind_recon) {
-              #          vali_ind$data <- array(vali_ind$data,c((dim(vali_ind$data)[1]/6),dim(vali_ind$data)[2]*6,
-              #                                                 dim(vali_ind$data)[3]))
-              vali_ind$data <- array(vali_ind$data,c((dim(vali_ind$data)[1]/6),
-                                                     dim(vali_ind$data)[2]*6))    
-              vali_ind$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-              vali_ind$names <- vali_ind$names[1:dim(vali_ind$data)[1]]
-              vali_ind$lon <- vali_ind$lon[1:(dim(vali_ind$data)[1])] #/length(unique(vali_ind$names)))]
-              vali_ind$lat <- vali_ind$lat[1:(dim(vali_ind$data)[1])]
+              vali_ind<-convert_to_monthly(vali_ind)
             }
           }
         }
@@ -1225,7 +1196,7 @@ if (load_prepplot){
   }
   
   calibrate.clim <- calibrate
-  calibrate.clim$data <- apply(array(calibrate$data, c(nrow(calibrate$data), s, ncol(calibrate$data)/s)), 1:2, mean, na.rm=T)
+  calibrate.clim$data <- apply(array(calibrate$data, c(nrow(calibrate$data), 2, ncol(calibrate$data)/2)), 1:2, mean, na.rm=T)
   calibrate.anom <- calibrate
   calibrate.anom$data <- array(calibrate$data - as.vector(calibrate.clim$data), c(nrow(calibrate$data), ncol(calibrate$data)))
   

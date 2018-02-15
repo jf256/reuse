@@ -1,4 +1,4 @@
-expname="1904-2003_MXD&TRW&SCHWEINGR_two-validation-sets_tps-only-OFF" # "EKF400_v1.3_full_res" #
+expname="proxies_only_NTREND_1-6th" # "EKF400_v1.3_full_res" #
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -191,11 +191,11 @@ regression_months = c('t.first','t.second','t.third','t.fourth','t.fifth','t.six
   TRW=F
   MXD=F
   SCHWEINGR=F
-  PAGES=F
+  PAGES=T
 pages_lm_fit = "CRU"   # can be CRU or GISS to calculate the reg coeff-s
 type = c("tree") 
 #          ^ it only works with tree and coral (and both indiviually as well)
-NTREND=T
+NTREND=F
 } 
 
 generate_PAGES = F      # using the screened PAGES proxy dataset
@@ -338,7 +338,7 @@ ncep_vali=F            # NCEP/NCAR reanalysis data for validation
 #####################################################################################
 # prepare plot switches
 #####################################################################################
-monthly_out = F    # if sixmonstatevector=T output is backtransformed to seasonal 
+monthly_out = T    # if sixmonstatevector=T output is backtransformed to seasonal 
                  # average or monthly data if monthly_out=T 
 calc_prepplot=T  # save half year averages calc from monthly data into /prepplot folder
   write_coor=F     # write ascii files with assimilated stations and data per ts
@@ -368,7 +368,7 @@ ind_recon=F      # delete/comment code in prepplot script and then delete switch
 #####################################################################################
 # plot switches
 #####################################################################################
-validation_set="twentycr" #twentycr/cru
+validation_set="cru_vali" #twentycr_vali/cru_vali
 monthly=F
 pseudoproxy=F
 plot_dweights=F

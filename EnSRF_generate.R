@@ -39,30 +39,59 @@ if (generate_ECHAM_covar){
   echam_covar(syr=1603,eyr=2004)
 }
 
-# if (generate_ind_recon){
-#   # read Broennimann et al. 2009 atm. indices from .txt to .Rdata for comparison
-#   #if (syr<1901){syr_ind=1901} else {syr_ind=syr}
-#   #if (eyr>2004){eyr_ind=2004} else {eyr_ind=eyr}
-#   #syr_ind=1901
-#   #eyr_ind=2004
-#   ind=read.table(file=paste(dataintdir,'/indices/stefan/stefan_monthly_indices.txt'
-#                             ,sep=''),header=T)   
-#   ind_rec_dimi = window(ts(c(rep(NA,length(ind[,colnames(ind) == 'Z100'])),rep(NA,132)),
-#                            start=ind[1,colnames(ind) == 'yr'],freq=12),syr_ind,c(eyr_ind,12))
-#   ind_rec_z100 = window(ts(ind[,colnames(ind) == 'Z100'],start=ind[1, 
-#                            colnames(ind) == 'yr'],freq=12),syr_ind,freq=12,c(eyr_ind,12))
-#   ind_rec_z300 = window(ts(ind[,colnames(ind) == 'Z300'],start=ind[1,
-#                            colnames(ind) == 'yr'],freq=12),syr_ind,c(eyr_ind,12))
-#   ind_rec_pwc = window(ts(ind[,colnames(ind) == 'PWC'],start=ind[1,
-#                            colnames(ind) == 'yr'],freq=12),syr_ind,c(eyr_ind,12))
-#   ind_rec_hc = window(ts(ind[,colnames(ind) == 'HCL'],start=ind[1,
-#                            colnames(ind) == 'yr'],freq=12),syr_ind,c(eyr_ind,12))
-#   ind_rec_sj = window(ts(ind[,colnames(ind) == 'SJ'],start=ind[1,
-#                            colnames(ind) == 'yr'],freq=12),syr_ind,c(eyr_ind,12))
-#   indall = t(cbind(ind_rec_dimi, ind_rec_z100, ind_rec_z300, ind_rec_pwc, ind_rec_hc, 
-#                   ind_rec_sj))
-#   save(indall, file=paste("../data/indices/indices_recon_",syr_ind,"-",eyr_ind,".Rdata",sep=""))
-# }
+if (generate_ind_recon){
+  # read Broennimann et al. 2009 atm. indices from .txt to .Rdata for comparison
+  #if (syr<1901){syr_ind=1901} else {syr_ind=syr}
+  #if (eyr>2004){eyr_ind=2004} else {eyr_ind=eyr}
+  syr_ind=1900
+  eyr_ind=2000
+  dataextdir='/mnt/climstor/giub/EKF400/'
+  indicespath <- paste0(dataextdir,'vali_data/indices/')
+  # ind=read.table(file=paste0(indicespath,'stefan_monthly_indices.txt'
+  #                           ,sep=''),header=T)
+  # ind_rec_dimi = window(ts(c(rep(NA,length(ind[,colnames(ind) == 'Z100'])),rep(NA,132)),
+  #                          start=ind[1,colnames(ind) == 'yr'],freq=12),syr_ind,c(eyr_ind,12))
+  # ind_rec_z100 = window(ts(ind[,colnames(ind)=='Z100'],frequency = 12, start = ind[1,colnames(ind)=='yr']), start=syr_ind, end =c(eyr_ind, 12))
+  # 
+  # ind_rec_z300 = window(ts(ind[,colnames(ind) == 'Z300'],start=ind[1,
+  #                          colnames(ind) == 'yr'],freq=12),syr_ind,c(eyr_ind,12))
+  # ind_rec_pwc = window(ts(ind[,colnames(ind) == 'PWC'],start=ind[1,
+  #                          colnames(ind) == 'yr'],freq=12),syr_ind,c(eyr_ind,12))
+  # ind_rec_hc = window(ts(ind[,colnames(ind) == 'HCL'],start=ind[1,
+  #                          colnames(ind) == 'yr'],freq=12),syr_ind,c(eyr_ind,12))
+  # ind_rec_sj = window(ts(ind[,colnames(ind) == 'SJ'],start=ind[1,
+  #                          colnames(ind) == 'yr'],freq=12),syr_ind,c(eyr_ind,12))
+  # indall = t(cbind(ind_rec_dimi, ind_rec_z100, ind_rec_z300, ind_rec_pwc, ind_rec_hc,
+  #                 ind_rec_sj))
+  # save(indall, file=paste0(dataintdir,'/indices/indices_recon_',syr_ind,'-',eyr_ind,'_monthly.Rdata',sep=''))
+  
+  #generate seasonal indices
+  
+  # syr_ind=1900
+  # eyr_ind=2000
+  # 
+  # ind=read.table(file=paste0(indicespath,'stefan_seasonal_indices.txt'
+  #                            ,sep=''),header=T)
+  # ind_rec_dimi = window(ts(c(rep(NA,length(ind[,colnames(ind) == 'Z100'])),rep(NA,132)),
+  #                          start=ind[1,colnames(ind) == 'yr'],freq=12),syr_ind,c(eyr_ind,12))
+  # ind_rec_z100 = window(ts(ind[,colnames(ind)=='Z100'],frequency = 12, start = ind[1,colnames(ind)=='yr']), start=syr_ind, end =c(eyr_ind, 12))
+  # 
+  # ind_rec_z300 = window(ts(ind[,colnames(ind) == 'Z300'],start=ind[1,
+  #                                                                  colnames(ind) == 'yr'],freq=12),syr_ind,c(eyr_ind,12))
+  # ind_rec_pwc = window(ts(ind[,colnames(ind) == 'PWC'],start=ind[1,
+  #                                                                colnames(ind) == 'yr'],freq=12),syr_ind,c(eyr_ind,12))
+  # ind_rec_hc = window(ts(ind[,colnames(ind) == 'HCL'],start=ind[1,
+  #                                                               colnames(ind) == 'yr'],freq=12),syr_ind,c(eyr_ind,12))
+  # ind_rec_sj = window(ts(ind[,colnames(ind) == 'SJ'],start=ind[1,
+  #                                                              colnames(ind) == 'yr'],freq=12),syr_ind,c(eyr_ind,12))
+  # indall = t(cbind(ind_rec_dimi, ind_rec_z100, ind_rec_z300, ind_rec_pwc, ind_rec_hc,
+  #                  ind_rec_sj))
+  # save(indall, file=paste0(dataintdir,'/indices/indices_recon_',syr_ind,'-',eyr_ind,'_seasonal.Rdata',sep=''))
+  # 
+  # 
+  
+  
+}
 
 if (generate_NCEP) {
   print("generate_NCEP")

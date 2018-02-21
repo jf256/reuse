@@ -1,4 +1,4 @@
-expname="test_climcal" # "EKF400_v1.3_full_res" #
+expname="proxies_only_NTREND_1-6th" # "EKF400_v1.3_full_res" #
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -191,23 +191,16 @@ regression_months = c('t.first','t.second','t.third','t.fourth','t.fifth','t.six
   TRW=F
   MXD=F
   SCHWEINGR=F
-  PAGES=F
+  PAGES=T
 pages_lm_fit = "CRU"   # can be CRU or GISS to calculate the reg coeff-s
-type = c("coral","tree") 
+type = c("tree") 
 #          ^ it only works with tree and coral (and both indiviually as well)
-NTREND=T
+NTREND=F
 } 
 
 generate_PAGES = F      # using the screened PAGES proxy dataset
 generate_NTREND = F
 
-if ((generate_PAGES & PAGES) | (generate_NTREND & NTREND) | generate_PROXIES & generate_PROXIESnew){
-  stop("WATCH! These switches should not be set to TRUE simultaneously: 
-
-       generate_PROXIES & generate_PROXIESnew 
-       generate_PAGES   & PAGES
-       generate_NTRED   & NTREND")
-}
 
 
 
@@ -217,11 +210,27 @@ yuri_slp=T
 ghcn_temp=T
 isti_instead_ghcn=F  # switch from ghcn to isti (ghcn_temp must still be set to TRUE)
 ghcn_prec=F
+import_luca=F        # new docu data 
 trw_only=F           # Petra's TRW only
 mxd_only=F           # Use only MXD tree ring proxies, NOT Petra's TRW
 schweingr_only=F     # Use Schweingruber MXD grid only
 
 # all available data selected above are automatically switched on when available in EnSRF_data
+
+if (generate_PROXIESnew){
+  if ((generate_PAGES & PAGES) | (generate_NTREND & NTREND) | (generate_PROXIES & generate_PROXIESnew) |
+      (trw_only) | (mxd_only) | (schweingr_only)){
+    stop("WARNING! These switches should not be set to TRUE simultaneously: 
+
+       generate_PROXIES & generate_PROXIESnew 
+       generate_PAGES   & PAGES
+       generate_NTRED   & NTREND
+       trw_only         & generate_PROXIESnew
+       mxd_only         & generate_PROXIESnew
+       schweingr_only   & generate_PROXIESnew
+         ")
+  }
+}
 
 
 loc=T      # T = WITH localization, F without
@@ -271,8 +280,8 @@ reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=F            # calc on land only
 fasttest=F             # use even less data
-tps_only=T             # only use temp, precip and slp in state vector, remove other vars
-no_stream=F            # all echam vars but stream function as there is problem with 
+tps_only=F             # only use temp, precip and slp in state vector, remove other vars
+no_stream=T            # all echam vars but stream function as there is problem with 
 #                       # 5/9 levels, which are in lat dimension before and after 1880
 loo=F                  # leave-one-out validation 
 if (loo) {tps_only=T;no_stream=F}  # reduce state vector for faster validation
@@ -347,7 +356,7 @@ if (!monthly_out & write_netcdf) {
 # 1902-2003, because it creates time series
 load_prepplot=T  # ATTENTION check if folder prepplot on scratch contains monthly or seasonal data!
                  # saves image and only needs to be run once, afterward set "load_image=T" 
-statyr=1904      # 1941 1850/69 year, when station network is kept constant
+statyr=1934    # 1941 1850/69 year, when station network is kept constant
 load_image=T     # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
 calc_vali_stat=T # calculate validation statistics after preparation (set "load_image=T")
 CRPS = TRUE      # calculate Continuous Ranked Probability Score
@@ -359,6 +368,7 @@ ind_recon=F      # delete/comment code in prepplot script and then delete switch
 #####################################################################################
 # plot switches
 #####################################################################################
+validation_set="cru_vali" #twentycr_vali/cru_vali
 monthly=F
 pseudoproxy=F
 plot_dweights=F

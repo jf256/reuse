@@ -13,8 +13,8 @@ rm(list=ls())
 #}
 
 # enter syr ane eyr manually
-syr=1930 #1902 #1941
-eyr=1935 #2003 #1970
+syr=1902 #1902 #1941
+eyr=1915 #2003 #1970
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
 args <- commandArgs(TRUE)
@@ -52,14 +52,49 @@ if (monthly_out) {
     dir.create(paste0("../data/prepplot/",expname,'/prepplot_monthly/'))
   }
   prepplotdir=paste0("../data/prepplot/",expname,'/prepplot_monthly/')
+  nseas=12
 } else {
   if(calc_prepplot){
     dir.create(paste0("../data/prepplot/",expname))
     dir.create(paste0("../data/prepplot/",expname,'/prepplot_seasonal/'))
   }
-  prepplotdir=paste0("../data/prepplot/",expname,'/prepplot_seasonal/') 
+  prepplotdir=paste0("../data/prepplot/",expname,'/prepplot_seasonal/')
+  nseas=2
 }
 if (load_prepplot) {dir.create(paste0("../data/image/",expname))}
+dir.create(paste0('../data/indices/',expname))
+
+if (ind_anom) {
+  if (land_only) {
+    if (monthly_out) {
+      filenameext <- paste0('_anom_landonly_mon_') 
+    } else {
+      filenameext <- paste0('_anom_landonly_seas_') 
+    }
+  } else {
+    if (monthly_out) {
+      filenameext <- paste0('_anom_landocean_mon_') 
+    } else {
+      filenameext <- paste0('_anom_landocean_seas_') 
+    }
+  }
+} else {
+  if (land_only) {
+    if (monthly_out) {
+      filenameext <- paste0('_abs_landonly_mon_') 
+    } else {
+      filenameext <- paste0('_abs_landonly_seas_') 
+    }
+  } else {
+    if (monthly_out) {
+      filenameext <- paste0('_abs_landocean_mon_') 
+    } else {
+      filenameext <- paste0('_abs_landocean_seas_') 
+    }
+  }
+}
+print(filenameext)
+
 
 
 #####################################################################################
@@ -134,119 +169,6 @@ if (calc_prepplot) {
                     row.names=F,col.names=F)
       }
     }
-    
-    if (ind_ECHAM) {
-      # extract the indices from output 
-      # 1. Analysis indices
-      ech_ind <- echam.anom
-      ech_ind$data <- echam.anom$data[which(echam.anom$names=="DIMI" | echam.anom$names=="z100" | 
-                                              echam.anom$names=="z300" | echam.anom$names=="PWC" | echam.anom$names=="HC" | 
-                                              echam.anom$names=="SJ"),,]
-      ech_ind$ensmean <- echam.anom$ensmean[which(echam.anom$names=="DIMI" | echam.anom$names=="z100" |  
-                                                    echam.anom$names=="z300" | echam.anom$names=="PWC" | echam.anom$names=="HC" | 
-                                                    echam.anom$names=="SJ"),]
-      ech_ind$names <- echam.anom$names[which(echam.anom$names=="DIMI" | echam.anom$names=="z100" | 
-                                                echam.anom$names=="z300" | echam.anom$names=="PWC" | echam.anom$names=="HC" | 
-                                                echam.anom$names=="SJ")]
-      ech_ind$lon <- echam.anom$lon[which(echam.anom$names=="DIMI" | echam.anom$names=="z100" | 
-                                            echam.anom$names=="z300" | echam.anom$names=="PWC" | echam.anom$names=="HC" | 
-                                            echam.anom$names=="SJ")]
-      ech_ind$lat <- echam.anom$lat[which(echam.anom$names=="DIMI" | echam.anom$names=="z100" | 
-                                            echam.anom$names=="z300" | echam.anom$names=="PWC" | echam.anom$names=="HC" | 
-                                            echam.anom$names=="SJ")]
-      echam$data <- echam$data[which(echam$names!="DIMI" & echam$names!="z100" & echam$names!="z300" &
-                                       echam$names!="PWC" & echam$names!="HC" & echam$names!="SJ"),,]
-      echam$ensmean <- echam$ensmean[which(echam$names!="DIMI" & echam$names!="z100" & echam$names!="z300" &
-                                             echam$names!="PWC" & echam$names!="HC" & echam$names!="SJ"),]
-      echam$names <- echam$names[which(echam$names!="DIMI" & echam$names!="z100" & echam$names!="z300" &
-                                         echam$names!="PWC" & echam$names!="HC" & echam$names!="SJ")]
-      echam$lon <- echam$lon[which(echam$names!="DIMI" & echam$names!="z100" & echam$names!="z300" &
-                                     echam$names!="PWC" & echam$names!="HC" & echam$names!="SJ")]
-      echam$lat <- echam$lat[which(echam$names!="DIMI" & echam$names!="z100" & echam$names!="z300" &
-                                     echam$names!="PWC" & echam$names!="HC" & echam$names!="SJ")]
-      echam.anom$data <- echam.anom$data[which(echam.anom$names!="DIMI" & echam.anom$names!="z100" & 
-                                                 echam.anom$names!="z300" & echam.anom$names!="PWC" & 
-                                                 echam.anom$names!="HC" & echam.anom$names!="SJ"),,]
-      echam.anom$ensmean <- echam.anom$ensmean[which(echam.anom$names!="DIMI" & echam.anom$names!="z100" &
-                                                       echam.anom$names!="z300" & echam.anom$names!="PWC" & 
-                                                       echam.anom$names!="HC" & echam.anom$names!="SJ"),]
-      echam.anom$names <- echam.anom$names[which(echam.anom$names!="DIMI" & echam.anom$names!="z100" & 
-                                                   echam.anom$names!="z300" & echam.anom$names!="PWC" & 
-                                                   echam.anom$names!="HC" & echam.anom$names!="SJ")]
-      echam.anom$lon <- echam.anom$lon[which(echam.anom$names!="DIMI" & echam.anom$names!="z100" & 
-                                               echam.anom$names!="z300" & echam.anom$names!="PWC" & 
-                                               echam.anom$names!="HC" & echam.anom$names!="SJ")]
-      echam.anom$lat <- echam.anom$lat[which(echam.anom$names!="DIMI" & echam.anom$names!="z100" & 
-                                               echam.anom$names!="z300" & echam.anom$names!="PWC" & 
-                                               echam.anom$names!="HC" & echam.anom$names!="SJ")]
-      ana_ind <- analysis.anom
-      ana_ind$data <- analysis.anom$data[which(analysis.anom$names=="DIMI" | analysis.anom$names=="z100" |
-                                                 analysis.anom$names=="z300" |
-                                                 analysis.anom$names=="PWC" | analysis.anom$names=="HC" | analysis.anom$names=="SJ"),,]
-      ana_ind$ensmean <- analysis.anom$ensmean[which(analysis.anom$names=="DIMI" | analysis.anom$names=="z100" | 
-                                                       analysis.anom$names=="z300" | analysis.anom$names=="PWC" | analysis.anom$names=="HC" | 
-                                                       analysis.anom$names=="SJ"),]
-      ana_ind$names <- analysis.anom$names[which(analysis.anom$names=="DIMI" | analysis.anom$names=="z100" | 
-                                                   analysis.anom$names=="z300" | analysis.anom$names=="PWC" | analysis.anom$names=="HC" | 
-                                                   analysis.anom$names=="SJ")]
-      ana_ind$lon <- analysis.anom$lon[which(analysis.anom$names=="DIMI" | analysis.anom$names=="z100" | analysis.anom$names=="z300" |
-                                               analysis.anom$names=="PWC" | analysis.anom$names=="HC" | analysis.anom$names=="SJ")]
-      ana_ind$lat <- analysis.anom$lat[which(analysis.anom$names=="DIMI" | analysis.anom$names=="z100" | analysis.anom$names=="z300" |
-                                               analysis.anom$names=="PWC" | analysis.anom$names=="HC" | analysis.anom$names=="SJ")]
-      analysis$data <- analysis$data[which(analysis$names!="DIMI" & analysis$names!="z100" & 
-                                             analysis$names!="z300" & analysis$names!="PWC" & analysis$names!="HC" & 
-                                             analysis$names!="SJ"),,]
-      analysis$ensmean <- analysis$ensmean[which(analysis$names!="DIMI" & analysis$names!="z100" & 
-                                                   analysis$names!="z300" & analysis$names!="PWC" & analysis$names!="HC" & 
-                                                   analysis$names!="SJ"),]
-      analysis$names <- analysis$names[which(analysis$names!="DIMI" & analysis$names!="z100" & 
-                                               analysis$names!="z300" & analysis$names!="PWC" & analysis$names!="HC" & 
-                                               analysis$names!="SJ")]
-      analysis$lon <- analysis$lon[which(analysis$names!="DIMI" & analysis$names!="z100" & analysis$names!="z300" &
-                                           analysis$names!="PWC" & analysis$names!="HC" & analysis$names!="SJ")]
-      analysis$lat <- analysis$lat[which(analysis$names!="DIMI" & analysis$names!="z100" & analysis$names!="z300" &
-                                           analysis$names!="PWC" & analysis$names!="HC" & analysis$names!="SJ")]
-      analysis.anom$data <- analysis.anom$data[which(analysis.anom$names!="DIMI" & analysis.anom$names!="z100" & 
-                                                       analysis.anom$names!="z300" & analysis.anom$names!="PWC" & analysis.anom$names!="HC" & 
-                                                       analysis.anom$names!="SJ"),,]
-      analysis.anom$ensmean <- analysis.anom$ensmean[which(analysis.anom$names!="DIMI" & analysis.anom$names!="z100" & 
-                                                             analysis.anom$names!="z300" & analysis.anom$names!="PWC" & analysis.anom$names!="HC" & 
-                                                             analysis.anom$names!="SJ"),]
-      analysis.anom$names <- analysis.anom$names[which(analysis.anom$names!="DIMI" & analysis.anom$names!="z100" & 
-                                                         analysis.anom$names!="z300" & analysis.anom$names!="PWC" & analysis.anom$names!="HC" & 
-                                                         analysis.anom$names!="SJ")]
-      analysis.anom$lon <- analysis.anom$lon[which(analysis.anom$names!="DIMI" & analysis.anom$names!="z100" & analysis.anom$names!="z300" &
-                                                     analysis.anom$names!="PWC" & analysis.anom$names!="HC" & analysis.anom$names!="SJ")]
-      analysis.anom$lat <- analysis.anom$lat[which(analysis.anom$names!="DIMI" & analysis.anom$names!="z100" & analysis.anom$names!="z300" &
-                                                     analysis.anom$names!="PWC" & analysis.anom$names!="HC" & analysis.anom$names!="SJ")]
-    }
-    if (ind_recon) {
-      if (vali) {  
-        vali_ind <- validate
-        vali_ind$data <- validate$data[which(validate$names=="ind_rec_dimi" | validate$names=="ind_rec_z100" |
-                                               validate$names=="ind_rec_z300" | validate$names=="ind_rec_pwc" | 
-                                               validate$names=="ind_rec_hc" | validate$names=="ind_rec_sj"),]
-        vali_ind$names <- validate$names[which(validate$names=="ind_rec_dimi" | validate$names=="ind_rec_z100" |
-                                                 validate$names=="ind_rec_z300" | validate$names=="ind_rec_pwc" | 
-                                                 validate$names=="ind_rec_hc" | validate$names=="ind_rec_sj")]
-        vali_ind$lon <- validate$lon[which(validate$names=="ind_rec_dimi" | validate$names=="ind_rec_z100" | 
-                                             validate$names=="ind_rec_z300" | validate$names=="ind_rec_pwc" | 
-                                             validate$names=="ind_rec_hc" | validate$names=="ind_rec_sj")]
-        vali_ind$lat <- validate$lat[which(validate$names=="ind_rec_dimi" | validate$names=="ind_rec_z100" | 
-                                             validate$names=="ind_rec_z300" | validate$names=="ind_rec_pwc" | 
-                                             validate$names=="ind_rec_hc" | validate$names=="ind_rec_sj")]
-        validate$data <- validate$data[which(validate$names=="temp2" | validate$names=="precip" |
-                                               validate$names=="slp"),]
-        validate$ensmean <- validate$data # defined later
-        validate$names <- validate$names[which(validate$names=="temp2" | validate$names=="precip" |
-                                                 validate$names=="slp")]
-        validate$lon <- validate$lon[which(validate$names=="temp2" | validate$names=="precip" |
-                                             validate$names=="slp")]
-        validate$lat <- validate$lat[which(validate$names=="temp2" | validate$names=="precip" |
-                                             validate$names=="slp")]
-      }
-    }
-    
     # convert data back to old format for plotting and analysis
     if (sixmonstatevector) {
       print('convert 6-months state vector')
@@ -258,30 +180,11 @@ if (calc_prepplot) {
         echam.anom<-convert_to_monthly(echam.anom)
         analysis<-convert_to_monthly(analysis)
         analysis.anom<-convert_to_monthly(analysis.anom)
-        if (ind_ECHAM) {
-          ech_ind<-convert_to_monthly(ech_ind)
-          ana_ind<-convert_to_monthly(ana_ind)
-        }
         if (vali) {
           if (!recon_vali) {
-            #          if (cyr==1901) {
-            #            validate$data <- cbind(rep(NA,length(validate$data)),validate$data)
-            #            validate$ensmean <- cbind(rep(NA,length(validate$ensmean)),validate$ensmean)
-            #          }
             validate<-convert_to_monthly(validate)
-            if (ind_recon) {
-              vali_ind<-convert_to_monthly(vali_ind)
-            }
           }
         }
-        #       if (!real_proxies) {
-        #         calibrate$data <- array(calibrate$data,c((dim(calibrate$data)[1]/6),
-        #                                                  dim(calibrate$data)[2]*6))
-        #         calibrate$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-        #         calibrate$names <- calibrate$names[1:dim(calibrate$data)[1]]
-        #         calibrate$lon <- calibrate$lon[1:dim(calibrate$data)[1]]
-        #         calibrate$lat <- calibrate$lat[1:dim(calibrate$data)[1]]
-        #       }
       } else { # seasonal output, probably summer/winter averages
         s=length(season)
         print(paste('seasons =',s))
@@ -300,18 +203,6 @@ if (calc_prepplot) {
                              length(unique(echam$names)))  
         echam$lon <- echam$lon[1:(dim(echam$data)[1])] #/length(unique(echam$names)))]
         echam$lat <- echam$lat[1:(dim(echam$data)[1])] #/length(unique(echam$names)))]
-        if (ind_ECHAM) {
-          etmp <- array(ech_ind$data,c((dim(ech_ind$data)[1]/6),6,dim(ech_ind$data)[2],
-                                       dim(ech_ind$data)[3]))  
-          ech_ind$data <- apply(etmp,c(1,3,4),mean)
-          etmp2 <- array(ech_ind$ensmean,c((dim(ech_ind$ensmean)[1]/6),6,dim(ech_ind$ensmean)[2]))
-          ech_ind$ensmean <- apply(etmp2,c(1,3),mean)
-          #    ech_ind$names <- ech_ind$names[1:dim(ech_ind$data)[1]/length(unique(ech_ind$names))]
-          ech_ind$names <- rep(unique(ech_ind$names),each=dim(ech_ind$data)[1]/
-                                 length(unique(ech_ind$names)))  
-          ech_ind$lon <- ech_ind$lon[1:(dim(ech_ind$data)[1])] #/length(unique(ech_ind$names)))]
-          ech_ind$lat <- ech_ind$lat[1:(dim(ech_ind$data)[1])] #/length(unique(ech_ind$names)))] 
-        }
         etmp <- NULL
         etmp2 <- NULL
         
@@ -331,19 +222,6 @@ if (calc_prepplot) {
         atmp2 <- array(analysis$ensmean,c((dim(analysis$ensmean)[1]/6),6,
                                           dim(analysis$ensmean)[2]))
         analysis$ensmean <- apply(atmp2,c(1,3),mean)
-        if (ind_ECHAM) {
-          atmp <- array(ana_ind$data,c((dim(ana_ind$data)[1]/6),6,dim(ana_ind$data)[2],
-                                       dim(ana_ind$data)[3]))  
-          ana_ind$data <- apply(atmp,c(1,3,4),mean)
-          #    ana_ind$names <- ana_ind$names[1:dim(ana_ind$data)[1]]
-          ana_ind$names <- rep(unique(ana_ind$names),each=dim(ana_ind$data)[1]/
-                                 length(unique(ana_ind$names)))
-          ana_ind$lon <- ana_ind$lon[1:(dim(ana_ind$data)[1])] #/length(unique(ana_ind$names)))]
-          ana_ind$lat <- ana_ind$lat[1:(dim(ana_ind$data)[1])] #/length(unique(ana_ind$names)))]
-          atmp2 <- array(ana_ind$ensmean,c((dim(ana_ind$ensmean)[1]/6),6,
-                                           dim(ana_ind$ensmean)[2]))
-          ana_ind$ensmean <- apply(atmp2,c(1,3),mean)
-        }
         atmp <- NULL
         atmp2 <- NULL
         
@@ -363,10 +241,6 @@ if (calc_prepplot) {
                                   length(unique(echam.anom$names)))  
         echam.anom$lon <- echam.anom$lon[1:(dim(echam.anom$data)[1])] #/length(unique(echam.anom$names)))]
         echam.anom$lat <- echam.anom$lat[1:(dim(echam.anom$data)[1])] #/length(unique(echam.anom$names)))]
-        if (ind_ECHAM) {
-          etmp <- array(ech_ind$data,c((dim(ech_ind$data)[1]/6),6,dim(ech_ind$data)[2],
-                                       dim(ech_ind$data)[3])) 
-        }
         etmp <- NULL
         
         atmp <- array(analysis.anom$data,c((dim(analysis.anom$data)[1]/6),6,dim(analysis.anom$data)[2],
@@ -399,13 +273,99 @@ if (calc_prepplot) {
             #      validate$names <- validate$names[1:dim(validate$data)[1]]
             validate$names <- rep(unique(validate$names),each=dim(validate$data)[1]/
                                     length(unique(validate$names)))
-            validate$lon <- rep(validate$lon,length(unique(validate$names)))
-            validate$lat <- rep(validate$lat,length(unique(validate$names)))
+            # validate$lon <- rep(validate$lon,length(unique(validate$names)))
+            # validate$lat <- rep(validate$lat,length(unique(validate$names)))
+            validate$lat <- validate$lat[1:(dim(validate$data)[1])]
+            validate$lon <- validate$lon[1:(dim(validate$data)[1])]
           }
         }
       }
       print("transformed 6-mon state vector")
       print(proc.time() - ptm1)
+      
+      ########### Indices Calculation ###################
+      
+        echam2.abs <- echam
+        analysis2.abs <- analysis
+        echam2.anom<-echam.anom
+        analysis2.anom<-analysis.anom
+        
+        if (land_only) {
+          xlim=c(-180,180)
+          ylim=c(-90,90)
+          nc <- nc_open(paste(echmaskpath, 'landseamask.nc', sep='/'))
+          lon <- nc$dim$lon$vals
+          lat <- nc$dim$lat$vals
+          lon[lon > 180] <- lon[lon > 180] - 360
+          loi <- which(lon >= xlim[1] & lon <= xlim[2])
+          lai <- which(lat >= ylim[1] & lat <= ylim[2])
+          # mulc for reading each 2rd grid cell to avoid memory problems
+          mulc <- floor(length(loi)/96)
+          loi <- loi[seq(ceiling(mulc/2),length(loi),mulc)]
+          lai <- lai[seq(ceiling(mulc/2), length(lai),mulc)]
+          lsm <- ncvar_get(nc)[loi, lai]
+          nc_close(nc)
+          lonlist=round(rep(lon[loi], length(lai))[lsm > 0.5],digits=2)
+          latlist=round(rep(lat[lai], each=length(loi))[lsm > 0.5],digits=2)
+          landll <- paste(lonlist,latlist)
+          
+          e.abs.ll <- paste(round(echam2.abs$lon,digits=2),round(echam2.abs$lat,digits=2))
+          landpos <- match(landll,e.abs.ll)
+          landpos_init <- landpos
+          ngrid <- dim(echam2.abs$data)[1]/length(unique(echam2.abs$names))
+          nrep <-  length(unique(echam2.abs$names))
+        
+          for (i in 1:(nrep-1)) {
+            landpos <- c(landpos,(landpos_init+ngrid*i))
+          }
+          echam2.anom$data <- echam.anom$data[landpos,,]
+          echam2.anom$ensmean <- echam.anom$ensmean[landpos,]
+          echam2.anom$lon <- echam.anom$lon[landpos]
+          echam2.anom$lat <- echam.anom$lat[landpos]
+          echam2.anom$names <- echam.anom$names[landpos]
+          echam2.abs$data <- echam2.abs$data[landpos,,]
+          echam2.abs$ensmean <- echam2.abs$ensmean[landpos,]
+          echam2.abs$lon <- echam2.abs$lon[landpos]
+          echam2.abs$lat <- echam2.abs$lat[landpos]
+          echam2.abs$names <- echam2.abs$names[landpos]
+          analysis2.anom$data <- analysis.anom$data[landpos,,]
+          analysis2.anom$ensmean <- analysis.anom$ensmean[landpos,]
+          analysis2.anom$lon <- analysis.anom$lon[landpos]
+          analysis2.anom$lat <- analysis.anom$lat[landpos]
+          analysis2.anom$names <- analysis.anom$names[landpos]
+          analysis2.abs$data <- analysis2.abs$data[landpos,,]
+          analysis2.abs$ensmean <- analysis2.abs$ensmean[landpos,]
+          analysis2.abs$lon <- analysis2.abs$lon[landpos]
+          analysis2.abs$lat <- analysis2.abs$lat[landpos]
+          analysis2.abs$names <- analysis2.abs$names[landpos]
+        }
+        
+        if (ind_anom) {
+          echam2 <- echam2.anom
+          analysis2 <- analysis2.anom
+        } else {
+          echam2 <- echam2.abs
+          analysis2 <- analysis2.abs
+        }   
+        
+        eind<-calc_indices(echam2,"echam2")
+        aind<-calc_indices(analysis2,"analysis2")
+        
+        if (vali) {
+          validate2<-validate
+          vind<-calc_indices(validate2,"validate2")
+        }
+        
+        
+        # save annual file
+        if (vali) {
+          save(aind,eind,vind, file=paste0('../data/indices/',expname,'/indices',filenameext,cyr,'.Rdata'))
+        } else {
+          save(aind,eind, file=paste0('../data/indices/',expname,'/indices',filenameext,cyr,'.Rdata'))
+        }
+      
+      
+      
       
       if (vali) {
         if (every2grid) {
@@ -439,20 +399,20 @@ if (calc_prepplot) {
       if (cyr == syr) {
         analysis.allts=analysis
         analysis.anom.allts=analysis.anom
-        if (ind_ECHAM) {
-          ana_ind.allts=ana_ind
-        }
-        if (vali) {
-          validate.allts=validate
-          if (ind_recon) {
-            vali_ind.allts=vali_ind
-          }
-        }
+        aind.allts=aind
+        aind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
+
         echam.allts=echam
         echam.anom.allts=echam.anom
-        if (ind_ECHAM) {
-          ech_ind.allts=ech_ind
+        eind.allts=eind
+        eind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
+        
+        if (vali) {
+          validate.allts=validate
+          vind.allts=vind
+          vind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
         }
+
       } else {
         analysis.allts$data=abind(analysis.allts$data,analysis$data,along=2)
         analysis.allts$ensmean=cbind(analysis.allts$ensmean,analysis$ensmean)
@@ -460,39 +420,47 @@ if (calc_prepplot) {
         analysis.anom.allts$data=abind(analysis.anom.allts$data,analysis.anom$data,along=2)
         analysis.anom.allts$ensmean=cbind(analysis.anom.allts$ensmean,analysis.anom$ensmean)
         analysis.anom.allts$time=c(analysis.anom.allts$time,analysis.anom$time)
-        if (ind_ECHAM) {
-          ana_ind.allts$data=abind(ana_ind.allts$data,ana_ind$data,along=2)
-          ana_ind.allts$ensmean=cbind(ana_ind.allts$ensmean,ana_ind$ensmean)
-          ana_ind.allts$time=c(ana_ind.allts$time,ana_ind$time)
-        }
-        if (vali) {
-          validate.allts$data=cbind(validate.allts$data,validate$data)
-          validate.allts$ensmean=cbind(validate.allts$ensmean,validate$ensmean)
-          validate.allts$time=c(validate.allts$time,validate$time)
-          if (ind_recon) {
-            vali_ind.allts$data=cbind(vali_ind.allts$data,vali_ind$data)
-            vali_ind.allts$ensmean=cbind(vali_ind.allts$ensmean,vali_ind$ensmean)
-            vali_ind.allts$time=c(vali_ind.allts$time,vali_ind$time)
-          }
-        }
+        
+        aind.allts$data=abind(aind.allts$data,aind$data,along=2)
+        aind.allts$ensmean=cbind(aind.allts$ensmean,aind$ensmean)
+        aind.allts$time=c(aind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+        
         echam.allts$data=abind(echam.allts$data,echam$data,along=2)
         echam.allts$ensmean=cbind(echam.allts$ensmean,echam$ensmean)
         echam.allts$time=c(echam.allts$time,echam$time)
         echam.anom.allts$data=abind(echam.anom.allts$data,echam.anom$data,along=2)
         echam.anom.allts$ensmean=cbind(echam.anom.allts$ensmean,echam.anom$ensmean)
         echam.anom.allts$time=c(echam.anom.allts$time,echam.anom$time)
-        if (ind_ECHAM) {
-          ech_ind.allts$data=abind(ech_ind.allts$data,ech_ind$data,along=2)
-          ech_ind.allts$ensmean=cbind(ech_ind.allts$ensmean,ech_ind$ensmean)
-          ech_ind.allts$time=c(ech_ind.allts$time,ech_ind$time)
+        
+        eind.allts$data=abind(eind.allts$data,eind$data,along=2)
+        eind.allts$ensmean=cbind(eind.allts$ensmean,eind$ensmean)
+        eind.allts$time=c(eind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+        
+        if (vali) {
+          validate.allts$data=cbind(validate.allts$data,validate$data)
+          validate.allts$ensmean=cbind(validate.allts$ensmean,validate$ensmean)
+          validate.allts$time=c(validate.allts$time,validate$time)
+          
+          vind.allts$data=abind(vind.allts$data,vind$data)
+          vind.allts$ensmean=cbind(vind.allts$ensmean,vind$ensmean)
+          vind.allts$time=c(vind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
         }
-      }  
-    }
+      }
+    } #e end sixmonstate loop
   } # loop over years
 } # end calc_prepplot=F loop
 
+# save combined indices
+# if (vali) {
+#   save(aind.allts,eind.allts,vind.allts,
+#        file=paste0('../data/indices/',expname,'/indices',filenameext,'allts.Rdata'))
+# } else {
+#   save(aind.allts,eind.allts,
+#        file=paste0('../data/indices/',expname,'/indices',filenameext,'allts.Rdata'))
+# }
 
 
+rm(analysis2, analysis2.abs, analysis2.anom,echam2, echam2.abs, echam2.anom, validate2)
 
 
 
@@ -865,15 +833,14 @@ if (load_prepplot){
     if (cyr == syr) {
       analysis.allts=analysis
       analysis.anom.allts=analysis.anom
-      #      ana_ind.allts=ana_ind
+
       if (vali) {
         validate.allts=validate
-        #        vali_ind.allts=vali_ind
+
       }
       echam.allts=echam
       echam.anom.allts=echam.anom
-      #      ech_ind.allts=ech_ind
-      
+
       # only instr. calibration data for period with fixed network
       # because proxies not in fixed grid format. Hence number of records 
       # and position/row in data/ensmean matrix changes over time
@@ -913,16 +880,12 @@ if (load_prepplot){
       analysis.anom.allts$data=abind(analysis.anom.allts$data,analysis.anom$data,along=2)
       analysis.anom.allts$ensmean=cbind(analysis.anom.allts$ensmean,analysis.anom$ensmean)
       analysis.anom.allts$time=c(analysis.anom.allts$time,analysis.anom$time)
-      #      ana_ind.allts$data=abind(ana_ind.allts$data,ana_ind$data,along=2)
-      #      ana_ind.allts$ensmean=cbind(ana_ind.allts$ensmean,ana_ind$ensmean)
-      #      ana_ind.allts$time=c(ana_ind.allts$time,ana_ind$time)
+
       if (vali & cyr>1751) {
         validate.allts$data=cbind(validate.allts$data,validate$data)
         validate.allts$ensmean=cbind(validate.allts$ensmean,validate$ensmean)
         validate.allts$time=c(validate.allts$time,validate$time)
-        #        vali_ind.allts$data=cbind(vali_ind.allts$data,vali_ind$data)
-        #        vali_ind.allts$ensmean=cbind(vali_ind.allts$ensmean,vali_ind$ensmean)
-        #        vali_ind.allts$time=c(vali_ind.allts$time,vali_ind$time)
+
       }
       echam.allts$data=abind(echam.allts$data,echam$data,along=2)
       echam.allts$ensmean=cbind(echam.allts$ensmean,echam$ensmean)
@@ -930,9 +893,7 @@ if (load_prepplot){
       echam.anom.allts$data=abind(echam.anom.allts$data,echam.anom$data,along=2)
       echam.anom.allts$ensmean=cbind(echam.anom.allts$ensmean,echam.anom$ensmean)
       echam.anom.allts$time=c(echam.anom.allts$time,echam.anom$time)
-      #      ech_ind.allts$data=abind(ech_ind.allts$data,ech_ind$data,along=2)
-      #      ech_ind.allts$ensmean=cbind(ech_ind.allts$ensmean,ech_ind$ensmean)
-      #      ech_ind.allts$time=c(ech_ind.allts$time,ech_ind$time)
+
       if (substring(expname,1,12)=="proxies_only") {
         pos <- which(calibrate$sour=="prox")
       }else{
@@ -964,65 +925,21 @@ if (load_prepplot){
     }  
   }
   
-  # do we still need this part?
-  # if (cyr == syr) {
-  #   analysis.allts=analysis
-  #   analysis.anom.allts=analysis.anom
-  #   ana_ind.allts=ana_ind
-  #   if (vali) {
-  #     validate.allts=validate
-  #     vali_ind.allts=vali_ind
-  #   }
-  #   echam.allts=echam
-  #   echam.anom.allts=echam.anom
-  #   ech_ind.allts=ech_ind
-  # } else {
-  #   analysis.allts$data=abind(analysis.allts$data,analysis$data,along=2)
-  #   analysis.allts$ensmean=cbind(analysis.allts$ensmean,analysis$ensmean)
-  #   analysis.allts$time=c(analysis.allts$time,analysis$time)
-  #   analysis.anom.allts$data=abind(analysis.anom.allts$data,analysis.anom$data,along=2)
-  #   analysis.anom.allts$ensmean=cbind(analysis.anom.allts$ensmean,analysis.anom$ensmean)
-  #   analysis.anom.allts$time=c(analysis.anom.allts$time,analysis.anom$time)
-  #   ana_ind.allts$data=abind(ana_ind.allts$data,ana_ind$data,along=2)
-  #   ana_ind.allts$ensmean=cbind(ana_ind.allts$ensmean,ana_ind$ensmean)
-  #   ana_ind.allts$time=c(ana_ind.allts$time,ana_ind$time)
-  #   if (vali) {
-  #     validate.allts$data=cbind(validate.allts$data,validate$data)
-  #     validate.allts$ensmean=cbind(validate.allts$ensmean,validate$ensmean)
-  #     validate.allts$time=c(validate.allts$time,validate$time)
-  #     vali_ind.allts$data=cbind(vali_ind.allts$data,vali_ind$data)
-  #     vali_ind.allts$ensmean=cbind(vali_ind.allts$ensmean,vali_ind$ensmean)
-  #     vali_ind.allts$time=c(vali_ind.allts$time,vali_ind$time)
-  #   }
-  #   echam.allts$data=abind(echam.allts$data,echam$data,along=2)
-  #   echam.allts$ensmean=cbind(echam.allts$ensmean,echam$ensmean)
-  #   echam.allts$time=c(echam.allts$time,echam$time)
-  #   echam.anom.allts$data=abind(echam.anom.allts$data,echam.anom$data,along=2)
-  #   echam.anom.allts$ensmean=cbind(echam.anom.allts$ensmean,echam.anom$ensmean)
-  #   echam.anom.allts$time=c(echam.anom.allts$time,echam.anom$time)
-  #   ech_ind.allts$data=abind(ech_ind.allts$data,ech_ind$data,along=2)
-  #   ech_ind.allts$ensmean=cbind(ech_ind.allts$ensmean,ech_ind$ensmean)
-  #   ech_ind.allts$time=c(ech_ind.allts$time,ech_ind$time)
-  # }
-  #}
-  
-  
-  
   
   echam <- echam.allts
   echam.anom <- echam.anom.allts
-  #ech_ind <- ech_ind.allts
-  rm(echam.allts,echam.anom.allts,ech_ind.allts)
+  
+  rm(echam.allts,echam.anom.allts)
   analysis <- analysis.allts
   analysis.anom <- analysis.anom.allts
-  #ana_ind <- ana_ind.allts
-  rm(analysis.allts,analysis.anom.allts,ana_ind.allts)
+
+  rm(analysis.allts,analysis.anom.allts)
   calibrate <- calibrate.allts
   #calibrate.anom <- calibrate.anom.allts
   if (vali) {
     validate <- validate.allts
-    #  vali_ind <- vali_ind.allts
-    rm(validate.allts,vali_ind.allts)
+
+    rm(validate.allts)
   }
   print("calc time for a year")
   print(proc.time() - ptm1)
@@ -1032,155 +949,6 @@ if (load_prepplot){
   # validate$data[validate$names=="slp",]<- validate$data[validate$names=="slp",]/100
   # validate$ensmean[validate$names=="slp",]<- validate$ensmean[validate$names=="slp",]/100
   
-  # do we still need this part?
-  # # convert data back to old format for plotting and analysis
-  # if (sixmonstatevector) {
-  #   if (monthly_out) {
-  #     s=12 # set back to 12 months for plotting
-  #     echam$data <- array(echam$data,c((dim(echam$data)[1]/6),dim(echam$data)[2]*6,
-  #                                      dim(echam$data)[3]))
-  #     echam$ensmean <- array(echam$ensmean,c((dim(echam$ensmean)[1]/6),
-  #                                            dim(echam$ensmean)[2]*6))
-  #     tmptime <- seq(syr,(eyr+1),by=1/12)
-  #     echam$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-  #     echam$names <- echam$names[1:dim(echam$data)[1]]
-  #     ech_ind$data <- array(ech_ind$data,c((dim(ech_ind$data)[1]/6),dim(ech_ind$data)[2]*6,
-  #                           dim(ech_ind$data)[3]))
-  #     ech_ind$ensmean <- array(ech_ind$ensmean,c((dim(ech_ind$ensmean)[1]/6),
-  #                              dim(ech_ind$ensmean)[2]*6))    
-  #     ech_ind$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-  #     ech_ind$names <- ech_ind$names[1:dim(ech_ind$data)[1]]
-  #     analysis$data <- array(analysis$data,c((dim(analysis$data)[1]/6),
-  #                                            dim(analysis$data)[2]*6,dim(analysis$data)[3]))
-  #     analysis$ensmean <- array(analysis$ensmean,c((dim(analysis$ensmean)[1]/6),
-  #                                                  dim(analysis$ensmean)[2]*6))
-  #     analysis$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-  #     analysis$names <- analysis$names[1:dim(analysis$data)[1]]
-  #     ana_ind$data <- array(ana_ind$data,c((dim(ana_ind$data)[1]/6),dim(ana_ind$data)[2]*6,
-  #                                          dim(ana_ind$data)[3]))
-  #     ana_ind$ensmean <- array(ana_ind$ensmean,c((dim(ana_ind$ensmean)[1]/6),
-  #                                                dim(ana_ind$ensmean)[2]*6))    
-  #     ana_ind$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-  #     ana_ind$names <- ana_ind$names[1:dim(ana_ind$data)[1]]
-  #     if (vali) {
-  #      if (!recon_vali) {
-  #       validate$data <- array(validate$data,c((dim(validate$data)[1]/6),
-  #                                              dim(validate$data)[2]*6))
-  #       validate$ensmean <- array(validate$ensmean,c((dim(validate$ensmean)[1]/6),
-  #                                                    dim(validate$ensmean)[2]*6))
-  #       validate$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-  #       validate$names <- validate$names[1:dim(validate$data)[1]]
-  #       vali_ind$data <- array(vali_ind$data,c((dim(vali_ind$data)[1]/6),dim(vali_ind$data)[2]*6,
-  #                                            dim(vali_ind$data)[3]))
-  #       vali_ind$ensmean <- array(vali_ind$ensmean,c((dim(vali_ind$ensmean)[1]/6),
-  #                                                  dim(vali_ind$ensmean)[2]*6))    
-  #       vali_ind$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-  #       vali_ind$names <- vali_ind$names[1:dim(vali_ind$data)[1]]
-  #      }
-  #     }
-  #     if (!real_proxies) {
-  #       calibrate$data <- array(calibrate$data,c((dim(calibrate$data)[1]/6),
-  #                                                dim(calibrate$data)[2]*6))
-  #       calibrate$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-  #       calibrate$names <- calibrate$names[1:dim(calibrate$data)[1]]
-  #       calibrate$lon <- calibrate$lon[1:dim(calibrate$data)[1]]
-  #       calibrate$lat <- calibrate$lat[1:dim(calibrate$data)[1]]
-  #     }
-  #   } else { # seasonal output, probably summer/winter averages
-  #     s=length(season) 
-  #     etmp <- array(echam$data,c((dim(echam$data)[1]/6),6,dim(echam$data)[2],
-  #                                dim(echam$data)[3]))  
-  #     echam$data <- apply(etmp,c(1,3,4),mean)
-  #     etmp2 <- array(echam$ensmean,c((dim(echam$ensmean)[1]/6),6,dim(echam$ensmean)[2]))
-  #     echam$ensmean <- apply(etmp2,c(1,3),mean)
-  # #    echam$names <- echam$names[1:dim(echam$data)[1]/length(unique(echam$names))]
-  #     echam$names <- rep(unique(echam$names),each=dim(echam$data)[1]/
-  #                          length(unique(echam$names)))  
-  #     echam$lon <- echam$lon[1:(dim(echam$data)[1])] #/length(unique(echam$names)))]
-  #     echam$lat <- echam$lat[1:(dim(echam$data)[1])] #/length(unique(echam$names)))]
-  #     etmp <- array(ech_ind$data,c((dim(ech_ind$data)[1]/6),6,dim(ech_ind$data)[2],
-  #                                dim(ech_ind$data)[3]))  
-  #     ech_ind$data <- apply(etmp,c(1,3,4),mean)
-  #     etmp2 <- array(ech_ind$ensmean,c((dim(ech_ind$ensmean)[1]/6),6,dim(ech_ind$ensmean)[2]))
-  #     ech_ind$ensmean <- apply(etmp2,c(1,3),mean)
-  #     #    ech_ind$names <- ech_ind$names[1:dim(ech_ind$data)[1]/length(unique(ech_ind$names))]
-  #     ech_ind$names <- rep(unique(ech_ind$names),each=dim(ech_ind$data)[1]/
-  #                          length(unique(ech_ind$names)))  
-  #     ech_ind$lon <- ech_ind$lon[1:(dim(ech_ind$data)[1])] #/length(unique(ech_ind$names)))]
-  #     ech_ind$lat <- ech_ind$lat[1:(dim(ech_ind$data)[1])] #/length(unique(ech_ind$names)))]    
-  #     atmp <- array(analysis$data,c((dim(analysis$data)[1]/6),6,dim(analysis$data)[2],
-  #                                   dim(analysis$data)[3]))  
-  #     analysis$data <- apply(atmp,c(1,3,4),mean)
-  # #    analysis$names <- analysis$names[1:dim(analysis$data)[1]]
-  #     analysis$names <- rep(unique(analysis$names),each=dim(analysis$data)[1]/
-  #                             length(unique(analysis$names)))
-  #     analysis$lon <- analysis$lon[1:(dim(analysis$data)[1])] #/length(unique(analysis$names)))]
-  #     analysis$lat <- analysis$lat[1:(dim(analysis$data)[1])] #/length(unique(analysis$names)))]
-  #     atmp2 <- array(analysis$ensmean,c((dim(analysis$ensmean)[1]/6),6,
-  #                                       dim(analysis$ensmean)[2]))
-  #     analysis$ensmean <- apply(atmp2,c(1,3),mean)
-  #     atmp <- array(ana_ind$data,c((dim(ana_ind$data)[1]/6),6,dim(ana_ind$data)[2],
-  #                                   dim(ana_ind$data)[3]))  
-  #     ana_ind$data <- apply(atmp,c(1,3,4),mean)
-  #     #    ana_ind$names <- ana_ind$names[1:dim(ana_ind$data)[1]]
-  #     ana_ind$names <- rep(unique(ana_ind$names),each=dim(ana_ind$data)[1]/
-  #                             length(unique(ana_ind$names)))
-  #     ana_ind$lon <- ana_ind$lon[1:(dim(ana_ind$data)[1])] #/length(unique(ana_ind$names)))]
-  #     ana_ind$lat <- ana_ind$lat[1:(dim(ana_ind$data)[1])] #/length(unique(ana_ind$names)))]
-  #     atmp2 <- array(ana_ind$ensmean,c((dim(ana_ind$ensmean)[1]/6),6,
-  #                                       dim(ana_ind$ensmean)[2]))
-  #     ana_ind$ensmean <- apply(atmp2,c(1,3),mean)
-  #     if (vali) {    
-  #      if (!recon_vali) {
-  #       vtmp <- array(validate$data,c((dim(validate$data)[1]/6),6,dim(validate$data)[2]))  
-  #       validate$data <- apply(vtmp,c(1,3),mean)
-  #       validate$ensmean <- validate$data
-  # #      validate$names <- validate$names[1:dim(validate$data)[1]]
-  #       validate$names <- rep(unique(validate$names),each=dim(validate$data)[1]/
-  #                               length(unique(validate$names)))
-  #       validate$lon <- validate$lon[1:(dim(validate$data)[1])] #/length(unique(validate$names)))]
-  #       validate$lat <- validate$lat[1:(dim(validate$data)[1])] #/length(unique(validate$names)))]
-  #       vtmp <- array(vali_ind$data,c((dim(vali_ind$data)[1]/6),6,dim(vali_ind$data)[2]))  
-  #       vali_ind$data <- apply(vtmp,c(1,3),mean)
-  #       vali_ind$ensmean <- vali_ind$data
-  #       #      vali_ind$names <- vali_ind$names[1:dim(vali_ind$data)[1]]
-  #       vali_ind$names <- rep(unique(vali_ind$names),each=dim(vali_ind$data)[1]/
-  #                               length(unique(vali_ind$names)))
-  #       vali_ind$lon <- vali_ind$lon[1:(dim(vali_ind$data)[1])] #/length(unique(vali_ind$names)))]
-  #       vali_ind$lat <- vali_ind$lat[1:(dim(vali_ind$data)[1])] #/length(unique(vali_ind$names)))]
-  #      }
-  #     }
-  #     if (!real_proxies) {
-  #       # ERROR, NOT ADJUSTED FOR seasonal/annual DOCUMENTARY DATA, YET !!!
-  #       ctmp <- array(calibrate$data,c((dim(calibrate$data)[1]/6),6,
-  #                                      dim(calibrate$data)[2]))  
-  #       calibrate$data <- apply(ctmp,c(1,3),mean)
-  #       calibrate$names <- calibrate$names[1:dim(calibrate$data)[1]] 
-  #       calibrate$lon <- calibrate$lon[1:dim(calibrate$data)[1]]
-  #       calibrate$lat <- calibrate$lat[1:dim(calibrate$data)[1]]
-  #     }
-  #   }
-  # }
-  # print("transformed 6-mon state vector")
-  # print(proc.time() - ptm1)
-  
-  #lenvar <- length(c(which(validate$names=="temp2"), which(validate$names=="precip"), 
-  #                   which(validate$names=="slp")))
-  #validate$data=validate$data[1:lenvar,]
-  #validate$ensmean=validate$data[1:lenvar,]
-  
-  # is building anom still necessary?
-  # analysis.anom <- analysis
-  # analysis.anom$data <- array(analysis$data - as.vector(apply(array(analysis$data, c(nrow(analysis$data), s, ncol(analysis$data)/s,30)), 1:2, mean)), c(nrow(analysis$data), s, ncol(analysis$data)/s, 30))
-  # analysis.anom$data <- (array(analysis.anom$data,c(dim(analysis.anom$data)[1],dim(analysis.anom$data)[2]*dim(analysis.anom$data)[3],dim(analysis.anom$data)[4])))
-  # analysis.anom$ensmean <- array(analysis$ensmean - as.vector(apply(array(analysis$ensmean, c(nrow(analysis$ensmean), s, ncol(analysis$ensmean)/s)), 1:2, mean)), c(nrow(analysis$ensmean), s, ncol(analysis$ensmean)/s))
-  # analysis.anom$ensmean <- (array(analysis.anom$ensmean,c(dim(analysis.anom$ensmean)[1],dim(analysis.anom$ensmean)[2]*dim(analysis.anom$ensmean)[3])))  
-  # 
-  # echam.anom <- echam
-  # echam.anom$data <- array(echam$data - as.vector(apply(array(echam$data, c(nrow(echam$data), s, ncol(echam$data)/s,30)), 1:2, mean)), c(nrow(echam$data), s, ncol(echam$data)/s, 30))
-  # echam.anom$data <- (array(echam.anom$data,c(dim(echam.anom$data)[1],dim(echam.anom$data)[2]*dim(echam.anom$data)[3],dim(echam.anom$data)[4])))
-  # echam.anom$ensmean <- array(echam$ensmean - as.vector(apply(array(echam$ensmean, c(nrow(echam$ensmean), s, ncol(echam$ensmean)/s)), 1:2, mean)), c(nrow(echam$ensmean), s, ncol(echam$ensmean)/s))
-  # echam.anom$ensmean <- (array(echam.anom$ensmean,c(dim(echam.anom$ensmean)[1],dim(echam.anom$ensmean)[2]*dim(echam.anom$ensmean)[3])))  
   
   if (vali) {
     validate.clim <- validate
@@ -1252,6 +1020,8 @@ if (load_image){
   }
   source('EnSRF_switches.R') # set switches again because they may differ in loaded image
 }
+
+
 
 if (calc_vali_stat){
   # year 1902-1980 only because of missing validation data
@@ -1846,357 +1616,364 @@ if (calc_vali_stat){
   
   
   
-  # extract the indices from output 
-  # 1. Analysis indices
-  H.giorgi <- compute_giorgi_H_sixmon(giorgi, echam) #, numvar=3) # 3 vars temp, precip, slp
-  #  H.giorgi <- compute_giorgi_H_v2(giorgi, echam_noindex) 
-  
-  if (!tps_only & ind_ECHAM) {
-    # add weights for indices # NOT WORKING because indices are not simple means 
-    #tmpweights <- cos(echam$latstream/180*pi)
-    #tmpweights <- tmpweights/sum(tmpweights)
-    #tmpstream <- rep(0,dim(echam$ensmean)[1])
-    #tmpstream[which(echam$names=='stream')] <- tmpweights
-    #Htmp <- rbind(H.giorgi,tmpstream,tmpgph100,tmpgph300,tmpu200,tmpomega,tmpomega_2) 
-    indices <- c('NH.temp2', 'NH.precip', 'NH.slp', 'NEU.temp2', 'NEU.precip', 'NEU.slp',
-                 'DIMI', 'HC', 'SJ', 'Z100', 'Z300', 'PWC')
-    Hind <- matrix(0,nrow=12,ncol=nrow(echam$data))
-    Hind[1,which(echam$names=="temp2")] <- H.giorgi[which(giorgi.short == 'NH'),
-                                                    which(echam$names=="temp2")]
-    Hind[2,which(echam$names=="precip")] <- H.giorgi[which(giorgi.short == 'NH'),
-                                                     which(echam$names=="precip")]
-    Hind[3,which(echam$names=="slp")] <- H.giorgi[which(giorgi.short == 'NH'),
-                                                  which(echam$names=="slp")]
-    Hind[4,which(echam$names=="temp2")] <- H.giorgi[which(giorgi.short == 'NEU'),
-                                                    which(echam$names=="temp2")]
-    Hind[5,which(echam$names=="precip")] <- H.giorgi[which(giorgi.short == 'NEU'),
-                                                     which(echam$names=="precip")]
-    Hind[6,which(echam$names=="slp")] <- H.giorgi[which(giorgi.short == 'NEU'),
-                                                  which(echam$names=="slp")] 
-    
-    #   Hind <- matrix(0,nrow=12,ncol=nrow(echam_noindex$data))
-    #   Hind[1,which(echam_noindex$names=="temp2")] <- H.giorgi[which(giorgi.short == 'NH'),
-    #                                                           which(echam_noindex$names=="temp2")]
-    #   Hind[2,which(echam_noindex$names=="precip")] <- H.giorgi[which(giorgi.short == 'NH'),
-    #                                                           which(echam_noindex$names=="precip")]
-    #   Hind[3,which(echam_noindex$names=="slp")] <- H.giorgi[which(giorgi.short == 'NH'),
-    #                                                            which(echam_noindex$names=="slp")]
-    #   Hind[4,which(echam_noindex$names=="temp2")] <- H.giorgi[which(giorgi.short == 'NEU'),
-    #                                                           which(echam_noindex$names=="temp2")]
-    #   Hind[5,which(echam_noindex$names=="precip")] <- H.giorgi[which(giorgi.short == 'NEU'),
-    #                                                            which(echam_noindex$names=="precip")]
-    #   Hind[6,which(echam_noindex$names=="slp")] <- H.giorgi[which(giorgi.short == 'NEU'),
-    #                                                         which(echam_noindex$names=="slp")] 
-    ##  Hind <- rbind(H.giorgi[c(which(giorgi.short == 'NH')+ c(0,1,2)*length(giorgi.short),
-    ##                           which(giorgi.short == 'NEU') + c(0,1,2)*
-    ##                           length(giorgi.short)),], 0, 0, 0, 0, 0)
-    #  # Hadley cell strength (HC)
-    #  # do -s fldmax -sellonlatbox,-180,180,0,30 -zonmean -sellevel,50000 -selvar,stream in out
-    #  # zonal mean
-    #   if (!no_stream) {
-    #     tmphc <- aggregate(echam$ensmean[which(echam$names=='stream'),],
-    #                      list(echam$latstream),mean)
-    #     # fieldmax
-    #     echHC <- apply(tmphc[,2:ncol(tmphc)],2,max)
-    #   }
-    #   # midlatitude circulation (Z300)
-    #   # cdo -s fldmean -sellonlatbox,-180,180,30,60 -sellevel,3000 -selvar,geopoth in out
-    #   tmpweights <- cos(echam$latgph300/180*pi)
-    #   tmpweights <- tmpweights/sum(tmpweights)
-    #   echZ300 <- apply(echam$ensmean[which(echam$names=='gph300'),]*tmpweights,2,sum) 
-    #   #z300 <- apply(echam$ensmean[which(echam$names=='gph300'),],2,mean)
-    #   # subtropical jet (SJ)
-    #   # cdo -s fldmax -sellonlatbox,-180,180,0,50 -zonmean -sellevel,20000 -selvar,u in out
-    #   tmpu200 <- aggregate(echam$ensmean[which(echam$names=='u200'),],
-    #                        list(echam$latu200),mean)
-    #   # fieldmax
-    #   echSJ <- apply(tmpu200[,2:ncol(tmpu200)],2,max)
-    #   # stratospheric polar vortex (Z100)
-    #   # cdo -s sub -fldmean -sellonlatbox,-180,180,75,90 ${STOR_DIR}/gph100.$f -fldmean -sellonlatbox,-180,180,40,55 in out
-    #   tmpweights <- cos(echam$latgph100/180*pi)
-    #   tmpweights <- tmpweights/sum(tmpweights)
-    #   tmpz100 <- apply(echam$ensmean[which(echam$names=='gph100'),]*tmpweights,2,sum) 
-    #   tmpweights <- cos(echam$latgph100_2/180*pi)
-    #   tmpweights <- tmpweights/sum(tmpweights)
-    #   tmpz100_2 <- apply(echam$ensmean[which(echam$names=='gph100_2'),]*tmpweights,2,sum) 
-    #   echZ100 <- tmpz100 - tmpz100_2
-    #   #echZ100 <- rep(0,length(tmpz100)) # set to zero until working
-    #   # Pacific walker circulation (PWC)
-    #   # cdo -s sellevel,50000 -selvar,omega in out
-    #   # cdo -s sub -fldmean -sellonlatbox,-180,-100,-10,10 ${STOR_DIR}/omega.$f -fldmean -sellonlatbox,100,150,-10,10 in out
-    #   tmpweights <- cos(echam$latomega/180*pi)
-    #   tmpweights <- tmpweights/sum(tmpweights)
-    #   tmpomega <- apply(echam$ensmean[which(echam$names=='omega'),]*tmpweights,2,sum) 
-    #   tmpweights <- cos(echam$latomega_2/180*pi)
-    #   tmpweights <- tmpweights/sum(tmpweights)
-    #   tmpomega_2 <- apply(echam$ensmean[which(echam$names=='omega_2'),]*tmpweights,2,sum) 
-    #   echPWC <- tmpomega - tmpomega_2
-    #   
-    #  #for (n in 5:length(indices)) Hind[n,which(echam$names == indices[n])] <- 1
-    eind <- list(ensmean=Hind%*%echam$ensmean, names=indices)
-    #  eind <- list(ensmean=Hind%*%echam_noindex$ensmean, names=indices)
-    #  #eind$data <- array(Hind %*% array(echam$data, c(nrow(echam$data), length(echam$data)/nrow(echam$data))), c(nrow(Hind), dim(echam$data)[2:3]))
-    #  eind$ensmean[which(indices=='HC'),] <- echHC
-    #  eind$ensmean[which(indices=='SJ'),] <- echSJ
-    #  eind$ensmean[which(indices=='Z100'),] <- echZ100
-    #  eind$ensmean[which(indices=='Z300'),] <- echZ300
-    #  eind$ensmean[which(indices=='PWC'),] <- echPWC
-    eind$ensmean[which(indices=='DIMI'),] <- ech_ind$ensmean[which(ech_ind$names=='DIMI'),]
-    eind$ensmean[which(indices=='HC'),] <- ech_ind$ensmean[which(ech_ind$names=='HC'),]
-    eind$ensmean[which(indices=='SJ'),] <- ech_ind$ensmean[which(ech_ind$names=='SJ'),]
-    eind$ensmean[which(indices=='Z100'),] <- ech_ind$ensmean[which(ech_ind$names=='z100'),]
-    eind$ensmean[which(indices=='Z300'),] <- ech_ind$ensmean[which(ech_ind$names=='z300'),]
-    eind$ensmean[which(indices=='PWC'),] <- ech_ind$ensmean[which(ech_ind$names=='PWC'),]
-    # data for ensemble member
-    eind$data <- array(Hind %*% array(echam$data, c(nrow(echam$data), 
-                                                    length(echam$data)/nrow(echam$data))), c(nrow(Hind), 
-                                                                                             dim(echam$data)[2:3]))
-    #  eind$data <- array(Hind %*% array(echam_noindex$data, c(nrow(echam_noindex$data), 
-    #                  length(echam_noindex$data)/nrow(echam_noindex$data))), c(nrow(Hind), 
-    #                  dim(echam_noindex$data)[2:3]))
-    #  for (i in 1:nmem) {
-    #     tmphc <- aggregate(echam$data[which(echam$names=='stream'),,i],
-    #                        list(echam$latstream),mean)
-    #     echHC <- apply(tmphc[,2:ncol(tmphc)],2,max)
-    #     tmpweights <- cos(echam$latgph300/180*pi)
-    #     tmpweights <- tmpweights/sum(tmpweights)
-    #     echZ300 <- apply(echam$data[which(echam$names=='gph300'),,i]*tmpweights,2,sum) 
-    #     tmpu200 <- aggregate(echam$data[which(echam$names=='u200'),,i],
-    #                          list(echam$latu200),mean)
-    #     echSJ <- apply(tmpu200[,2:ncol(tmpu200)],2,max)
-    #     tmpweights <- cos(echam$latgph100/180*pi)
-    #     tmpweights <- tmpweights/sum(tmpweights)
-    #     tmpz100 <- apply(echam$data[which(echam$names=='gph100'),,i]*tmpweights,2,sum) 
-    #     tmpweights <- cos(echam$latgph100_2/180*pi)
-    #     tmpweights <- tmpweights/sum(tmpweights)
-    #     tmpz100_2 <- apply(echam$data[which(echam$names=='gph100_2'),,i]*tmpweights,2,sum) 
-    #     echz100 <- tmpz100 - tmpz100_2
-    #     #echZ100 <- rep(0,length(tmpz100)) # set to zero until working
-    #     tmpweights <- cos(echam$latomega/180*pi)
-    #     tmpweights <- tmpweights/sum(tmpweights)
-    #     tmpomega <- apply(echam$data[which(echam$names=='omega'),,i]*tmpweights,2,sum) 
-    #     tmpweights <- cos(echam$latomega_2/180*pi)
-    #     tmpweights <- tmpweights/sum(tmpweights)
-    #     tmpomega_2 <- apply(echam$data[which(echam$names=='omega_2'),,i]*tmpweights,2,sum) 
-    #     echPWC <- tmpomega - tmpomega_2
-    #     eind$data[which(indices=='HC'),,i] <- echHC
-    #     eind$data[which(indices=='SJ'),,i] <- echSJ
-    #     eind$data[which(indices=='Z100'),,i] <- echZ100
-    #     eind$data[which(indices=='Z300'),,i] <- echZ300
-    #     eind$data[which(indices=='PWC'),,i] <- echPWC
-    eind$data[which(indices=='DIMI'),,] <- ech_ind$data[which(ech_ind$names=='DIMI'),,]
-    eind$data[which(indices=='HC'),,] <- ech_ind$data[which(ech_ind$names=='HC'),,]
-    eind$data[which(indices=='SJ'),,] <- ech_ind$data[which(ech_ind$names=='SJ'),,]
-    eind$data[which(indices=='Z100'),,] <- ech_ind$data[which(ech_ind$names=='z100'),,]
-    eind$data[which(indices=='Z300'),,] <- ech_ind$data[which(ech_ind$names=='z300'),,]
-    eind$data[which(indices=='PWC'),,] <- ech_ind$data[which(ech_ind$names=='PWC'),,]
-    #   } 
-    #   
-    #   tmphc <- aggregate(analysis$ensmean[which(analysis$names=='stream'),],
-    #                      list(analysis$latstream),mean)
-    #   # fieldmax
-    #   anaHC <- apply(tmphc[,2:ncol(tmphc)],2,max)
-    #   # midlatitude circulation (Z300)
-    #   tmpweights <- cos(analysis$latgph300/180*pi)
-    #   tmpweights <- tmpweights/sum(tmpweights)
-    #   anaZ300 <- apply(analysis$ensmean[which(analysis$names=='gph300'),]*tmpweights,2,sum) 
-    #   # subtropical jet (SJ)
-    #   tmpu200 <- aggregate(analysis$ensmean[which(analysis$names=='u200'),],
-    #                        list(analysis$latu200),mean)
-    #   # fieldmax
-    #   anaSJ <- apply(tmpu200[,2:ncol(tmpu200)],2,max)
-    #   # stratospheric polar vortex (Z100)
-    #   tmpweights <- cos(analysis$latgph100/180*pi)
-    #   tmpweights <- tmpweights/sum(tmpweights)
-    #   tmpz100 <- apply(analysis$ensmean[which(analysis$names=='gph100'),]*tmpweights,2,sum) 
-    #   tmpweights <- cos(analysis$latgph100_2/180*pi)
-    #   tmpweights <- tmpweights/sum(tmpweights)
-    #   tmpz100_2 <- apply(analysis$ensmean[which(analysis$names=='gph100_2'),]*tmpweights,
-    #                      2,sum) 
-    #   anaZ100 <- tmpz100 - tmpz100_2
-    #   #anaZ100 <- rep(0,length(tmpz100)) # set to zero until working
-    #   # Pacific walker circulation (PWC)
-    #   tmpweights <- cos(analysis$latomega/180*pi)
-    #   tmpweights <- tmpweights/sum(tmpweights)
-    #   tmpweights <- cos(analysis$latomega_2/180*pi)
-    #   tmpweights <- tmpweights/sum(tmpweights)
-    #   tmpomega_2 <- apply(analysis$ensmean[which(analysis$names=='omega_2'),]*tmpweights,
-    #                       2,sum) 
-    #   anaPWC <- tmpomega - tmpomega_2
-    aind <- list(ensmean=Hind%*%analysis$ensmean, names=indices)
-    #   aind <- list(ensmean=Hind%*%analysis_noindex$ensmean, names=indices)
-    #   aind$ensmean[which(indices=='HC'),] <- anaHC
-    #   aind$ensmean[which(indices=='SJ'),] <- anaSJ
-    #   aind$ensmean[which(indices=='Z100'),] <- anaZ100
-    #   aind$ensmean[which(indices=='Z300'),] <- anaZ300
-    #   aind$ensmean[which(indices=='PWC'),] <- anaPWC
-    aind$ensmean[which(indices=='DIMI'),] <- ana_ind$ensmean[which(ana_ind$names=='DIMI'),]
-    aind$ensmean[which(indices=='HC'),] <- ana_ind$ensmean[which(ana_ind$names=='HC'),]
-    aind$ensmean[which(indices=='SJ'),] <- ana_ind$ensmean[which(ana_ind$names=='SJ'),]
-    aind$ensmean[which(indices=='Z100'),] <- ana_ind$ensmean[which(ana_ind$names=='z100'),]
-    aind$ensmean[which(indices=='Z300'),] <- ana_ind$ensmean[which(ana_ind$names=='z300'),]
-    aind$ensmean[which(indices=='PWC'),] <- ana_ind$ensmean[which(ana_ind$names=='PWC'),]  
-    #   #aind <- list(ensmean=Hind%*%analysis$ensmean, names=indices)
-    #   #aind$data <- array(Hind %*% array(analysis$data, c(nrow(analysis$data), length(analysis$data)/nrow(analysis$data))), c(nrow(Hind), dim(analysis$data)[2:3]))
-    #   
-    #   # data for ensemble member
-    aind$data <- array(Hind %*% array(analysis$data, c(nrow(analysis$data), 
-                                                       length(analysis$data)/nrow(analysis$data))), c(nrow(Hind), 
-                                                                                                      dim(analysis$data)[2:3]))
-    #  aind$data <- array(Hind %*% array(analysis_noindex$data, c(nrow(analysis_noindex$data), 
-    #                 length(analysis_noindex$data)/nrow(analysis_noindex$data))), c(nrow(Hind), 
-    #                 dim(analysis_noindex$data)[2:3]))
-    #   for (i in 1:nmem) {
-    #     tmphc <- aggregate(analysis$data[which(analysis$names=='stream'),,i],
-    #                        list(analysis$latstream),mean)
-    #     anaHC <- apply(tmphc[,2:ncol(tmphc)],2,max)
-    #     tmpweights <- cos(analysis$latgph300/180*pi)
-    #     tmpweights <- tmpweights/sum(tmpweights)
-    #     anaZ300 <- apply(analysis$data[which(analysis$names=='gph300'),,i]*tmpweights,2,sum) 
-    #     tmpu200 <- aggregate(analysis$data[which(analysis$names=='u200'),,i],
-    #                          list(analysis$latu200),mean)
-    #     anaSJ <- apply(tmpu200[,2:ncol(tmpu200)],2,max)
-    #     tmpweights <- cos(analysis$latgph100/180*pi)
-    #     tmpweights <- tmpweights/sum(tmpweights)
-    #     tmpz100 <- apply(analysis$data[which(analysis$names=='gph100'),,i]*tmpweights,2,sum) 
-    #     tmpweights <- cos(analysis$latgph100_2/180*pi)
-    #     tmpweights <- tmpweights/sum(tmpweights)
-    #     tmpz100_2 <- apply(analysis$data[which(analysis$names=='gph100_2'),,i]*tmpweights,
-    #                        2,sum) 
-    #     anaz100 <- tmpz100 - tmpz100_2
-    #     #anaZ100 <- rep(0,length(tmpz100)) # set to zero until working
-    #     tmpweights <- cos(analysis$latomega/180*pi)
-    #     tmpweights <- tmpweights/sum(tmpweights)
-    #     tmpomega <- apply(analysis$data[which(analysis$names=='omega'),,i]*tmpweights,2,sum) 
-    #     tmpweights <- cos(analysis$latomega_2/180*pi)
-    #     tmpweights <- tmpweights/sum(tmpweights)
-    #     tmpomega_2 <- apply(analysis$data[which(analysis$names=='omega_2'),,i]*tmpweights,
-    #                         2,sum) 
-    #     anaPWC <- tmpomega - tmpomega_2
-    #     aind$data[which(indices=='HC'),,i] <- anaHC
-    #     aind$data[which(indices=='SJ'),,i] <- anaSJ
-    #     aind$data[which(indices=='Z100'),,i] <- anaZ100
-    #     aind$data[which(indices=='Z300'),,i] <- anaZ300
-    #     aind$data[which(indices=='PWC'),,i] <- anaPWC
-    aind$data[which(indices=='DIMI'),,] <- ana_ind$data[which(ana_ind$names=='DIMI'),,]
-    aind$data[which(indices=='HC'),,] <- ana_ind$data[which(ana_ind$names=='HC'),,]
-    aind$data[which(indices=='SJ'),,] <- ana_ind$data[which(ana_ind$names=='SJ'),,]
-    aind$data[which(indices=='Z100'),,] <- ana_ind$data[which(ana_ind$names=='z100'),,]
-    aind$data[which(indices=='Z300'),,] <- ana_ind$data[which(ana_ind$names=='z300'),,]
-    aind$data[which(indices=='PWC'),,] <- ana_ind$data[which(ana_ind$names=='PWC'),,]
-    #   }  
-    
-    # 3. Validation data set indices
-    #  H.giorgi2 <- compute_giorgi_H(giorgi, validate) #, numvar=3) # 3 vars temp, precip, slp
-    #  Hind2 <- rbind(H.giorgi2[c(which(giorgi.short == 'NH')+ c(0,1,2)*length(giorgi.short),
-    #                             which(giorgi.short == 'NEU') + c(0,1,2)*length(giorgi.short)),], 
-    #                              0, 0, 0, 0, 0)          
-    
-    if (vali & ((cru_vali) | (ncep_vali) | (recon_vali))) { 
-      # there is already stefans indices in the data, only calc NH and EU
-      #  vind <- list(data=Hind2 %*% validate$data[1:length(
-      #               which(cruall$names=="temp2"))*3,], names=indices)
-      #    validatanona = validate$data
-      #    validatanona[is.na(validate$data)]=9e36
-      # land sea mask to take care of missing validata in the ocean
-      vpos <- which(!is.na(validate$data[,1]))
-      Hind2 <- Hind[,vpos]
-      validatanona <- validate$data[vpos,]
-      vind <- list(data=Hind2 %*% validatanona, names=indices)
-      #    vind <- list(data=Hind2 %*% validatanona, names=indices)
-      #  vind <- list(data=Hind2 %*% validate$data, names=indices)
-      #     vind$data[7,] <- valiall.allts$data[which(valiall$names=="ind_rec_hc"),]
-      #     vind$data[8,] <- valiall.allts$data[which(valiall$names=="ind_rec_sj"),]
-      #     vind$data[9,] <- valiall.allts$data[which(valiall$names=="ind_rec_z100"),]
-      #     vind$data[10,] <- valiall.allts$data[which(valiall$names=="ind_rec_z300"),]
-      #     vind$data[11,] <- valiall.allts$data[which(valiall$names=="ind_rec_pwc"),]
-      vind$data[7,] <- vali_ind$data[which(vali_ind$names=="ind_rec_hc"),]
-      vind$data[8,] <- vali_ind$data[which(vali_ind$names=="ind_rec_sj"),]
-      vind$data[9,] <- vali_ind$data[which(vali_ind$names=="ind_rec_z100"),]
-      vind$data[10,] <- vali_ind$data[which(vali_ind$names=="ind_rec_z300"),]
-      vind$data[11,] <- vali_ind$data[which(vali_ind$names=="ind_rec_pwc"),]
-      
-    } 
-    #   if (ncep_vali) { # there is already stefans indices in the data, only calc NH and EU
-    #     #  vind <- list(data=Hind2 %*% validate$data[1:length(which(ncepall$names=="temp2"))*3,], names=indices)
-    #     validatanona = validate$data
-    #     validatanona[is.na(validate$data)]=9e36
-    #     vind <- list(data=Hind2 %*% validatanona, names=indices)
-    #     #  vind <- list(data=Hind2 %*% validate$data, names=indices)
-    #     vind$data[7,] <- ncepall.allts$data[which(ncepall$names=="ind_rec_hc"),]
-    #     vind$data[8,] <- ncepall.allts$data[which(ncepall$names=="ind_rec_sj"),]
-    #     vind$data[9,] <- ncepall.allts$data[which(ncepall$names=="ind_rec_z100"),]
-    #     vind$data[10,] <- ncepall.allts$data[which(ncepall$names=="ind_rec_z300"),]
-    #     vind$data[11,] <- ncepall.allts$data[which(ncepall$names=="ind_rec_pwc"),]
-    #   } 
-    #   if (recon_vali) { # no indices available, only calc NH and EU
-    #     validate$data[which(is.na(validate$data))] <- 0
-    #     vind <- list(data=Hind2 %*% validate$data, names=indices)
-    #     vind$data[7:11,] <- 0
-    # #  vind$data[1:3,] <- 0 
-    # #  vind$data[5,] <- vind$data[5,]/3 # convert seasonal sum to month sum
-  }
-  
-  # compute indices from cut-off distance runs
-  if (check_dist) {
-    adist.ind <- lapply(ana.dist, function(x) {
-      out <- list(ensmean = Hind %*% x$ensmean, names=indices)
-      out$data <- array(Hind %*% array(x$data, c(nrow(echam$data), 
-                                                 length(echam$data)/nrow(echam$data))), c(nrow(Hind), 
-                                                                                          dim(echam$data)[2:3]))
-      return(out)})
-  }
-  
-  #valnona = validate$data
-  #posnona = which(is.na(valnona))
-  #valnona[posnona] = 0
-  #vind <- list(data=Hind2 %*% valnona, names=indices)
-  
-  #for (n in vind$names) {
-  #  validate
-  #}
-  # this calculates the indices 'NHt2m', 'NEUt2m', 'NEUpr', 'NEUslp' as there are no regional averages in the original validation data (CRU TS)
-  # 'HC', 'SJ', 'z100', 'DIMI' and simply taken from the validation data set and were calculated based on Stefan's recon pre 1948 and from NCEP reanalysis afterwards
-  
-  
-  # stratospheric polar vortex
-  #    cdo -s -sellevel,10000 -selvar,geopoth $f ${STOR_DIR}/gph100.$f
-  #    cdo -s sub -fldmean -sellonlatbox,-180,180,75,90 ${STOR_DIR}/gph100.$f -fldmean -sellonlatbox,-180,180,40,55 ${STOR_DIR}/gph100.$f ${STOR_DIR}/z100.$f
-  #    ncrename -h -v geopoth,z100 ${STOR_DIR}/z100.$f  
-  # Hadley cell strength
-  #    cdo -s fldmax -sellonlatbox,-180,180,0,30 -zonmean -sellevel,50000 -selvar,stream $f ${STOR_DIR}/HC.$f
-  #    ncrename -h -v stream,HC ${STOR_DIR}/HC.$f 
-  # subtropical jet
-  #    cdo -s fldmax -sellonlatbox,-180,180,0,50 -zonmean -sellevel,20000 -selvar,u $f ${STOR_DIR}/SJ.$f
-  #    ncrename -h -v u,SJ ${STOR_DIR}/SJ.$f  
-  
-  #      ncrename -h -v geopoth,z100 ${STOR_DIR}/z100.$f
-  
+  # # extract the indices from output 
+  # # 1. Analysis indices
+  # H.giorgi <- compute_giorgi_H_sixmon(giorgi, echam) #, numvar=3) # 3 vars temp, precip, slp
+  # #  H.giorgi <- compute_giorgi_H_v2(giorgi, echam_noindex) 
+  # 
+  # if (!tps_only & ind_ECHAM) {
+  #   # add weights for indices # NOT WORKING because indices are not simple means 
+  #   #tmpweights <- cos(echam$latstream/180*pi)
+  #   #tmpweights <- tmpweights/sum(tmpweights)
+  #   #tmpstream <- rep(0,dim(echam$ensmean)[1])
+  #   #tmpstream[which(echam$names=='stream')] <- tmpweights
+  #   #Htmp <- rbind(H.giorgi,tmpstream,tmpgph100,tmpgph300,tmpu200,tmpomega,tmpomega_2) 
+  #   indices <- c('NH.temp2', 'NH.precip', 'NH.slp', 'NEU.temp2', 'NEU.precip', 'NEU.slp',
+  #                'DIMI', 'HC', 'SJ', 'Z100', 'Z300', 'PWC')
+  #   Hind <- matrix(0,nrow=12,ncol=nrow(echam$data))
+  #   Hind[1,which(echam$names=="temp2")] <- H.giorgi[which(giorgi.short == 'NH'),
+  #                                                   which(echam$names=="temp2")]
+  #   Hind[2,which(echam$names=="precip")] <- H.giorgi[which(giorgi.short == 'NH'),
+  #                                                    which(echam$names=="precip")]
+  #   Hind[3,which(echam$names=="slp")] <- H.giorgi[which(giorgi.short == 'NH'),
+  #                                                 which(echam$names=="slp")]
+  #   Hind[4,which(echam$names=="temp2")] <- H.giorgi[which(giorgi.short == 'NEU'),
+  #                                                   which(echam$names=="temp2")]
+  #   Hind[5,which(echam$names=="precip")] <- H.giorgi[which(giorgi.short == 'NEU'),
+  #                                                    which(echam$names=="precip")]
+  #   Hind[6,which(echam$names=="slp")] <- H.giorgi[which(giorgi.short == 'NEU'),
+  #                                                 which(echam$names=="slp")] 
+  #   
+  #   #   Hind <- matrix(0,nrow=12,ncol=nrow(echam_noindex$data))
+  #   #   Hind[1,which(echam_noindex$names=="temp2")] <- H.giorgi[which(giorgi.short == 'NH'),
+  #   #                                                           which(echam_noindex$names=="temp2")]
+  #   #   Hind[2,which(echam_noindex$names=="precip")] <- H.giorgi[which(giorgi.short == 'NH'),
+  #   #                                                           which(echam_noindex$names=="precip")]
+  #   #   Hind[3,which(echam_noindex$names=="slp")] <- H.giorgi[which(giorgi.short == 'NH'),
+  #   #                                                            which(echam_noindex$names=="slp")]
+  #   #   Hind[4,which(echam_noindex$names=="temp2")] <- H.giorgi[which(giorgi.short == 'NEU'),
+  #   #                                                           which(echam_noindex$names=="temp2")]
+  #   #   Hind[5,which(echam_noindex$names=="precip")] <- H.giorgi[which(giorgi.short == 'NEU'),
+  #   #                                                            which(echam_noindex$names=="precip")]
+  #   #   Hind[6,which(echam_noindex$names=="slp")] <- H.giorgi[which(giorgi.short == 'NEU'),
+  #   #                                                         which(echam_noindex$names=="slp")] 
+  #   ##  Hind <- rbind(H.giorgi[c(which(giorgi.short == 'NH')+ c(0,1,2)*length(giorgi.short),
+  #   ##                           which(giorgi.short == 'NEU') + c(0,1,2)*
+  #   ##                           length(giorgi.short)),], 0, 0, 0, 0, 0)
+  #   #  # Hadley cell strength (HC)
+  #   #  # do -s fldmax -sellonlatbox,-180,180,0,30 -zonmean -sellevel,50000 -selvar,stream in out
+  #   #  # zonal mean
+  #   #   if (!no_stream) {
+  #   #     tmphc <- aggregate(echam$ensmean[which(echam$names=='stream'),],
+  #   #                      list(echam$latstream),mean)
+  #   #     # fieldmax
+  #   #     echHC <- apply(tmphc[,2:ncol(tmphc)],2,max)
+  #   #   }
+  #   #   # midlatitude circulation (Z300)
+  #   #   # cdo -s fldmean -sellonlatbox,-180,180,30,60 -sellevel,3000 -selvar,geopoth in out
+  #   #   tmpweights <- cos(echam$latgph300/180*pi)
+  #   #   tmpweights <- tmpweights/sum(tmpweights)
+  #   #   echZ300 <- apply(echam$ensmean[which(echam$names=='gph300'),]*tmpweights,2,sum) 
+  #   #   #z300 <- apply(echam$ensmean[which(echam$names=='gph300'),],2,mean)
+  #   #   # subtropical jet (SJ)
+  #   #   # cdo -s fldmax -sellonlatbox,-180,180,0,50 -zonmean -sellevel,20000 -selvar,u in out
+  #   #   tmpu200 <- aggregate(echam$ensmean[which(echam$names=='u200'),],
+  #   #                        list(echam$latu200),mean)
+  #   #   # fieldmax
+  #   #   echSJ <- apply(tmpu200[,2:ncol(tmpu200)],2,max)
+  #   #   # stratospheric polar vortex (Z100)
+  #   #   # cdo -s sub -fldmean -sellonlatbox,-180,180,75,90 ${STOR_DIR}/gph100.$f -fldmean -sellonlatbox,-180,180,40,55 in out
+  #   #   tmpweights <- cos(echam$latgph100/180*pi)
+  #   #   tmpweights <- tmpweights/sum(tmpweights)
+  #   #   tmpz100 <- apply(echam$ensmean[which(echam$names=='gph100'),]*tmpweights,2,sum) 
+  #   #   tmpweights <- cos(echam$latgph100_2/180*pi)
+  #   #   tmpweights <- tmpweights/sum(tmpweights)
+  #   #   tmpz100_2 <- apply(echam$ensmean[which(echam$names=='gph100_2'),]*tmpweights,2,sum) 
+  #   #   echZ100 <- tmpz100 - tmpz100_2
+  #   #   #echZ100 <- rep(0,length(tmpz100)) # set to zero until working
+  #   #   # Pacific walker circulation (PWC)
+  #   #   # cdo -s sellevel,50000 -selvar,omega in out
+  #   #   # cdo -s sub -fldmean -sellonlatbox,-180,-100,-10,10 ${STOR_DIR}/omega.$f -fldmean -sellonlatbox,100,150,-10,10 in out
+  #   #   tmpweights <- cos(echam$latomega/180*pi)
+  #   #   tmpweights <- tmpweights/sum(tmpweights)
+  #   #   tmpomega <- apply(echam$ensmean[which(echam$names=='omega'),]*tmpweights,2,sum) 
+  #   #   tmpweights <- cos(echam$latomega_2/180*pi)
+  #   #   tmpweights <- tmpweights/sum(tmpweights)
+  #   #   tmpomega_2 <- apply(echam$ensmean[which(echam$names=='omega_2'),]*tmpweights,2,sum) 
+  #   #   echPWC <- tmpomega - tmpomega_2
+  #   #   
+  #   #  #for (n in 5:length(indices)) Hind[n,which(echam$names == indices[n])] <- 1
+  #   eind <- list(ensmean=Hind%*%echam$ensmean, names=indices)
+  #   #  eind <- list(ensmean=Hind%*%echam_noindex$ensmean, names=indices)
+  #   #  #eind$data <- array(Hind %*% array(echam$data, c(nrow(echam$data), length(echam$data)/nrow(echam$data))), c(nrow(Hind), dim(echam$data)[2:3]))
+  #   #  eind$ensmean[which(indices=='HC'),] <- echHC
+  #   #  eind$ensmean[which(indices=='SJ'),] <- echSJ
+  #   #  eind$ensmean[which(indices=='Z100'),] <- echZ100
+  #   #  eind$ensmean[which(indices=='Z300'),] <- echZ300
+  #   #  eind$ensmean[which(indices=='PWC'),] <- echPWC
+  #   eind$ensmean[which(indices=='DIMI'),] <- ech_ind$ensmean[which(ech_ind$names=='DIMI'),]
+  #   eind$ensmean[which(indices=='HC'),] <- ech_ind$ensmean[which(ech_ind$names=='HC'),]
+  #   eind$ensmean[which(indices=='SJ'),] <- ech_ind$ensmean[which(ech_ind$names=='SJ'),]
+  #   eind$ensmean[which(indices=='Z100'),] <- ech_ind$ensmean[which(ech_ind$names=='z100'),]
+  #   eind$ensmean[which(indices=='Z300'),] <- ech_ind$ensmean[which(ech_ind$names=='z300'),]
+  #   eind$ensmean[which(indices=='PWC'),] <- ech_ind$ensmean[which(ech_ind$names=='PWC'),]
+  #   # data for ensemble member
+  #   eind$data <- array(Hind %*% array(echam$data, c(nrow(echam$data), 
+  #                                                   length(echam$data)/nrow(echam$data))), c(nrow(Hind), 
+  #                                                                                            dim(echam$data)[2:3]))
+  #   #  eind$data <- array(Hind %*% array(echam_noindex$data, c(nrow(echam_noindex$data), 
+  #   #                  length(echam_noindex$data)/nrow(echam_noindex$data))), c(nrow(Hind), 
+  #   #                  dim(echam_noindex$data)[2:3]))
+  #   #  for (i in 1:nmem) {
+  #   #     tmphc <- aggregate(echam$data[which(echam$names=='stream'),,i],
+  #   #                        list(echam$latstream),mean)
+  #   #     echHC <- apply(tmphc[,2:ncol(tmphc)],2,max)
+  #   #     tmpweights <- cos(echam$latgph300/180*pi)
+  #   #     tmpweights <- tmpweights/sum(tmpweights)
+  #   #     echZ300 <- apply(echam$data[which(echam$names=='gph300'),,i]*tmpweights,2,sum) 
+  #   #     tmpu200 <- aggregate(echam$data[which(echam$names=='u200'),,i],
+  #   #                          list(echam$latu200),mean)
+  #   #     echSJ <- apply(tmpu200[,2:ncol(tmpu200)],2,max)
+  #   #     tmpweights <- cos(echam$latgph100/180*pi)
+  #   #     tmpweights <- tmpweights/sum(tmpweights)
+  #   #     tmpz100 <- apply(echam$data[which(echam$names=='gph100'),,i]*tmpweights,2,sum) 
+  #   #     tmpweights <- cos(echam$latgph100_2/180*pi)
+  #   #     tmpweights <- tmpweights/sum(tmpweights)
+  #   #     tmpz100_2 <- apply(echam$data[which(echam$names=='gph100_2'),,i]*tmpweights,2,sum) 
+  #   #     echz100 <- tmpz100 - tmpz100_2
+  #   #     #echZ100 <- rep(0,length(tmpz100)) # set to zero until working
+  #   #     tmpweights <- cos(echam$latomega/180*pi)
+  #   #     tmpweights <- tmpweights/sum(tmpweights)
+  #   #     tmpomega <- apply(echam$data[which(echam$names=='omega'),,i]*tmpweights,2,sum) 
+  #   #     tmpweights <- cos(echam$latomega_2/180*pi)
+  #   #     tmpweights <- tmpweights/sum(tmpweights)
+  #   #     tmpomega_2 <- apply(echam$data[which(echam$names=='omega_2'),,i]*tmpweights,2,sum) 
+  #   #     echPWC <- tmpomega - tmpomega_2
+  #   #     eind$data[which(indices=='HC'),,i] <- echHC
+  #   #     eind$data[which(indices=='SJ'),,i] <- echSJ
+  #   #     eind$data[which(indices=='Z100'),,i] <- echZ100
+  #   #     eind$data[which(indices=='Z300'),,i] <- echZ300
+  #   #     eind$data[which(indices=='PWC'),,i] <- echPWC
+  #   eind$data[which(indices=='DIMI'),,] <- ech_ind$data[which(ech_ind$names=='DIMI'),,]
+  #   eind$data[which(indices=='HC'),,] <- ech_ind$data[which(ech_ind$names=='HC'),,]
+  #   eind$data[which(indices=='SJ'),,] <- ech_ind$data[which(ech_ind$names=='SJ'),,]
+  #   eind$data[which(indices=='Z100'),,] <- ech_ind$data[which(ech_ind$names=='z100'),,]
+  #   eind$data[which(indices=='Z300'),,] <- ech_ind$data[which(ech_ind$names=='z300'),,]
+  #   eind$data[which(indices=='PWC'),,] <- ech_ind$data[which(ech_ind$names=='PWC'),,]
+  #   #   } 
+  #   #   
+  #   #   tmphc <- aggregate(analysis$ensmean[which(analysis$names=='stream'),],
+  #   #                      list(analysis$latstream),mean)
+  #   #   # fieldmax
+  #   #   anaHC <- apply(tmphc[,2:ncol(tmphc)],2,max)
+  #   #   # midlatitude circulation (Z300)
+  #   #   tmpweights <- cos(analysis$latgph300/180*pi)
+  #   #   tmpweights <- tmpweights/sum(tmpweights)
+  #   #   anaZ300 <- apply(analysis$ensmean[which(analysis$names=='gph300'),]*tmpweights,2,sum) 
+  #   #   # subtropical jet (SJ)
+  #   #   tmpu200 <- aggregate(analysis$ensmean[which(analysis$names=='u200'),],
+  #   #                        list(analysis$latu200),mean)
+  #   #   # fieldmax
+  #   #   anaSJ <- apply(tmpu200[,2:ncol(tmpu200)],2,max)
+  #   #   # stratospheric polar vortex (Z100)
+  #   #   tmpweights <- cos(analysis$latgph100/180*pi)
+  #   #   tmpweights <- tmpweights/sum(tmpweights)
+  #   #   tmpz100 <- apply(analysis$ensmean[which(analysis$names=='gph100'),]*tmpweights,2,sum) 
+  #   #   tmpweights <- cos(analysis$latgph100_2/180*pi)
+  #   #   tmpweights <- tmpweights/sum(tmpweights)
+  #   #   tmpz100_2 <- apply(analysis$ensmean[which(analysis$names=='gph100_2'),]*tmpweights,
+  #   #                      2,sum) 
+  #   #   anaZ100 <- tmpz100 - tmpz100_2
+  #   #   #anaZ100 <- rep(0,length(tmpz100)) # set to zero until working
+  #   #   # Pacific walker circulation (PWC)
+  #   #   tmpweights <- cos(analysis$latomega/180*pi)
+  #   #   tmpweights <- tmpweights/sum(tmpweights)
+  #   #   tmpweights <- cos(analysis$latomega_2/180*pi)
+  #   #   tmpweights <- tmpweights/sum(tmpweights)
+  #   #   tmpomega_2 <- apply(analysis$ensmean[which(analysis$names=='omega_2'),]*tmpweights,
+  #   #                       2,sum) 
+  #   #   anaPWC <- tmpomega - tmpomega_2
+  #   aind <- list(ensmean=Hind%*%analysis$ensmean, names=indices)
+  #   #   aind <- list(ensmean=Hind%*%analysis_noindex$ensmean, names=indices)
+  #   #   aind$ensmean[which(indices=='HC'),] <- anaHC
+  #   #   aind$ensmean[which(indices=='SJ'),] <- anaSJ
+  #   #   aind$ensmean[which(indices=='Z100'),] <- anaZ100
+  #   #   aind$ensmean[which(indices=='Z300'),] <- anaZ300
+  #   #   aind$ensmean[which(indices=='PWC'),] <- anaPWC
+  #   aind$ensmean[which(indices=='DIMI'),] <- ana_ind$ensmean[which(ana_ind$names=='DIMI'),]
+  #   aind$ensmean[which(indices=='HC'),] <- ana_ind$ensmean[which(ana_ind$names=='HC'),]
+  #   aind$ensmean[which(indices=='SJ'),] <- ana_ind$ensmean[which(ana_ind$names=='SJ'),]
+  #   aind$ensmean[which(indices=='Z100'),] <- ana_ind$ensmean[which(ana_ind$names=='z100'),]
+  #   aind$ensmean[which(indices=='Z300'),] <- ana_ind$ensmean[which(ana_ind$names=='z300'),]
+  #   aind$ensmean[which(indices=='PWC'),] <- ana_ind$ensmean[which(ana_ind$names=='PWC'),]  
+  #   #   #aind <- list(ensmean=Hind%*%analysis$ensmean, names=indices)
+  #   #   #aind$data <- array(Hind %*% array(analysis$data, c(nrow(analysis$data), length(analysis$data)/nrow(analysis$data))), c(nrow(Hind), dim(analysis$data)[2:3]))
+  #   #   
+  #   #   # data for ensemble member
+  #   aind$data <- array(Hind %*% array(analysis$data, c(nrow(analysis$data), 
+  #                                                      length(analysis$data)/nrow(analysis$data))), c(nrow(Hind), 
+  #                                                                                                     dim(analysis$data)[2:3]))
+  #   #  aind$data <- array(Hind %*% array(analysis_noindex$data, c(nrow(analysis_noindex$data), 
+  #   #                 length(analysis_noindex$data)/nrow(analysis_noindex$data))), c(nrow(Hind), 
+  #   #                 dim(analysis_noindex$data)[2:3]))
+  #   #   for (i in 1:nmem) {
+  #   #     tmphc <- aggregate(analysis$data[which(analysis$names=='stream'),,i],
+  #   #                        list(analysis$latstream),mean)
+  #   #     anaHC <- apply(tmphc[,2:ncol(tmphc)],2,max)
+  #   #     tmpweights <- cos(analysis$latgph300/180*pi)
+  #   #     tmpweights <- tmpweights/sum(tmpweights)
+  #   #     anaZ300 <- apply(analysis$data[which(analysis$names=='gph300'),,i]*tmpweights,2,sum) 
+  #   #     tmpu200 <- aggregate(analysis$data[which(analysis$names=='u200'),,i],
+  #   #                          list(analysis$latu200),mean)
+  #   #     anaSJ <- apply(tmpu200[,2:ncol(tmpu200)],2,max)
+  #   #     tmpweights <- cos(analysis$latgph100/180*pi)
+  #   #     tmpweights <- tmpweights/sum(tmpweights)
+  #   #     tmpz100 <- apply(analysis$data[which(analysis$names=='gph100'),,i]*tmpweights,2,sum) 
+  #   #     tmpweights <- cos(analysis$latgph100_2/180*pi)
+  #   #     tmpweights <- tmpweights/sum(tmpweights)
+  #   #     tmpz100_2 <- apply(analysis$data[which(analysis$names=='gph100_2'),,i]*tmpweights,
+  #   #                        2,sum) 
+  #   #     anaz100 <- tmpz100 - tmpz100_2
+  #   #     #anaZ100 <- rep(0,length(tmpz100)) # set to zero until working
+  #   #     tmpweights <- cos(analysis$latomega/180*pi)
+  #   #     tmpweights <- tmpweights/sum(tmpweights)
+  #   #     tmpomega <- apply(analysis$data[which(analysis$names=='omega'),,i]*tmpweights,2,sum) 
+  #   #     tmpweights <- cos(analysis$latomega_2/180*pi)
+  #   #     tmpweights <- tmpweights/sum(tmpweights)
+  #   #     tmpomega_2 <- apply(analysis$data[which(analysis$names=='omega_2'),,i]*tmpweights,
+  #   #                         2,sum) 
+  #   #     anaPWC <- tmpomega - tmpomega_2
+  #   #     aind$data[which(indices=='HC'),,i] <- anaHC
+  #   #     aind$data[which(indices=='SJ'),,i] <- anaSJ
+  #   #     aind$data[which(indices=='Z100'),,i] <- anaZ100
+  #   #     aind$data[which(indices=='Z300'),,i] <- anaZ300
+  #   #     aind$data[which(indices=='PWC'),,i] <- anaPWC
+  #   aind$data[which(indices=='DIMI'),,] <- ana_ind$data[which(ana_ind$names=='DIMI'),,]
+  #   aind$data[which(indices=='HC'),,] <- ana_ind$data[which(ana_ind$names=='HC'),,]
+  #   aind$data[which(indices=='SJ'),,] <- ana_ind$data[which(ana_ind$names=='SJ'),,]
+  #   aind$data[which(indices=='Z100'),,] <- ana_ind$data[which(ana_ind$names=='z100'),,]
+  #   aind$data[which(indices=='Z300'),,] <- ana_ind$data[which(ana_ind$names=='z300'),,]
+  #   aind$data[which(indices=='PWC'),,] <- ana_ind$data[which(ana_ind$names=='PWC'),,]
+  #   #   }  
+  #   
+  #   # 3. Validation data set indices
+  #   #  H.giorgi2 <- compute_giorgi_H(giorgi, validate) #, numvar=3) # 3 vars temp, precip, slp
+  #   #  Hind2 <- rbind(H.giorgi2[c(which(giorgi.short == 'NH')+ c(0,1,2)*length(giorgi.short),
+  #   #                             which(giorgi.short == 'NEU') + c(0,1,2)*length(giorgi.short)),], 
+  #   #                              0, 0, 0, 0, 0)          
+  #   
+  #   if (vali & ((cru_vali) | (ncep_vali) | (recon_vali))) { 
+  #     # there is already stefans indices in the data, only calc NH and EU
+  #     #  vind <- list(data=Hind2 %*% validate$data[1:length(
+  #     #               which(cruall$names=="temp2"))*3,], names=indices)
+  #     #    validatanona = validate$data
+  #     #    validatanona[is.na(validate$data)]=9e36
+  #     # land sea mask to take care of missing validata in the ocean
+  #     vpos <- which(!is.na(validate$data[,1]))
+  #     Hind2 <- Hind[,vpos]
+  #     validatanona <- validate$data[vpos,]
+  #     vind <- list(data=Hind2 %*% validatanona, names=indices)
+  #     #    vind <- list(data=Hind2 %*% validatanona, names=indices)
+  #     #  vind <- list(data=Hind2 %*% validate$data, names=indices)
+  #     #     vind$data[7,] <- valiall.allts$data[which(valiall$names=="ind_rec_hc"),]
+  #     #     vind$data[8,] <- valiall.allts$data[which(valiall$names=="ind_rec_sj"),]
+  #     #     vind$data[9,] <- valiall.allts$data[which(valiall$names=="ind_rec_z100"),]
+  #     #     vind$data[10,] <- valiall.allts$data[which(valiall$names=="ind_rec_z300"),]
+  #     #     vind$data[11,] <- valiall.allts$data[which(valiall$names=="ind_rec_pwc"),]
+  #     vind$data[7,] <- vali_ind$data[which(vali_ind$names=="ind_rec_hc"),]
+  #     vind$data[8,] <- vali_ind$data[which(vali_ind$names=="ind_rec_sj"),]
+  #     vind$data[9,] <- vali_ind$data[which(vali_ind$names=="ind_rec_z100"),]
+  #     vind$data[10,] <- vali_ind$data[which(vali_ind$names=="ind_rec_z300"),]
+  #     vind$data[11,] <- vali_ind$data[which(vali_ind$names=="ind_rec_pwc"),]
+  #     
+  #   } 
+  #   #   if (ncep_vali) { # there is already stefans indices in the data, only calc NH and EU
+  #   #     #  vind <- list(data=Hind2 %*% validate$data[1:length(which(ncepall$names=="temp2"))*3,], names=indices)
+  #   #     validatanona = validate$data
+  #   #     validatanona[is.na(validate$data)]=9e36
+  #   #     vind <- list(data=Hind2 %*% validatanona, names=indices)
+  #   #     #  vind <- list(data=Hind2 %*% validate$data, names=indices)
+  #   #     vind$data[7,] <- ncepall.allts$data[which(ncepall$names=="ind_rec_hc"),]
+  #   #     vind$data[8,] <- ncepall.allts$data[which(ncepall$names=="ind_rec_sj"),]
+  #   #     vind$data[9,] <- ncepall.allts$data[which(ncepall$names=="ind_rec_z100"),]
+  #   #     vind$data[10,] <- ncepall.allts$data[which(ncepall$names=="ind_rec_z300"),]
+  #   #     vind$data[11,] <- ncepall.allts$data[which(ncepall$names=="ind_rec_pwc"),]
+  #   #   } 
+  #   #   if (recon_vali) { # no indices available, only calc NH and EU
+  #   #     validate$data[which(is.na(validate$data))] <- 0
+  #   #     vind <- list(data=Hind2 %*% validate$data, names=indices)
+  #   #     vind$data[7:11,] <- 0
+  #   # #  vind$data[1:3,] <- 0 
+  #   # #  vind$data[5,] <- vind$data[5,]/3 # convert seasonal sum to month sum
+  # }
+  # 
+  # # compute indices from cut-off distance runs
+  # if (check_dist) {
+  #   adist.ind <- lapply(ana.dist, function(x) {
+  #     out <- list(ensmean = Hind %*% x$ensmean, names=indices)
+  #     out$data <- array(Hind %*% array(x$data, c(nrow(echam$data), 
+  #                                                length(echam$data)/nrow(echam$data))), c(nrow(Hind), 
+  #                                                                                         dim(echam$data)[2:3]))
+  #     return(out)})
+  # }
+  # 
+  # #valnona = validate$data
+  # #posnona = which(is.na(valnona))
+  # #valnona[posnona] = 0
+  # #vind <- list(data=Hind2 %*% valnona, names=indices)
+  # 
+  # #for (n in vind$names) {
+  # #  validate
+  # #}
+  # # this calculates the indices 'NHt2m', 'NEUt2m', 'NEUpr', 'NEUslp' as there are no regional averages in the original validation data (CRU TS)
+  # # 'HC', 'SJ', 'z100', 'DIMI' and simply taken from the validation data set and were calculated based on Stefan's recon pre 1948 and from NCEP reanalysis afterwards
+  # 
+  # 
+  # # stratospheric polar vortex
+  # #    cdo -s -sellevel,10000 -selvar,geopoth $f ${STOR_DIR}/gph100.$f
+  # #    cdo -s sub -fldmean -sellonlatbox,-180,180,75,90 ${STOR_DIR}/gph100.$f -fldmean -sellonlatbox,-180,180,40,55 ${STOR_DIR}/gph100.$f ${STOR_DIR}/z100.$f
+  # #    ncrename -h -v geopoth,z100 ${STOR_DIR}/z100.$f  
+  # # Hadley cell strength
+  # #    cdo -s fldmax -sellonlatbox,-180,180,0,30 -zonmean -sellevel,50000 -selvar,stream $f ${STOR_DIR}/HC.$f
+  # #    ncrename -h -v stream,HC ${STOR_DIR}/HC.$f 
+  # # subtropical jet
+  # #    cdo -s fldmax -sellonlatbox,-180,180,0,50 -zonmean -sellevel,20000 -selvar,u $f ${STOR_DIR}/SJ.$f
+  # #    ncrename -h -v u,SJ ${STOR_DIR}/SJ.$f  
+  # 
+  # #      ncrename -h -v geopoth,z100 ${STOR_DIR}/z100.$f
+  # 
   if (vali) {
-    if (ind_ECHAM) {
       # compute validation statistics on indices
-      ecorr.ind <- corr_fun(eind, vind, seas=2)
-      acorr.ind <- corr_fun(aind, vind, seas=2)
-      ermse.ind <- rmse_fun(eind, vind, seas=2)
-      armse.ind <- rmse_fun(aind, vind, seas=2)
-      ebias.ind <- bias_fun(eind, vind, seas=2)
-      abias.ind <- bias_fun(aind, vind, seas=2)
+      eind.allts$ensmean<-eind.allts$ensmean[1:34,]
+      aind.allts$ensmean<-aind.allts$ensmean[1:34,]
+      vind.allts$ensmean<-vind.allts$ensmean[1:34,]
+      eind.allts$data<-eind.allts$data[1:34,,]
+      aind.allts$data<-aind.allts$data[1:34,,]    
+      vind.allts$data<-vind.allts$data[1:34,]
+      aind.allts$names<-aind.allts$names[1:34]
+      eind.allts$names<-eind.allts$names[1:34]
+      vind.allts$names<-vind.allts$names[1:34]
+      ecorr.ind <- corr_fun(eind.allts, vind.allts, seas=2)
+      acorr.ind <- corr_fun(aind.allts, vind.allts, seas=2)
+      ermse.ind <- rmse_fun(eind.allts, vind.allts, seas=2)
+      armse.ind <- rmse_fun(aind.allts, vind.allts, seas=2)
+      ebias.ind <- bias_fun(eind.allts, vind.allts, seas=2)
+      abias.ind <- bias_fun(aind.allts, vind.allts, seas=2)
       RE.ind <- RE_fun(armse.ind, y=ermse.ind)
-    }
   }
-  
-  # compute validation stats on indices from distance runs
-  if (check_dist) {
-    if (vali) {
-      erank.ind <- rank_fun(eind, vind, seas=2)
-      arank.ind <- rank_fun(aind, vind, seas=2)
-      acorr.dist.ind <- lapply(adist.ind, corr_fun, y=vind, seas=2)
-      armse.dist.ind <- lapply(adist.ind, rmse_fun, y=vind, seas=2)
-      abias.dist.ind <- lapply(adist.ind, bias_fun, y=vind, seas=2)
-      RE.dist.ind <- lapply(armse.dist.ind, RE_fun, y=ermse.ind)
-      arank.dist.ind <- lapply(adist.ind, rank_fun, y=vind, seas=2)
-    }
-  }
+  # 
+  # # compute validation stats on indices from distance runs
+  # if (check_dist) {
+  #   if (vali) {
+  #     erank.ind <- rank_fun(eind, vind, seas=2)
+  #     arank.ind <- rank_fun(aind, vind, seas=2)
+  #     acorr.dist.ind <- lapply(adist.ind, corr_fun, y=vind, seas=2)
+  #     armse.dist.ind <- lapply(adist.ind, rmse_fun, y=vind, seas=2)
+  #     abias.dist.ind <- lapply(adist.ind, bias_fun, y=vind, seas=2)
+  #     RE.dist.ind <- lapply(armse.dist.ind, RE_fun, y=ermse.ind)
+  #     arank.dist.ind <- lapply(adist.ind, rank_fun, y=vind, seas=2)
+  #   }
+  # }
   #}
   
   

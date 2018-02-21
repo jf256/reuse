@@ -1229,34 +1229,35 @@ if (ind_ECHAM) {
 pdf(paste(figpath,'vali_ind.pdf',sep='/'), width=9, height=6, paper='special') 
 par(mfrow=c(4,2), cex.axis=1.4, cex.lab=1.4, mar=c(3,5,1,1), oma=c(0,0,0,0))
 
-vind2=vind
-vind2$data=array(vind$data,c(dim(vind$data)[1],2,dim(vind$data)[2]/2))
-eind2=eind
-eind2$ensmean=array(eind$ensmean,c(dim(eind$ensmean)[1],2,dim(eind$ensmean)[2]/2))
-eind2$min=array(apply(eind$data,1:2,min),c(dim(eind$ensmean)[1],2,dim(eind$ensmean)[2]/2))
-eind2$max=array(apply(eind$data,1:2,max),c(dim(eind$ensmean)[1],2,dim(eind$ensmean)[2]/2))
-aind2=aind
-aind2$ensmean=array(aind$ensmean,c(dim(aind$ensmean)[1],2,dim(aind$ensmean)[2]/2))
-aind2$min=array(apply(aind$data,1:2,min),c(dim(aind$ensmean)[1],2,dim(aind$ensmean)[2]/2))
-aind2$max=array(apply(aind$data,1:2,max),c(dim(aind$ensmean)[1],2,dim(aind$ensmean)[2]/2))
+vind2=vind.allts
+vind2$data=array(vind.allts$data,c(dim(vind.allts$data)[1],2,dim(vind.allts$data)[2]/2))
+eind2=eind.allts
+eind2$ensmean=array(eind.allts$ensmean,c(dim(eind.allts$ensmean)[1],2,dim(eind.allts$ensmean)[2]/2))
+eind2$min=array(apply(eind.allts$data,1:2,min),c(dim(eind.allts$ensmean)[1],2,dim(eind.allts$ensmean)[2]/2))
+eind2$max=array(apply(eind.allts$data,1:2,max),c(dim(eind.allts$ensmean)[1],2,dim(eind.allts$ensmean)[2]/2))
+aind2=aind.allts
+aind2$ensmean=array(aind.allts$ensmean,c(dim(aind.allts$ensmean)[1],2,dim(aind.allts$ensmean)[2]/2))
+aind2$min=array(apply(aind.allts$data,1:2,min),c(dim(aind.allts$ensmean)[1],2,dim(aind.allts$ensmean)[2]/2))
+aind2$max=array(apply(aind.allts$data,1:2,max),c(dim(aind.allts$ensmean)[1],2,dim(aind.allts$ensmean)[2]/2))
+t<-vind.allts$time[seq(1,length(vind.allts$time),by=2)]
 
-for (ind in c(1,4,5,6)) {
+for (ind in c(1,9,19,29)) {
 if (ind == 1) {mainname='NHt2m'}
-if (ind == 4) {mainname='NEUt2m'}
-if (ind == 5) {mainname='NEUpr'}
-if (ind == 6) {mainname='NEUslp'}
+if (ind == 9) {mainname='NEUt2m'}
+if (ind == 19) {mainname='NEUpr'}
+if (ind == 29) {mainname='NEUslp'}
  for (seas in c(1,2)) {
-  if (seas == 1) {color='darkblue'; color3='blue'; color2='cyan'}
-  if (seas == 2) {color='darkred'; color3='red'; color2='orange'}
-  ymin=min(eind2$min[ind,seas,])
-  ymax=max(eind2$max[ind,seas,])
-  plot(vind2$data[ind,seas,],ty='l',col=color,lty=1,ylim=c(ymin,ymax),main=mainname)
-  lines(eind2$ensmean[ind,seas,],ty='l',col=color2,lwd=2,lty=2,main='')
-  lines(eind2$min[ind,seas,],ty='l',col=color2,lty=2,lwd=1,main='')
-  lines(eind2$max[ind,seas,],ty='l',col=color2,lty=2,lwd=1,main='')
-  lines(aind2$ensmean[ind,seas,],ty='l',col=color3,lwd=2,lty=3,main='')
-  lines(aind2$min[ind,seas,],ty='l',col=color3,lty=3,lwd=1,main='')
-  lines(aind2$max[ind,seas,],ty='l',col=color3,lty=3,lwd=1,main='')
+  if (seas == 1) {color='black'; color3='blue'; color2='cyan'}
+  if (seas == 2) {color='violet'; color3='red'; color2='orange'}
+  ymin=min(cbind(eind2$min[ind,seas,],aind2$min[ind,seas,], vind2$data),na.rm = T)
+  ymax=max(cbind(eind2$max[ind,seas,],aind2$max[ind,seas,], vind2$data),na.rm = T)
+  plot(t,vind2$data[ind,seas,],ty='l',col=color,lty=1,ylim=c(ymin,ymax),main=mainname)
+  lines(t,eind2$ensmean[ind,seas,],ty='l',col=color2,lwd=2,lty=2,main='')
+  lines(t,eind2$min[ind,seas,],ty='l',col=color2,lty=2,lwd=1,main='')
+  lines(t,eind2$max[ind,seas,],ty='l',col=color2,lty=2,lwd=1,main='')
+  lines(t,aind2$ensmean[ind,seas,],ty='l',col=color3,lwd=2,lty=3,main='')
+  lines(t,aind2$min[ind,seas,],ty='l',col=color3,lty=3,lwd=1,main='')
+  lines(t,aind2$max[ind,seas,],ty='l',col=color3,lty=3,lwd=1,main='')
  }
 }
 dev.off()
@@ -1268,7 +1269,17 @@ dev.off()
 # new like in the paper
 #<<label=indices_corr, echo=FALSE, fig=TRUE, width=12, height=7, results=hide, eps=FALSE>>=
 
-inds <- c('NH.temp2', 'NEU.temp2', 'NEU.precip', 'HC', 'SJ', 'Z100', 'Z300', 'PWC') 
+inds <- c('NH.temp2', 'NEU.temp2', 'NEU.precip', 'NAM.temp2', 'AFR.temp2')
+indices <- c('ENH.temp2','NAM.temp2','SAM.temp2','AFR.temp2',
+             'ASI.temp2','AUS.temp2','ARC.temp2','ANT.temp2',
+             'NEU.temp2','MED.temp2',
+             'GLO.temp2','NAM.precip','SAM.precip','AFR.precip',
+             'ASI.precip','AUS.precip','ARC.precip','ANT.precip',
+             'NEU.precip','MED.precip',
+             'SH.temp2','NAM.slp','SAM.slp','AFR.slp',
+             'ASI.slp','AUS.slp','ARC.slp','ANT.slp',
+             'NEU.slp','MED.slp',
+             'NH.temp2', 'EU.temp2', 'EU.precip', 'EU.slp')
 if (pseudoproxy) {
     RE.mat <- array(NA, c(length(inds), 2, 30))
     corr.mat <- array(NA, c(length(inds)*2, 2, 30))
@@ -1333,7 +1344,7 @@ if (pseudoproxy){
     }
 
 #    indind <- c(1,2,4,5,7,8,10,11,13,14,16,17)
-indind <- c(1,2,4,5,7,8,10,11,13,14,16,17,19,20,22,23)
+indind <- c(1,2,4,5,7,8,10,11,13,14)
     for (se in 1:2){
         plot(0, type='n', xaxt='n', ylim=c(-1.1,1.1), xlim=c(0,max(indind)+1), xlab='', ylab='', yaxt=if (se == 2) 'n' else 's')
         polygon(c(-1,-1,max(indind)+c(2,2)), c(0,-2,-2,0), border=NA, col=grey(0.9))

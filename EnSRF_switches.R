@@ -324,7 +324,7 @@ ncep_vali=F            # NCEP/NCAR reanalysis data for validation
 #####################################################################################
 # prepare plot switches
 #####################################################################################
-monthly_out = T    # if sixmonstatevector=T output is backtransformed to seasonal 
+monthly_out = F    # if sixmonstatevector=T output is backtransformed to seasonal 
                  # average or monthly data if monthly_out=T 
 calc_prepplot=T  # save half year averages calc from monthly data into /prepplot folder
   write_coor=F     # write ascii files with assimilated stations and data per ts
@@ -349,6 +349,7 @@ CRPS = F      # calculate Continuous Ranked Probability Score
 vali_plots=F     # source EnSRF_plots.R script 
 ind_ECHAM=F      # delete/comment code in prepplot script and then delete switches here
 ind_recon=F      # delete/comment code in prepplot script and then delete switches here
+ind_anom=F      # calculate indices with anomaly data instead of absolute data
 
 
 #####################################################################################

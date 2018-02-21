@@ -32,10 +32,11 @@ if (user=="veronika") {
 } else if (user=="joerg") {
   workdir='/scratch3/joerg/projects/reuse/reuse_git/'
 } else if (user=="lucaf") {
-    workdir='/scratch3/lucaf/reuse/reuse_git/'
+  workdir='/scratch3/lucaf/reuse/reuse_git/'
+} else if (user == "nevin"){
+  workdir = '/scratch3/nevin/reuse_climcal/reuse_git/'
 } else {
   stop("Unknown user!")
-
 }
 dataextdir='/mnt/climstor/giub/EKF400/'
 dataintdir=paste0(workdir,'../data/')

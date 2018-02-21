@@ -15,8 +15,8 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
-syr=1902
-eyr=1903
+syr=1900
+eyr=2000
 
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
@@ -36,6 +36,8 @@ if (user=="veronika") {
   workdir='/scratch4/lucaf/reuse/reuse_git/'
 } else if (user=="joerg") {
   workdir='/scratch3/joerg/projects/reuse/reuse_git/'
+} else if (user == "nevin"){
+  workdir= '/scratch3/nevin/reuse_climcal/reuse_git/'
 } else {
   stop("Unknown user!")
 }
@@ -363,6 +365,7 @@ for (cyr in syr2:eyr) {
   # convert lon, lat, names sixmonstatevector data format
   # ACHTUNG: only 11 vars withOUT stream function included so far
   if (sixmonstatevector) {
+    one_var_dim<-length(echam$lon)
     numvar <- length(unique(echam$names)) 
     echam$lon <-  c(rep(echam$lon, (numvar*6)))
     echam$lat <- c(rep(echam$lat, (numvar*6)))

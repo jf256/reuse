@@ -14,7 +14,7 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 syr=1903 #1902 #1941
-eyr=1960 #2003 #1970
+eyr=1905 #2003 #1970
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
 args <- commandArgs(TRUE)
@@ -33,7 +33,9 @@ if (user=="veronika") {
   workdir='/scratch3/joerg/projects/reuse/reuse_git/'
 } else if (user=="lucaf") {
     workdir='/scratch4/lucaf/reuse/reuse_git/'
-} else {
+} else if (user == "nevin"){
+  workdir= '/scratch3/nevin/reuse_climcal/reuse_git/'
+}else {
   stop("Unknown user!")
 
 }
@@ -251,23 +253,12 @@ for (cyr in syr:eyr) {
     if (monthly_out) {
       print(paste('seasons =',s))
       s=12 # set back to 12 months for plotting
-      echam$data <- array(echam$data,c((dim(echam$data)[1]/6),dim(echam$data)[2]*6,
-                                       dim(echam$data)[3]))
-      echam$ensmean <- array(echam$ensmean,c((dim(echam$ensmean)[1]/6),
-                                             dim(echam$ensmean)[2]*6))
+      
       tmptime <- seq(syr,(eyr+1),by=1/12)
-      echam$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-      echam$names <- echam$names[1:dim(echam$data)[1]]
-      echam$lon <- echam$lon[1:(dim(echam$data)[1])] #/length(unique(echam$names)))]
-      echam$lat <- echam$lat[1:(dim(echam$data)[1])] #/length(unique(echam$names)))]
-      echam.anom$data <- array(echam.anom$data,c((dim(echam.anom$data)[1]/6),dim(echam.anom$data)[2]*6,
-                                       dim(echam.anom$data)[3]))
-      echam.anom$ensmean <- array(echam.anom$ensmean,c((dim(echam.anom$ensmean)[1]/6),
-                                             dim(echam.anom$ensmean)[2]*6))
-      echam.anom$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-      echam.anom$names <- echam.anom$names[1:dim(echam.anom$data)[1]]
-      echam.anom$lon <- echam.anom$lon[1:(dim(echam.anom$data)[1])] #/length(unique(echam.anom$names)))]
-      echam.anom$lat <- echam.anom$lat[1:(dim(echam.anom$data)[1])] #/length(unique(echam.anom$names)))]
+      echam<-convert_to_monthly(echam)
+      echam.anom<-convert_to_monthly(echam.anom)
+      analysis<-convert_to_monthly(analysis)
+      analysis.anom<-convert_to_monthly(analysis.anom)
       if (ind_ECHAM) {
         ech_ind$data <- array(ech_ind$data,c((dim(ech_ind$data)[1]/6),dim(ech_ind$data)[2]*6,
                                            dim(ech_ind$data)[3]))
@@ -278,22 +269,6 @@ for (cyr in syr:eyr) {
         ech_ind$lon <- ech_ind$lon[1:(dim(ech_ind$data)[1])] #/length(unique(ech_ind$names)))]
         ech_ind$lat <- ech_ind$lat[1:(dim(ech_ind$data)[1])]
       }
-      analysis$data <- array(analysis$data,c((dim(analysis$data)[1]/6),
-                                             dim(analysis$data)[2]*6,dim(analysis$data)[3]))
-      analysis$ensmean <- array(analysis$ensmean,c((dim(analysis$ensmean)[1]/6),
-                                                   dim(analysis$ensmean)[2]*6))
-      analysis$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-      analysis$names <- analysis$names[1:dim(analysis$data)[1]]
-      analysis$lon <- analysis$lon[1:(dim(analysis$data)[1])] #/length(unique(analysis$names)))]
-      analysis$lat <- analysis$lat[1:(dim(analysis$data)[1])] 
-      analysis.anom$data <- array(analysis.anom$data,c((dim(analysis.anom$data)[1]/6),
-                                             dim(analysis.anom$data)[2]*6,dim(analysis.anom$data)[3]))
-      analysis.anom$ensmean <- array(analysis.anom$ensmean,c((dim(analysis.anom$ensmean)[1]/6),
-                                                   dim(analysis.anom$ensmean)[2]*6))
-      analysis.anom$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
-      analysis.anom$names <- analysis.anom$names[1:dim(analysis.anom$data)[1]]
-      analysis.anom$lon <- analysis.anom$lon[1:(dim(analysis.anom$data)[1])] #/length(unique(analysis.anom$names)))]
-      analysis.anom$lat <- analysis.anom$lat[1:(dim(analysis.anom$data)[1])] 
       if (ind_ECHAM) {
         ana_ind$data <- array(ana_ind$data,c((dim(ana_ind$data)[1]/6),dim(ana_ind$data)[2]*6,
                                          dim(ana_ind$data)[3]))
@@ -1252,7 +1227,7 @@ if (vali) {
 }
 
 calibrate.clim <- calibrate
-calibrate.clim$data <- apply(array(calibrate$data, c(nrow(calibrate$data), s, ncol(calibrate$data)/s)), 1:2, mean, na.rm=T)
+calibrate.clim$data <- apply(array(calibrate$data, c(nrow(calibrate$data), 2, ncol(calibrate$data)/2)), 1:2, mean, na.rm=T)
 calibrate.anom <- calibrate
 calibrate.anom$data <- array(calibrate$data - as.vector(calibrate.clim$data), c(nrow(calibrate$data), ncol(calibrate$data)))
 

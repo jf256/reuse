@@ -1110,22 +1110,40 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
           if (!exists("mrNH")) {
             mrNH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) #nr of coeff + intercept
             var_residuNH <- NA
+            NHlat <- p_tree$lat[i]
+            NHlon <- tree$lon[i]
+            NHelev <- p_tree$elevation[i]
+            NHdata <- p_tree$data[,i]
           } else {
             mrNH <- rbind(mrNH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))#nr of coeff + intercept
-            var_residuNH <- c(var_residuNH,rep(NA,1)) }
-        }else if (!exists("mrSH")){
+            var_residuNH <- c(var_residuNH,rep(NA,1))
+            NHlat <- c(NHlat,p_tree$lat[i])
+            NHlon <- c(NHlon,p_tree$lon[i])
+            NHelev <- c(NHelev,p_tree$elevation[i])
+            NHdata <- cbind(NHdata,p_tree$data[,i])}
+        }else  {
+          if (!exists("mrSH")){
             mrSH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # nr of coeff + intercept
             var_residuSH <- NA
+            SHlat <- p_tree$lat[i]
+            SHlon <- p_tree$lon[i]
+            SHelev <- p_tree$elevation[i]
+            SHdata <- p_tree$data[,i]
         }else{
             mrSH <- rbind(mrSH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))
             var_residuSH <- c(var_residuSH,rep(NA,1)) 
-          }
+            NHlat <- c(NHlat,p_tree$lat[i])
+            NHlon <- c(NHlon,p_tree$lon[i])
+            NHelev <- c(NHelev,p_tree$elevation[i])
+            NHdata <- cbind(NHdata,p_tree$data[,i])
+        }
+        }
       }else{ # we can calculate the regression
         # make variable for each month
         t5 = t3[c(4:(length(t3)-3))]
         t4 = t(array(t5,c(6,length(t5)/6))) #makes half year bunches
         tSH = t4[seq(2,nrow(t4),2),] #takes the months from Oct to March
-        tNH = t4[seq(1,nrow(t4),2),][-c(1),] #takes the months from April to September
+        tNH = t4[seq(1,nrow(t4),2),][-c(1),] #takes the months from April to September, shortened because easier later
         # t4 = t(array(t5,c(12,length(t5)/12))) # 70 years from Apr-March, cuts the last half year without warning
         
         if (p_tree$lat[i] > 0) { # which half a year we want to use for calculating the regression
@@ -1145,17 +1163,33 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
         if (!exists("mrNH")) { 
           mrNH <- results$coefficients
           var_residuNH <- var(results$residuals)
+          NHlat <- p_tree$lat[i]
+          NHlon <- p_tree$lon[i]
+          NHelev <- p_tree$elevation[i]
+          NHdata <- p_tree$data[,i]
         } else { 
           mrNH <- rbind(mrNH,results$coefficients)
           var_residuNH <- c(var_residuNH,var(results$residuals))
+          NHlat <- c(NHlat,p_tree$lat[i])
+          NHlon <- c(NHlon,p_tree$lon[i])
+          NHelev <- c(NHelev,p_tree$elevation[i])
+          NHdata <- cbind(NHdata,p_tree$data[,i])
         }
         }else{
           if (!exists("mrSH")) { 
             mrSH <- results$coefficients
             var_residuSH <- var(results$residuals)
+            SHlat <- p_tree$lat[i]
+            SHlon <- p_tree$lon[i]
+            SHelev <- p_tree$elevation[i]
+            SHdata <- p_tree$data[,i]
           } else { 
             mrSH <- rbind(mrSH,results$coefficients)
             var_residuSH <- c(var_residuSH,var(results$residuals))
+            SHlat <- c(SHlat,p_tree$lat[i])
+            SHlon <- c(SHlon,p_tree$lon[i])
+            SHelev <- c(SHelev,p_tree$elevation[i])
+            SHdata <- cbind(SHdata,p_tree$data[,i])
           }
         }
       }
@@ -1165,9 +1199,17 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
     colnames(mrtmp) <- c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabp.first","unabp.second","unabp.third","unabp.fourth","unabp.fifth","unabp.sixth")
     mrtmp[1:nrow(mrNH),match(colnames(mrNH),colnames(mrtmp))]<-mrNH 
     mrtmp[(nrow(mrNH)+1):nrow(mrtmp),match(colnames(mrSH),colnames(mrtmp))]<-mrSH
+    datatmp <- matrix(NA, 403, ncol(NHdata)+ncol(SHdata))
+    datatmp[,1:ncol(NHdata)] <- NHdata
+    datatmp[,(ncol(NHdata)+1):ncol(datatmp)] <- SHdata
+    
     
     p_tree$mr <- mrtmp 
     p_tree$var_residu <- c(var_residuNH,var_residuSH)
+    p_tree$lat <- c(NHlat,SHlat)
+    p_tree$lon <- c(NHlon,SHlon)
+    p_tree$elevation <- c(NHelev,SHelev)
+    p_tree$data <- datatmp
     invisible(p_tree)
     
     
@@ -1268,22 +1310,31 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
             if (!exists("mrNH")) { 
               mrNH <- results$coefficients
               var_residuNH <- var(results$residuals)
+              NHlat <- p_coral$lat[i]
+              NHlon <- p_coral$lon[i]
             } else { 
               mrNH <- rbind(mrNH,results$coefficients)
               var_residuNH <- c(var_residuNH,var(results$residuals))
+              NHlat <- c(NHlat,p_coral$lat[i])
+              NHlon <- c(NHlon,p_coral$lon[i])
             }
           }else{
             if (!exists("mrSH")) { 
               mrSH <- results$coefficients
               var_residuSH <- var(results$residuals)
+              SHlat <- p_coral$lat[i]
+              SHlon <- p_coral$lon[i]
             } else { 
               mrSH <- rbind(mrSH,results$coefficients)
               var_residuSH <- c(var_residuSH,var(results$residuals))
+              SHlat <- c(SHlat,p_coral$lat[i])
+              SHlon <- c(SHlon,p_coral$lon[i])
             }
           }
         }
       }
     }
+    
     
     mrtmp<-matrix(NA, nrow(mrNH)+nrow(mrSH),13)
     colnames(mrtmp) <- c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabp.first","unabp.second","unabp.third","unabp.fourth","unabp.fifth","unabp.sixth")
@@ -1292,6 +1343,8 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
     
     p_coral$mr <- mrtmp
     p_coral$var_residu <- c(var_residuNH,var_residuSH)
+    p_coral$lat <- c(NHlat,SHlat)
+    p_coral$lon <- c(NHlon,SHlon)
     invisible(p_coral)
   } else if (archivetype == "documents") {
     mylist.names = c("data","time","lon","lat","archivetype","elevation")
@@ -2694,6 +2747,8 @@ plot_echam <- function(x, levs, varname='temp2', type='data',  ti=1,
       if (nmod == 1) dd <- lcm(2.8)
       layout(matrix(c(1:nmod, rep(nmod+2, nn-nmod), rep(nmod+1, nrow)),
                     ncol, nrow, byrow=T), height=c(rep(5, ncol-1),dd))
+
+      
       oma <- rep(0, 4)
       if (!is.null(rownames)) oma[3] <- 3
       if (!is.null(colnames)) oma[2] <- 3
@@ -5319,7 +5374,7 @@ read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,
     ti <- which(tim >= timlim[1] & tim < (timlim[2]+1))
     outdata <- NULL
     names <- NULL
-    for (varname in c('temp2', 'precip', 'slp','air','prate','hgt','omega','geopoth')){
+    for (varname in c('temp2', 'precip', 'slp','gph500','gph100','u850','u200','v850','v200','omega500','t500')){
       if (varname %in% names(nc$var)){
         if (length(nc$var[[varname]]$dim) == 3){
           if (length(ti)==1) {
@@ -5358,10 +5413,10 @@ read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,
           if (varname == 'slp'){
             data <- data / 100
             print(paste("unit conversion for ",varname," done"))}
-          if (varname == 'temp2'){
+          if (varname == 'temp2'| varname =="t500"){
             data <- data - 273.15
-            print(paste("unit conversion for ",varname," done"))}
-          if (varname == 'omega'){
+            print(paste("unit conversion for Kelvin to Celsius done"))}
+          if (varname == 'omega500'){
             data <- data/100
             print(paste("unit conversion for ",varname," done"))}
         }

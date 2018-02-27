@@ -40,7 +40,7 @@ source('EnSRF_functions.R')
 # cdo vardes filename
 # cdo sinfo filename
 
-# GEOPOTH
+# GEOPOTH 500
 ## Time_bnds variable löschen und 500 level auswählen
 system(paste0("cdo -sellevel,500 -delname,time_bnds ",twentycrpath,"hgt.mon.mean.nc ",twentycrpath,"new.hgt.nc"))
 ## Interpolate onto echam grid
@@ -48,10 +48,20 @@ system(paste0("cdo -r remapcon,t63grid ",twentycrpath,"new.hgt.nc ",twentycrpath
 ## change variablename
 system(paste0("cdo chname,hgt,gph500 ",twentycrpath,"newnew.hgt.nc ",twentycrpath,"newnewnew.hgt.nc"))
 
-# TEMPERATURE
+# GEOPOTH 100
+system(paste0("cdo -sellevel,100 -delname,time_bnds ",twentycrpath,"hgt.mon.mean.nc ",twentycrpath,"new.hgt100.nc"))
+system(paste0("cdo -r remapcon,t63grid ",twentycrpath,"new.hgt100.nc ",twentycrpath,"newnew.hgt100.nc"))
+system(paste0("cdo chname,hgt,gph100 ",twentycrpath,"newnew.hgt100.nc ",twentycrpath,"newnewnew.hgt100.nc"))
+
+# TEMPERATURE 2m
 system(paste0("cdo delname,time_bnds ",twentycrpath,"air.2m.mon.mean.nc ",twentycrpath,"new.air.nc"))
 system(paste0("cdo -r remapcon,t63grid ",twentycrpath,"new.air.nc ",twentycrpath,"newnew.air.nc"))
 system(paste0("cdo chname,air,temp2 ",twentycrpath,"newnew.air.nc ",twentycrpath,"newnewnew.air.nc"))
+
+# TEMPERATURE 500
+system(paste0("cdo -sellevel,500 -delname,time_bnds ",twentycrpath,"air.mon.mean.nc ",twentycrpath,"new.air500.nc"))
+system(paste0("cdo -r remapcon,t63grid ",twentycrpath,"new.air500.nc ",twentycrpath,"newnew.air500.nc"))
+system(paste0("cdo chname,air,t500 ",twentycrpath,"newnew.air500.nc ",twentycrpath,"newnewnew.air500.nc"))
 
 # PRECIPITATION -> needs to be changed from rate to normal
 system(paste0("cdo delname,time_bnds ",twentycrpath,"prate.mon.mean.nc ",twentycrpath,"new.prate.nc"))
@@ -67,17 +77,50 @@ system(paste0("cdo chname,prmsl,slp ",twentycrpath,"newnew.prmsl.nc ",twentycrpa
 system(paste0("cdo -sellevel,500 -delname,time_bnds ",twentycrpath,"omega.mon.mean.nc ",twentycrpath,"new.omega.nc"))
 system(paste0("cdo -r remapcon,t63grid ",twentycrpath,"new.omega.nc ",twentycrpath,"newnew.omega.nc"))
 system(paste0("cdo chname,omega,omega500 ",twentycrpath,"newnew.omega.nc ",twentycrpath,"newnewnew.omega.nc"))
-#already has the right variable name
+
+# u850
+system(paste0("cdo -sellevel,850 -delname,time_bnds ",twentycrpath,"uwnd.mon.mean.nc ",twentycrpath,"new.u850.nc"))
+system(paste0("cdo -r remapcon,t63grid ",twentycrpath,"new.u850.nc ",twentycrpath,"newnew.u850.nc"))
+system(paste0("cdo chname,uwnd,u850 ",twentycrpath,"newnew.u850.nc ",twentycrpath,"newnewnew.u850.nc"))
+
+# u200
+system(paste0("cdo -sellevel,200 -delname,time_bnds ",twentycrpath,"uwnd.mon.mean.nc ",twentycrpath,"new.u200.nc"))
+system(paste0("cdo -r remapcon,t63grid ",twentycrpath,"new.u200.nc ",twentycrpath,"newnew.u200.nc"))
+system(paste0("cdo chname,uwnd,u200 ",twentycrpath,"newnew.u200.nc ",twentycrpath,"newnewnew.u200.nc"))
+
+# v850
+system(paste0("cdo -sellevel,850 -delname,time_bnds ",twentycrpath,"vwnd.mon.mean.nc ",twentycrpath,"new.v850.nc"))
+system(paste0("cdo -r remapcon,t63grid ",twentycrpath,"new.v850.nc ",twentycrpath,"newnew.v850.nc"))
+system(paste0("cdo chname,vwnd,v850 ",twentycrpath,"newnew.v850.nc ",twentycrpath,"newnewnew.v850.nc"))
+
+# v200
+system(paste0("cdo -sellevel,200 -delname,time_bnds ",twentycrpath,"vwnd.mon.mean.nc ",twentycrpath,"new.v200.nc"))
+system(paste0("cdo -r remapcon,t63grid ",twentycrpath,"new.v200.nc ",twentycrpath,"newnew.v200.nc"))
+system(paste0("cdo chname,vwnd,v200 ",twentycrpath,"newnew.v200.nc ",twentycrpath,"newnewnew.v200.nc"))
+
+
+# TO DO:
+# merge all and save
+
 
 ## select time range
-system(paste0("cdo seldate,1901-01-01,2004-12-31 ",twentycrpath,"newnewnew.hgt.nc ",twentycrpath,"geopoth.nc"))
+system(paste0("cdo seldate,1901-01-01,2004-12-31 ",twentycrpath,"newnewnew.hgt.nc ",twentycrpath,"gph500.nc"))
+system(paste0("cdo seldate,1901-01-01,2004-12-31 ",twentycrpath,"newnewnew.hgt100.nc ",twentycrpath,"gph100.nc"))
 system(paste0("cdo seldate,1901-01-01,2004-12-31 ",twentycrpath,"newnewnew.air.nc ",twentycrpath,"temp2.nc"))
+system(paste0("cdo seldate,1901-01-01,2004-12-31 ",twentycrpath,"newnewnew.air500.nc ",twentycrpath,"t500.nc"))
 system(paste0("cdo seldate,1901-01-01,2004-12-31 ",twentycrpath,"newnewnew.prate.nc ",twentycrpath,"precip.nc"))
 system(paste0("cdo seldate,1901-01-01,2004-12-31 ",twentycrpath,"newnewnew.prmsl.nc ",twentycrpath,"slp.nc"))
-system(paste0("cdo seldate,1901-01-01,2004-12-31 ",twentycrpath,"newnewnew.omega.nc ",twentycrpath,"omega.nc"))
+system(paste0("cdo seldate,1901-01-01,2004-12-31 ",twentycrpath,"newnewnew.omega.nc ",twentycrpath,"omega500.nc"))
+system(paste0("cdo seldate,1901-01-01,2004-12-31 ",twentycrpath,"newnewnew.u850.nc ",twentycrpath,"u850.nc"))
+system(paste0("cdo seldate,1901-01-01,2004-12-31 ",twentycrpath,"newnewnew.u200.nc ",twentycrpath,"u200.nc"))
+system(paste0("cdo seldate,1901-01-01,2004-12-31 ",twentycrpath,"newnewnew.v850.nc ",twentycrpath,"v850.nc"))
+system(paste0("cdo seldate,1901-01-01,2004-12-31 ",twentycrpath,"newnewnew.v200.nc ",twentycrpath,"v200.nc"))
+
+
+
 
 ### MERGE ALL VARS 1901-2004
-system(paste0("cdo merge ",twentycrpath,"temp2.nc ",twentycrpath,"precip.nc ",twentycrpath,"slp.nc ",twentycrpath,"geopoth.nc ",twentycrpath,"omega.nc ",twentycrpath,"twentycr_allvar_1901-2004.nc"))
+system(paste0("cdo merge ",twentycrpath,"temp2.nc ",twentycrpath,"precip.nc ",twentycrpath,"slp.nc ",twentycrpath,"gph500.nc ",twentycrpath,"gph100.nc ",twentycrpath,"u850.nc ",twentycrpath,"u200.nc ",twentycrpath,"v850.nc ",twentycrpath,"v200.nc ",twentycrpath,"omega500.nc ",twentycrpath,"t500.nc ",twentycrpath,"twentycr_allvar_1901-2004.nc"))
 
 ## check data
 system(paste0("cdo vardes ",twentycrpath,"twentycr_allvar_1901-2004.nc"))
@@ -89,8 +132,14 @@ twentycr.all <- read_20cr(filehead="twentycr_allvar_1901-2004",path=twentycrpath
 length(which(twentycr.all$names=="temp2"))
 length(which(twentycr.all$names=="precip"))
 length(which(twentycr.all$names=="slp"))
+length(which(twentycr.all$names=="gph500"))
+length(which(twentycr.all$names=="gph100"))
+length(which(twentycr.all$names=="u850"))
+length(which(twentycr.all$names=="u200"))
+length(which(twentycr.all$names=="v850"))
+length(which(twentycr.all$names=="v200"))
 length(which(twentycr.all$names=="omega500"))
-length(which(twentycr.all$names=="gph5"))
+length(which(twentycr.all$names=="t500"))
 
 save(twentycr.all,file=paste0(twentycrpath,"twentycr_allvar_1901-2004_2ndgrid.Rdata"))
 

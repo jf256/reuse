@@ -32,11 +32,12 @@ if (user=="veronika") {
 } else if (user=="joerg") {
   workdir='/scratch3/joerg/projects/reuse/reuse_git/'
 } else if (user=="lucaf") {
-  workdir='/scratch3/lucaf/reuse/reuse_git/'
+    workdir='/scratch3/lucaf/reuse/reuse_git/'
 } else if (user == "nevin"){
   workdir = '/scratch3/nevin/reuse_climcal/reuse_git/'
 } else {
   stop("Unknown user!")
+
 }
 dataextdir='/mnt/climstor/giub/EKF400/'
 dataintdir=paste0(workdir,'../data/')
@@ -2797,19 +2798,19 @@ validate.anom <- validate.anom_init
     print("saving...")
     if (every2grid) {
       if (monthly_out) {
-        save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,H.giorgi,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,cali,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim, 
+        save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,H.giorgi,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,cali,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,sprerr.win,sprerr.sum,sprerr.c.win,sprerr.c.sum,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim,s.plot,vali,recon_vali, 
              file=paste0("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",syr,"-",eyr,"_monthly_2ndgrid.Rdata"))
         
       } else {
-        save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,H.giorgi,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,cali,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim ,
+        save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,H.giorgi,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,cali,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,sprerr.win,sprerr.sum,sprerr.c.win,sprerr.c.sum,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim,s.plot,vali,recon_vali,
              file=paste0("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
       }  
     } else {
       if (monthly_out) {
-        save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,H.giorgi,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,cali,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim ,
+        save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,H.giorgi,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,cali,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,sprerr.win,sprerr.sum,sprerr.c.win,sprerr.c.sum,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim,s.plot,vali,recon_vali,
              file=paste("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",syr,"-",eyr,"_monthly.Rdata",sep=""))
       } else {
-        save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,H.giorgi,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,cali,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim ,
+        save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,H.giorgi,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,cali,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,sprerr.win,sprerr.sum,sprerr.c.win,sprerr.c.sum,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim,s.plot,vali,recon_vali,
              file=paste("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",syr,"-",eyr,"_seasonal.Rdata",sep=""))
       }
     }

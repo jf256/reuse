@@ -1,4 +1,4 @@
-expname="CRUvs20CR" # "EKF400_v1.3_full_res" #
+expname="proxies_only_NTREND_nevin" # "EKF400_v1.3_full_res" #
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -175,7 +175,7 @@ generate_PROXIES=F
 #        Abklären: ist in den jeweiligen  read_proxy_mxd zb t4 immer von t1-t12, weil sonst machen 
 #                  die colnames nicht Sinn!!!!! Zb Zeile:
 #                  Weil in Pages sind es nicht dieselben 
-generate_PROXIESnew=F
+generate_PROXIESnew=T
 if (generate_PROXIESnew==T) {
 # You can choose any combination of months and variable (T&P) for regression_months.
 # Then you can choose for each source whether it to be included or not. 
@@ -191,7 +191,7 @@ regression_months = c('t.first','t.second','t.third','t.fourth','t.fifth','t.six
   TRW=F
   MXD=F
   SCHWEINGR=F
-  PAGES=F
+  PAGES=T
 pages_lm_fit = "CRU"   # can be CRU or GISS to calculate the reg coeff-s
 type = c("tree") 
 #          ^ it only works with tree and coral (and both indiviually as well)

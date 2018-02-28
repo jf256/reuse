@@ -1,4 +1,4 @@
-expname="proxies_only_NTREND_1-6th" # "EKF400_v1.3_full_res" #
+expname="CRUvs20CR" # "EKF400_v1.3_full_res" #
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -175,7 +175,7 @@ generate_PROXIES=F
 #        Abklären: ist in den jeweiligen  read_proxy_mxd zb t4 immer von t1-t12, weil sonst machen 
 #                  die colnames nicht Sinn!!!!! Zb Zeile:
 #                  Weil in Pages sind es nicht dieselben 
-generate_PROXIESnew=T
+generate_PROXIESnew=F
 if (generate_PROXIESnew==T) {
 # You can choose any combination of months and variable (T&P) for regression_months.
 # Then you can choose for each source whether it to be included or not. 
@@ -191,7 +191,7 @@ regression_months = c('t.first','t.second','t.third','t.fourth','t.fifth','t.six
   TRW=F
   MXD=F
   SCHWEINGR=F
-  PAGES=T
+  PAGES=F
 pages_lm_fit = "CRU"   # can be CRU or GISS to calculate the reg coeff-s
 type = c("tree") 
 #          ^ it only works with tree and coral (and both indiviually as well)
@@ -305,7 +305,7 @@ if (no_stream & tps_only) {
 # other options
 scaleprox=T            # scale standardized docu and prox data the echam variance at location
 anomaly_assim=T        # work with anomalies to avoid reg. const in state vector
-nseas <- 12            # year with 12 months
+# nseas <- 12            # year with 12 months
 check_dist=F           # test for ideal cut-off distance of spatial correlations
 #H_non_lin=F           # new H operator that also allows non-linear functions
 ana.enssize=F
@@ -338,7 +338,7 @@ ncep_vali=F            # NCEP/NCAR reanalysis data for validation
 #####################################################################################
 # prepare plot switches
 #####################################################################################
-monthly_out = T    # if sixmonstatevector=T output is backtransformed to seasonal 
+monthly_out = F    # if sixmonstatevector=T output is backtransformed to seasonal 
                  # average or monthly data if monthly_out=T 
 calc_prepplot=T  # save half year averages calc from monthly data into /prepplot folder
   write_coor=F     # write ascii files with assimilated stations and data per ts

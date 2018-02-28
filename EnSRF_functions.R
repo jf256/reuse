@@ -5867,6 +5867,30 @@ convert_to_2_seasons <- function(x,source){
     return(x)
   }
 }
+convert_to_monthly <- function(dataset) {
+  # converts dataset from sixmonstatevector back to twelve months (oktober-september)
+  syr<-get("syr")
+  eyr<-get("eyr")
+  s<-12 # set back to 12 months for plotting
+  tmptime <-  get("tmptime")
+  season<-get("season")
+  #reshape dataset
+  
+  if (length(dim(dataset$data))==3){ 
+    dataset$data <- array(dataset$data, c((dim(dataset$data)[1]/6), dim(dataset$data)[2]*6, dim(dataset$data)[3]))
+  }
+  else{ #validate and calibrate do not have multiple ensemble members (one dim less)
+    dataset$data <- array(dataset$data, c((dim(dataset$data)[1]/6), dim(dataset$data)[2]*6))  
+  }
+  if ("ensmean" %in% names(dataset)){  #some datasets do not have ensmean
+    dataset$ensmean <- array(dataset$ensmean, c((dim(dataset$ensmean)[1]/6), dim(dataset$ensmean)[2]*6))
+  }
+  dataset$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
+  dataset$names <- dataset$names[1:dim(dataset$data)[1]]
+  dataset$lon <- dataset$lon[1:(dim(dataset$data)[1])] #/length(unique(dataset$names)))]
+  dataset$lat <- dataset$lat[1:(dim(dataset$data)[1])] #/length(unique(dataset$names)))]
+  return(dataset)
+}
 
 
 

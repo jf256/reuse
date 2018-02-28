@@ -15,8 +15,8 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
-syr=1903
-eyr=1960
+syr=1910
+eyr=1945
 
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
@@ -70,7 +70,7 @@ for (cyr in syr2:eyr) {
     instrumental=F
   }
   if (cyr < 1960) {
-    real_proxies=T         # Proxy data experiment (regression NOT H operator)
+    real_proxies=F         # Proxy data experiment (regression NOT H operator)
   } else {
     real_proxies=F
   }

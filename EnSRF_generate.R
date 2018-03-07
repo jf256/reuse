@@ -207,7 +207,7 @@ if (generate_PROXIESnew){
     
     if (varname=="pages") {
       print("reading pages")
-      pagesprox <- read_PAGES(type) 
+      pagesprox <- setup_read_pages(type) 
       
       if (exists("realprox")){
         

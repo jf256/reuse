@@ -15,8 +15,8 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
-syr=1910
-eyr=1945
+syr=1899
+eyr=1904
 
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
@@ -71,7 +71,7 @@ for (cyr in syr2:eyr) {
     instrumental=F
   }
   if (cyr < 1960) {
-    real_proxies=F         # Proxy data experiment (regression NOT H operator)
+    real_proxies=T         # Proxy data experiment (regression NOT H operator)
   } else {
     real_proxies=F
   }
@@ -1328,7 +1328,7 @@ for (cyr in syr2:eyr) {
       if ((real_proxies) & ((instrumental) | (docum))) { 
         Rcal <- c(temp2=0.9, precip=50, slp=10)[calibrate$names]
         #        if (avg_prox_per_grid) {Rcal <- Rcal*(1/calibrate$numavg)}
-        Rcal[calibrate$names=="prox"] <- realprox$var_residu 
+        Rcal[calibrate$names=="prox"] <- realprox$var_residu/4
         # previously used residuals/2 for 1. paper version to give proxies more weight
         # better delete "/2"
         # probably should have given instrumentals more error instead!

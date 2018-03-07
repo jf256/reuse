@@ -278,7 +278,7 @@ avg_prox_per_grid=T    # average more than one proxy per echam grid box
 instmaskprox=F         # remove proxy data from grid boxes that have instr. data
 reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
-land_only=F            # calc on land only
+land_only=T            # calc on land only
 fasttest=F             # use even less data
 tps_only=F             # only use temp, precip and slp in state vector, remove other vars
 no_stream=T            # all echam vars but stream function as there is problem with 
@@ -356,19 +356,20 @@ if (!monthly_out & write_netcdf) {
 # 1902-2003, because it creates time series
 load_prepplot=T  # ATTENTION check if folder prepplot on scratch contains monthly or seasonal data!
                  # saves image and only needs to be run once, afterward set "load_image=T" 
-statyr=1934    # 1941 1850/69 year, when station network is kept constant
+statyr=1903    # 1941 1850/69 year, when station network is kept constant
 load_image=T     # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
 calc_vali_stat=T # calculate validation statistics after preparation (set "load_image=T")
 CRPS = TRUE      # calculate Continuous Ranked Probability Score
 vali_plots=F     # source EnSRF_plots.R script 
 ind_ECHAM=F      # delete/comment code in prepplot script and then delete switches here
 ind_recon=F      # delete/comment code in prepplot script and then delete switches here
-
+ind_anom=F       # calculate indices from anomaly data
+  
 
 #####################################################################################
 # plot switches
 #####################################################################################
-validation_set="cru_vali" #twentycr_vali/cru_vali
+validation_set=c("cru_vali","twentycr_vali")
 monthly=F
 pseudoproxy=F
 plot_dweights=F

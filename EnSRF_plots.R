@@ -1241,16 +1241,18 @@ aind2$min=array(apply(aind.allts$data,1:2,min),c(dim(aind.allts$ensmean)[1],2,di
 aind2$max=array(apply(aind.allts$data,1:2,max),c(dim(aind.allts$ensmean)[1],2,dim(aind.allts$ensmean)[2]/2))
 t<-vind.allts$time[seq(1,length(vind.allts$time),by=2)]
 
-for (ind in c(1,9,19,29)) {
-if (ind == 1) {mainname='NHt2m'}
+for (ind in c(31,9,19,29)) {
+if (ind == 31) {mainname='NHt2m'}
 if (ind == 9) {mainname='NEUt2m'}
 if (ind == 19) {mainname='NEUpr'}
 if (ind == 29) {mainname='NEUslp'}
  for (seas in c(1,2)) {
   if (seas == 1) {color='black'; color3='blue'; color2='cyan'}
-  if (seas == 2) {color='violet'; color3='red'; color2='orange'}
-  ymin=min(cbind(eind2$min[ind,seas,],aind2$min[ind,seas,], vind2$data),na.rm = T)
-  ymax=max(cbind(eind2$max[ind,seas,],aind2$max[ind,seas,], vind2$data),na.rm = T)
+  if (seas == 2) {color='black'; color3='red'; color2='orange'}
+   
+    ymin=min(eind2$min[ind,seas,])
+    ymax=max(eind2$max[ind,seas,])
+
   plot(t,vind2$data[ind,seas,],ty='l',col=color,lty=1,ylim=c(ymin,ymax),main=mainname)
   lines(t,eind2$ensmean[ind,seas,],ty='l',col=color2,lwd=2,lty=2,main='')
   lines(t,eind2$min[ind,seas,],ty='l',col=color2,lty=2,lwd=1,main='')
@@ -1265,7 +1267,7 @@ dev.off()
 
 
 ################################################################################
-# Fig. 8: index correlation 
+# Fig. 8:  index correlation 
 # new like in the paper
 #<<label=indices_corr, echo=FALSE, fig=TRUE, width=12, height=7, results=hide, eps=FALSE>>=
 

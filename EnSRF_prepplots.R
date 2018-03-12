@@ -13,8 +13,8 @@ rm(list=ls())
 #}
 
 # enter syr ane eyr manually
-syr=1902 #1902 #1941
-eyr=1915 #2003 #1970
+syr=1905 #1902 #1941
+eyr=1909 #2003 #1970
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
 args <- commandArgs(TRUE)
@@ -175,7 +175,7 @@ if (calc_prepplot) {
       if (monthly_out) {
         print(paste('seasons =',s))
         s=12 # set back to 12 months for plotting
-        tmptime <- seq(syr,(eyr+1),by=1/12)
+        tmptime <- seq(syr-1,(eyr+1),by=1/12)
         echam<-convert_to_monthly(echam)
         echam.anom<-convert_to_monthly(echam.anom)
         analysis<-convert_to_monthly(analysis)
@@ -289,6 +289,7 @@ if (calc_prepplot) {
         analysis2.abs <- analysis
         echam2.anom<-echam.anom
         analysis2.anom<-analysis.anom
+
         
         if (land_only) {
           xlim=c(-180,180)
@@ -312,12 +313,15 @@ if (calc_prepplot) {
           e.abs.ll <- paste(round(echam2.abs$lon,digits=2),round(echam2.abs$lat,digits=2))
           landpos <- match(landll,e.abs.ll)
           landpos_init <- landpos
+          landposv<-landpos
           ngrid <- dim(echam2.abs$data)[1]/length(unique(echam2.abs$names))
           nrep <-  length(unique(echam2.abs$names))
-        
+
           for (i in 1:(nrep-1)) {
             landpos <- c(landpos,(landpos_init+ngrid*i))
           }
+
+          
           echam2.anom$data <- echam.anom$data[landpos,,]
           echam2.anom$ensmean <- echam.anom$ensmean[landpos,]
           echam2.anom$lon <- echam.anom$lon[landpos]
@@ -338,7 +342,22 @@ if (calc_prepplot) {
           analysis2.abs$lon <- analysis2.abs$lon[landpos]
           analysis2.abs$lat <- analysis2.abs$lat[landpos]
           analysis2.abs$names <- analysis2.abs$names[landpos]
-        }
+          if (vali) {
+            validate2<-validate
+            nrepv <- length(unique(validate2$names))
+            for (i in 1:(nrepv-1)) {
+              landposv<-c(landposv,(landpos_init+ngrid*i))
+            }
+            validate2$data <- validate$data[landposv,]
+            validate2$ensmean<- validate$ensmean[landposv,]
+            validate2$lon<- validate$lon[landposv]
+            validate2$lat<- validate$lat[landposv]
+            validate2$names<- validate$names[landposv]            
+        
+          }
+
+          }
+        
         
         if (ind_anom) {
           echam2 <- echam2.anom
@@ -352,7 +371,7 @@ if (calc_prepplot) {
         aind<-calc_indices(analysis2,"analysis2")
         
         if (vali) {
-          validate2<-validate
+          
           vind<-calc_indices(validate2,"validate2")
         }
         
@@ -395,23 +414,25 @@ if (calc_prepplot) {
       
       ######################################################
       # combining the years, one after one
-      # Roni: if we want to use without loading the prepplot data, the allts variables should be renamed  
+      # Roni: if we want to use without loading the prepplot data, the allts variables should be renamed 
       if (cyr == syr) {
         analysis.allts=analysis
         analysis.anom.allts=analysis.anom
         aind.allts=aind
-        aind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
 
         echam.allts=echam
         echam.anom.allts=echam.anom
         eind.allts=eind
-        eind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
         
-        if (vali) {
-          validate.allts=validate
-          vind.allts=vind
-          vind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
+        if(monthly_out){
+          aind.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
+          eind.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
+        }else{
+          aind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
+          eind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
         }
+        
+
 
       } else {
         analysis.allts$data=abind(analysis.allts$data,analysis$data,along=2)
@@ -423,7 +444,7 @@ if (calc_prepplot) {
         
         aind.allts$data=abind(aind.allts$data,aind$data,along=2)
         aind.allts$ensmean=cbind(aind.allts$ensmean,aind$ensmean)
-        aind.allts$time=c(aind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+
         
         echam.allts$data=abind(echam.allts$data,echam$data,along=2)
         echam.allts$ensmean=cbind(echam.allts$ensmean,echam$ensmean)
@@ -434,15 +455,34 @@ if (calc_prepplot) {
         
         eind.allts$data=abind(eind.allts$data,eind$data,along=2)
         eind.allts$ensmean=cbind(eind.allts$ensmean,eind$ensmean)
-        eind.allts$time=c(eind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
         
-        if (vali) {
-          validate.allts$data=cbind(validate.allts$data,validate$data)
-          validate.allts$ensmean=cbind(validate.allts$ensmean,validate$ensmean)
-          validate.allts$time=c(validate.allts$time,validate$time)
-          
-          vind.allts$data=abind(vind.allts$data,vind$data)
-          vind.allts$ensmean=cbind(vind.allts$ensmean,vind$ensmean)
+        if(monthly_out){
+          aind.allts$time=c(aind.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+          eind.allts$time=c(eind.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+        } else {
+          aind.allts$time=c(aind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+          eind.allts$time=c(eind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+        }
+      }
+        
+      if ((vali & cyr==1902)|(vali & cyr==syr &syr>1902)) {
+        validate.allts=validate
+        vind.allts=vind
+        if(monthly_out){
+          vind.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
+        }else{
+          vind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
+        }
+      } else if (vali){
+        validate.allts$data=cbind(validate.allts$data,validate$data)
+        validate.allts$ensmean=cbind(validate.allts$ensmean,validate$ensmean)
+        validate.allts$time=c(validate.allts$time,validate$time)
+        
+        vind.allts$data=abind(vind.allts$data,vind$data)
+        vind.allts$ensmean=cbind(vind.allts$ensmean,vind$ensmean)
+        if(monthly_out){
+          vind.allts$time=c(vind.allts$time,seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+        }else{
           vind.allts$time=c(vind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
         }
       }
@@ -749,7 +789,7 @@ if (load_prepplot){
     load(paste0(prepplotdir,'analysis_',stat_yr,'.Rdata'))
   }
   cali <- calibrate
-  for (cyr in syr:(eyr-1)) {
+  for (cyr in syr:(eyr)) { #for monthly (jan-dec) exchange eyr with eyr-1, because last yr doesnt contain oct-dec
     print(paste('year',cyr))
     if ((cyr < 1902)) { #1751)) { #} |  (cyr > 1979)) {
       vali=F                 # switch off prepplot if no vali data selected
@@ -778,28 +818,28 @@ if (load_prepplot){
     
     # load data and make normal calendar year Jan-Dec
     #    if (cyr==eyr) {stop("last year cannot be created because oct-dec data is missing")}
-    if (every2grid) {
-      load(file=paste0(prepplotdir,'analysis_',(cyr+1),'_2ndgrid.Rdata')) 
-    } else {
-      load(file=paste0(prepplotdir,'analysis_',(cyr+1),'.Rdata')) 
-    }
-    echam2 <- echam
-    analysis2 <- analysis
+    # if (every2grid) {
+    #   load(file=paste0(prepplotdir,'analysis_',(cyr+1),'_2ndgrid.Rdata')) 
+    # } else {
+    #   load(file=paste0(prepplotdir,'analysis_',(cyr+1),'.Rdata')) 
+    # }
+    # echam2 <- echam
+    # analysis2 <- analysis
     if (every2grid) {
       load(file=paste0(prepplotdir,'analysis_',cyr,'_2ndgrid.Rdata')) 
     } else {
       load(file=paste0(prepplotdir,'analysis_',cyr,'.Rdata')) 
     }
-    if (monthly_out) {
-      echam$data <- abind(echam$data[,4:12,],echam2$data[,1:3,],along=2)
-      echam$ensmean <- abind(echam$ensmean[,4:12],echam2$ensmean[,1:3],along=2)
-      analysis$data <- abind(analysis$data[,4:12,],analysis2$data[,1:3,],along=2)
-      analysis$ensmean <- abind(analysis$ensmean[,4:12],analysis2$ensmean[,1:3],along=2)
-      if (landcorr) {
-        echam$data = array (echam$data, c(dim(echam$data),1))
-        analysis$data = array (analysis$data, c(dim(analysis$data),1))
-      }
-    }
+    # if (monthly_out) {
+    #   echam$data <- abind(echam$data[,4:12,],echam2$data[,1:3,],along=2)
+    #   echam$ensmean <- abind(echam$ensmean[,4:12],echam2$ensmean[,1:3],along=2)
+    #   analysis$data <- abind(analysis$data[,4:12,],analysis2$data[,1:3,],along=2)
+    #   analysis$ensmean <- abind(analysis$ensmean[,4:12],analysis2$ensmean[,1:3],along=2)
+    #   if (landcorr) {
+    #     echam$data = array (echam$data, c(dim(echam$data),1))
+    #     analysis$data = array (analysis$data, c(dim(analysis$data),1))
+    #   }
+    # }
     
     #    lenvar2 <- length(c(which(validate$names=="temp2"), which(validate$names=="precip"), 
     #                        which(validate$names=="slp")))
@@ -871,8 +911,13 @@ if (load_prepplot){
         #      calibrate.anom.allts$sour=as.matrix(calibrate.anom$sour[pos])
       }
     } else {
-      if (cyr==1751 & vali) {
+      if (cyr==1902 & vali) {
         validate.allts=validate 
+      } else if (vali & cyr>1902) {
+        validate.allts$data=cbind(validate.allts$data,validate$data)
+        validate.allts$ensmean=cbind(validate.allts$ensmean,validate$ensmean)
+        validate.allts$time=c(validate.allts$time,validate$time)
+
       }
       analysis.allts$data=abind(analysis.allts$data,analysis$data,along=2)
       analysis.allts$ensmean=cbind(analysis.allts$ensmean,analysis$ensmean)
@@ -880,13 +925,7 @@ if (load_prepplot){
       analysis.anom.allts$data=abind(analysis.anom.allts$data,analysis.anom$data,along=2)
       analysis.anom.allts$ensmean=cbind(analysis.anom.allts$ensmean,analysis.anom$ensmean)
       analysis.anom.allts$time=c(analysis.anom.allts$time,analysis.anom$time)
-
-      if (vali & cyr>1751) {
-        validate.allts$data=cbind(validate.allts$data,validate$data)
-        validate.allts$ensmean=cbind(validate.allts$ensmean,validate$ensmean)
-        validate.allts$time=c(validate.allts$time,validate$time)
-
-      }
+      
       echam.allts$data=abind(echam.allts$data,echam$data,along=2)
       echam.allts$ensmean=cbind(echam.allts$ensmean,echam$ensmean)
       echam.allts$time=c(echam.allts$time,echam$time)
@@ -1020,6 +1059,36 @@ if (load_image){
   }
   source('EnSRF_switches.R') # set switches again because they may differ in loaded image
 }
+
+echam.vali<-echam
+echam.vali$data<-echam$data[,which(echam$time>=1901.75),]
+echam.vali$ensmean<-echam$ensmean[,which(echam$time>=1901.75)]
+echam.vali$time<-echam$time[which(echam$time>=1901.75)]
+echam.anom.vali<-echam.anom
+echam.anom.vali$data<-echam.anom$data[,which(echam.anom$time>=1901.75),]
+echam.anom.vali$ensmean<-echam.anom$ensmean[,which(echam.anom$time>=1901.75)]
+echam.anom.vali$time<-echam.anom$time[which(echam.anom$time>=1901.75)]
+
+analysis.vali<-analysis
+analysis.vali$data<-analysis$data[,which(analysis$time>=1901.75),]
+analysis.vali$ensmean<-analysis$ensmean[,which(analysis$time>=1901.75)]
+analysis.vali$time<-analysis$time[which(analysis$time>=1901.75)]
+analysis.anom.vali<-analysis.anom
+analysis.anom.vali$data<-analysis.anom$data[,which(analysis.anom$time>=1901.75),]
+analysis.anom.vali$ensmean<-analysis.anom$ensmean[,which(analysis.anom$time>=1901.75)]
+analysis.anom.vali$time<-analysis.anom$time[which(analysis.anom$time>=1901.75)]
+
+eind.vali<-eind.allts
+eind.vali$data<-eind.allts$data[,which(eind.allts$time>=1901.75),]
+eind.vali$ensmean<-eind.allts$ensmean[,which(eind.allts$time>=1901.75)]
+eind.vali$time<-eind.allts$time[which(eind.allts$time>=1901.75)]
+
+aind.vali<-aind.allts
+aind.vali$data<-aind.allts$data[,which(aind.allts$time>=1901.75),]
+aind.vali$ensmean<-aind.allts$ensmean[,which(aind.allts$time>=1901.75)]
+aind.vali$time<-aind.allts$time[which(aind.allts$time>=1901.75)]
+
+
 
 
 
@@ -1191,8 +1260,8 @@ if (calc_vali_stat){
     
     #  rmse <- rmse_fun(analysis_noindex, y=validate, seas=s)
     #  rmse.ech <- rmse_fun(echam_noindex, y=validate, seas=s)
-    rmse <- rmse_fun(analysis, y=validate, seas=s)
-    rmse.ech <- rmse_fun(echam, y=validate, seas=s)
+    rmse <- rmse_fun(analysis.vali, y=validate, seas=s)
+    rmse.ech <- rmse_fun(echam.vali, y=validate, seas=s)
     # vali.clim <- multiyear_seas_average(validate, seas=s)
     # vali.clim.data <- vali.clim$data
     # vali.clim.time <- vali.clim$time
@@ -1213,8 +1282,8 @@ if (calc_vali_stat){
   if (vali) { 
     #  rmse.anom <- rmse_fun(analysis.anom_noindex, y=validate.anom, seas=s)
     #  rmse.ech.anom <- rmse_fun(echam.anom_noindex, y=validate.anom, seas=s)    
-    rmse.anom <- rmse_fun(analysis.anom, y=validate.anom, seas=s)
-    rmse.ech.anom <- rmse_fun(echam.anom, y=validate.anom, seas=s) 
+    rmse.anom <- rmse_fun(analysis.anom.vali, y=validate.anom, seas=s)
+    rmse.ech.anom <- rmse_fun(echam.anom.vali, y=validate.anom, seas=s) 
     # vali.clim.anom <- multiyear_seas_average(validate.anom, seas=s)
     # vali.clim.anom.data <- vali.clim.anom$data
     # vali.clim.anom.time <- vali.clim.anom$time
@@ -1261,15 +1330,15 @@ if (calc_vali_stat){
   if (vali) {
     #  corr <-  corr_fun(analysis_noindex, y=validate, seas=s)
     #  corr.ech <- corr_fun(echam_noindex, y=validate, seas=s)
-    corr <-  corr_fun(analysis, y=validate, seas=s)
-    corr.ech <- corr_fun(echam, y=validate, seas=s)
+    corr <-  corr_fun(analysis.vali, y=validate, seas=s)
+    corr.ech <- corr_fun(echam.vali, y=validate, seas=s)
   }
   ##bias <- lapply(analysis, bias_fun, y=validate, seas=s)
   if (vali) {
     #  bias <- bias_fun(analysis_noindex, y=validate, seas=s)
     #  bias.ech <- bias_fun(echam_noindex, y=validate, seas=s)
-    bias <- bias_fun(analysis, y=validate, seas=s)
-    bias.ech <- bias_fun(echam, y=validate, seas=s)
+    bias <- bias_fun(analysis.vali, y=validate, seas=s)
+    bias.ech <- bias_fun(echam.vali, y=validate, seas=s)
   }
   #if (check_dist) {
   #  rank <- lapply(analysis_noindex, rank_fun, y=validate, seas=s)
@@ -1944,21 +2013,21 @@ if (calc_vali_stat){
   # 
   if (vali) {
       # compute validation statistics on indices
-      eind.allts$ensmean<-eind.allts$ensmean[1:34,]
-      aind.allts$ensmean<-aind.allts$ensmean[1:34,]
+      eind.vali$ensmean<-eind.vali$ensmean[1:34,]
+      aind.vali$ensmean<-aind.vali$ensmean[1:34,]
       vind.allts$ensmean<-vind.allts$ensmean[1:34,]
-      eind.allts$data<-eind.allts$data[1:34,,]
-      aind.allts$data<-aind.allts$data[1:34,,]    
+      eind.vali$data<-eind.vali$data[1:34,,]
+      aind.vali$data<-aind.vali$data[1:34,,]
       vind.allts$data<-vind.allts$data[1:34,]
-      aind.allts$names<-aind.allts$names[1:34]
-      eind.allts$names<-eind.allts$names[1:34]
+      aind.vali$names<-aind.vali$names[1:34]
+      eind.vali$names<-eind.vali$names[1:34]
       vind.allts$names<-vind.allts$names[1:34]
-      ecorr.ind <- corr_fun(eind.allts, vind.allts, seas=2)
-      acorr.ind <- corr_fun(aind.allts, vind.allts, seas=2)
-      ermse.ind <- rmse_fun(eind.allts, vind.allts, seas=2)
-      armse.ind <- rmse_fun(aind.allts, vind.allts, seas=2)
-      ebias.ind <- bias_fun(eind.allts, vind.allts, seas=2)
-      abias.ind <- bias_fun(aind.allts, vind.allts, seas=2)
+      ecorr.ind <- corr_fun(eind.vali, vind.allts, seas=2)
+      acorr.ind <- corr_fun(aind.vali, vind.allts, seas=2)
+      ermse.ind <- rmse_fun(eind.vali, vind.allts, seas=2)
+      armse.ind <- rmse_fun(aind.vali, vind.allts, seas=2)
+      ebias.ind <- bias_fun(eind.vali, vind.allts, seas=2)
+      abias.ind <- bias_fun(aind.vali, vind.allts, seas=2)
       RE.ind <- RE_fun(armse.ind, y=ermse.ind)
   }
   # 

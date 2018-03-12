@@ -1,4 +1,4 @@
-expname="test_nevin" # "EKF400_v1.3_full_res" #
+expname="test_nevin_proxies_only_PAGES" # "EKF400_v1.3_full_res" #
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -158,7 +158,7 @@ generate_HadCRU4=F     # HadCRU ens. SD for instr. uncertainty and error-spread 
 #} else {               # Kuettel's temp. precip. and SLP 
 generate_LUTPAULKUT=F # gridded seasonal recons (1750-1999)
 #} 
-#generate_ind_recon=F   # read Stefan's indices 1900-2000 from .txt to .RData
+generate_ind_recon=F   # read Stefan's indices 1900-2000 from .txt to .RData
 # use scripts in data_yuri to generate .Rdata files 
 generate_t_yuri=F      # if TRUE -> yuri's temp. data collection including HISTALP is read
 generate_slp_yuri=F    # if TRUE -> yuri's slp data collection is read
@@ -191,11 +191,11 @@ regression_months = c('t.first','t.second','t.third','t.fourth','t.fifth','t.six
   TRW=F
   MXD=F
   SCHWEINGR=F
-  PAGES=F
+  PAGES=T
 pages_lm_fit = "CRU"   # can be CRU or GISS to calculate the reg coeff-s
-type = c("coral","tree") 
+type = c("tree") 
 #          ^ it only works with tree and coral (and both indiviually as well)
-NTREND=T
+NTREND=F
 } 
 
 generate_PAGES = F      # using the screened PAGES proxy dataset
@@ -212,9 +212,9 @@ if ((generate_PAGES & PAGES) | (generate_NTREND & NTREND) | generate_PROXIES & g
 
 
 
-yuri_temp=T          # yuri's data compilation, SLP always loaded
-yuri_slp=T
-ghcn_temp=T
+yuri_temp=F          # yuri's data compilation, SLP always loaded
+yuri_slp=F
+ghcn_temp=F
 isti_instead_ghcn=F  # switch from ghcn to isti (ghcn_temp must still be set to TRUE)
 ghcn_prec=F
 trw_only=F           # Petra's TRW only
@@ -269,7 +269,7 @@ avg_prox_per_grid=T    # average more than one proxy per echam grid box
 instmaskprox=F         # remove proxy data from grid boxes that have instr. data
 reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
-land_only=F            # calc on land only
+land_only=T            # calc on land only
 fasttest=F             # use even less data
 tps_only=F             # only use temp, precip and slp in state vector, remove other vars (no_stream is set automatically)
 
@@ -291,7 +291,7 @@ check_assimdata=T      # screen assimilation data before using it
 # other options
 scaleprox=T            # scale standardized docu and prox data the echam variance at location
 anomaly_assim=T        # work with anomalies to avoid reg. const in state vector
-nseas <- 12            # year with 12 months
+# nseas <- 12            # year with 12 months
 check_dist=F           # test for ideal cut-off distance of spatial correlations
 #H_non_lin=F           # new H operator that also allows non-linear functions
 ana.enssize=F
@@ -349,13 +349,13 @@ CRPS = F      # calculate Continuous Ranked Probability Score
 vali_plots=F     # source EnSRF_plots.R script 
 ind_ECHAM=F      # delete/comment code in prepplot script and then delete switches here
 ind_recon=F      # delete/comment code in prepplot script and then delete switches here
-ind_anom=F      # calculate indices with anomaly data instead of absolute data
+ind_anom=F     # calculate indices with anomaly data instead of absolute data
 
 
 #####################################################################################
 # plot switches
 #####################################################################################
-monthly=T
+monthly=F
 pseudoproxy=F
 plot_dweights=F
 write_nc=F

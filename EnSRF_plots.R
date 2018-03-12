@@ -18,7 +18,7 @@
 rm(list=ls())
 
 syr=1904
-eyr=1960
+eyr=1930
 
 user <- system("echo $USER",intern=T)
 print(paste('User:',user))
@@ -273,7 +273,12 @@ for (i in 1:length(stat.pos1)){
 
 
 
-# plot sample time series for lon/lat:
+##### plot sample time series for lon/lat: #####
+#codeline beneath finds gridbox with lowest correlation (was used because of strange bad results)
+#which(corr$ensmean[,2]==min(corr$ensmean[which(corr$lat<34&corr$lat>24&corr$lon<(90)&corr$lon>(68)&corr$names=="temp2"),2],na.rm=T))
+
+
+# Greenland
 paste(validate$lon[278],validate$lat[278])
 pdf(paste(figpath,'/example_timeseries_greenland.pdf',sep=''), width=4.5, height=6, paper='special')
 par(oma=c(0,0,0,0),mar=c(2,4,2,0.5),mfrow=c(3,1))
@@ -282,6 +287,7 @@ plot(validate$data[278,pos2],ylim=c(-15,-12),ty='l',col="blue",main="Temperature
      xlab='',ylab='ºC',xaxt='n')
 lines(echam$ensmean[278,pos2],col="black")
 lines(analysis$ensmean[278,pos2],col="red")
+lines(calibrate$data[,pos2])
 #precip
 plot(validate$data[4608+278,pos2],ylim=c(11,14),ty='l',col="blue",main="Precipitation",
      xlab='',ylab='mm',xaxt='n')
@@ -296,6 +302,63 @@ legend("bottomleft", c('Instrumental CRU TS3', 'CCC400', "EFK400"),col=c("blue",
        lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='white',
        box.col='white', cex=1)
 dev.off()
+
+
+# Alaska
+# line beneath was used to determine closest lon/lat to validate lat/lon 632
+#calipos<-which(abs(calibrate$lon-validate$lon[632])+abs(calibrate$lat-validate$lat[632])==min(abs(calibrate$lon-validate$lon[632])+abs(calibrate$lat-validate$lat[632])))
+paste(validate$lon[632],validate$lat[632])
+pdf(paste(figpath,'/example_timeseries_alaska.pdf',sep=''), width=4.5, height=6, paper='special')
+par(oma=c(0,0,0,0),mar=c(2,4,2,0.5),mfrow=c(3,1))
+#50yr summer temp
+plot(validate$data[632,pos2],ylim=c(1,8),ty='l',col="blue",main="Temperature",
+     xlab='',ylab='ºC',xaxt='n')
+lines(echam$ensmean[632,pos2],col="black")
+lines(analysis$ensmean[632,pos2],col="red")
+# lines(calibrate$data[27,pos2]+3,col="yellow")
+# lines(calibrate$data[162,pos2]+3, col="green")
+#precip
+plot(validate$data[4608+632,pos2],ylim=c(15,80),ty='l',col="blue",main="Precipitation",
+     xlab='',ylab='mm',xaxt='n')
+lines(echam$ensmean[4608+632,pos2],col="black")
+lines(analysis$ensmean[4608+632,pos2],col="red")
+#slp
+plot(validate$time[pos2],validate$data[2*4608+632,pos2],
+     ylim=c(1000,1015),ty='l',col="blue",main="SLP",xlab='Year',ylab='hPA')
+lines(echam$time[pos2],echam$ensmean[2*4608+632,pos2],col="black")
+lines(analysis$time[pos2],analysis$ensmean[2*4608+632,pos2],col="red")
+legend("bottomleft", c('Instrumental CRU TS3', 'CCC400', "EFK400"),col=c("blue", "black", "red"),
+       lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='white',
+       box.col='white', cex=1)
+dev.off()
+
+
+# Somewhere near Himalaya (Pakistan)
+paste(validate$lon[1460],validate$lat[1460])
+pdf(paste(figpath,'/example_timeseries_pakistan.pdf',sep=''), width=4.5, height=6, paper='special')
+par(oma=c(0,0,0,0),mar=c(2,4,2,0.5),mfrow=c(3,1))
+#50yr summer temp
+plot(validate$data[1460,pos2],ylim=c(27,35),ty='l',col="blue",main="Temperature",
+     xlab='',ylab='ºC',xaxt='n')
+lines(echam$ensmean[1460,pos2],col="black")
+lines(analysis$ensmean[1460,pos2],col="red")
+#precip
+plot(validate$data[4608+1460,pos2],ylim=c(0,80),ty='l',col="blue",main="Precipitation",
+     xlab='',ylab='mm',xaxt='n')
+lines(echam$ensmean[4608+1460,pos2],col="black")
+lines(analysis$ensmean[4608+1460,pos2],col="red")
+#slp
+plot(validate$time[pos2],validate$data[2*4608+1460,pos2],
+     ylim=c(995,1005),ty='l',col="blue",main="SLP",xlab='Year',ylab='hPA')
+lines(echam$time[pos2],echam$ensmean[2*4608+1460,pos2],col="black")
+lines(analysis$time[pos2],analysis$ensmean[2*4608+1460,pos2],col="red")
+legend("bottomleft", c('Instrumental CRU TS3', 'CCC400', "EFK400"),col=c("blue", "black", "red"),
+       lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='white',
+       box.col='white', cex=1)
+dev.off()
+
+
+
 
 
 #chose timestep for sample year plots
@@ -1621,71 +1684,71 @@ if (ind_ECHAM) {
 } # end if(echam_ind)
 
 ################################################################################
-# Fig. 9a: temperature reconstruction skill 
-if (!monthly_out){
-#<<label=Giorgitemp2, echo=FALSE, fig=TRUE, eps=FALSE, width=12, height=14>>=
-if (pseudoproxy){
-  giorgi.RE <- compute_avg_RE_pseudoproxy(H.giorgi, echam, analysis[[2]], validate)
-  giorgi.corr <- compute_avg_corr_pseudoproxy(H.giorgi, echam, analysis[[i]], validate)
-} else {
-  #  giorgi.RE <- compute_avg_RE(H.giorgi, echam, analysis[[2]], validate)
-  #  giorgi.corr <- compute_avg_corr(H.giorgi, echam, analysis[[2]], validate)
-  giorgi.RE <- compute_avg_RE(H.giorgi, echam, analysis, validate)
-  giorgi.corr <- compute_avg_corr(H.giorgi, echam, analysis, validate)
-}
-varname <- c('temp2', 'precip', 'slp')
-varn <- 1
-
-pdf(paste(figpath,'RE_giorgi_temp.pdf',sep='/'), width=9, height=6, paper='special')
-#if (pseudoproxy){
-par(mfrow=c(4,1), mar=c(1,3,1,1), oma=c(0,0,0,0), cex.axis=1.2, cex.lab=1.2)
-#} else {
-#  par(mfrow=c(2,1), mar=c(1,3,1,1), oma=c(0,0,0,0), cex.axis=1.2, cex.lab=1.2)
-#}
-ncorr <- length(giorgi.short)
-RE.mat <- giorgi.RE[ncorr*(varn-1) + 1:ncorr,,]
-indind <- 1:ncorr
-for (se in 1:2){
-  plot(0, type='n', xaxt='n', ylim=c(-1,1), xlim=c(1,max(indind)), xlab='', ylab='')
-  polygon(c(-3, -3, max(indind)+5, max(indind+5)), c(0,-2,-2,0), border=NA, col=grey(0.8))
-  if (pseudoproxy){
-    boxplot(t(RE.mat[,se,1:29]), at=indind, col=hcl((varn-1)*120, c=40, l=50),
-            add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5)
-    points(indind - 0.3, RE.mat[,se,30], pch='>', lwd=3, cex=1.2)
-  } else {
-    boxplot(t(RE.mat[,se,1:30]), at=indind, col=hcl((varn-1)*120, c=40, l=50),
-            add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5)
-    points(indind - 0.3, RE.mat[,se,31], pch='>', lwd=3, cex=1.2)
-  }
-  text(indind, rep(-0.8,length(indind)), giorgi.short, cex=1, adj=c(0.5,1.3))
-  text(0.5,1,c('Winter', 'Summer')[se], cex=1.2, adj=c(0,1))
-  abline(v=seq(1.5, max(indind), 1), lty=3)
-}
-
-
-ncorr <- length(giorgi.short)*2
-corr.mat <- giorgi.corr[ncorr*(varn-1) + 1:ncorr,,]
-indind <- rbind(seq(1, by=4, length=ncorr/2), seq(2, by=4, length=ncorr/2))
-
-for (se in 1:2){
-  plot(0, type='n', xaxt='n', ylim=c(-1,1), xlim=c(2,max(indind)-1), xlab='', ylab='')
-  polygon(c(-3, -3, max(indind)+5, max(indind+5)), c(0,-2,-2,0), border=NA, col=grey(0.8))
-  if (pseudoproxy){
-    boxplot(t(corr.mat[,se,1:29]), at=as.vector(indind), col=hcl((varn-1)*120, c=40, l=c(90,50)), add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1)
-    points(apply(indind, 2, mean) - 1.4, corr.mat[seq(1,ncorr,2),se,30], pch='>', lwd=3, cex=1.2)
-    points(apply(indind, 2, mean) + 1.4, corr.mat[seq(2,ncorr,2),se,30], pch='<', lwd=3, cex=1.2)
-  } else {
-    boxplot(t(corr.mat[,se,1:30]), at=as.vector(indind), col=hcl((varn-1)*120, c=40, l=c(90,50)), add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1)
-    points(apply(indind, 2, mean) - 1.4, corr.mat[seq(1,ncorr,2),se,31], pch='>', lwd=3, cex=1.2)
-    points(apply(indind, 2, mean) + 1.4, corr.mat[seq(2,ncorr,2),se,31], pch='<', lwd=3, cex=1.2) 
-  }  
-  text(apply(indind, 2, mean), rep(-0.8,ncol(indind)), giorgi.short, cex=1, adj=c(0.5,1.3))
-  text(0.5,1,c('Winter', 'Summer')[se], cex=1.2, adj=c(0,1))
-  abline(v=seq(3.5,max(indind), by=4), lty=3)
-}
-dev.off() 
-#    \caption{Skill in reconstructing area-average temperature in different subcontinental regions as defined in \citet{Giorgi2000}}
-}
+# # Fig. 9a: temperature reconstruction skill 
+# if (!monthly_out){
+# #<<label=Giorgitemp2, echo=FALSE, fig=TRUE, eps=FALSE, width=12, height=14>>=
+# if (pseudoproxy){
+#   giorgi.RE <- compute_avg_RE_pseudoproxy(H.giorgi, echam, analysis[[2]], validate)
+#   giorgi.corr <- compute_avg_corr_pseudoproxy(H.giorgi, echam, analysis[[i]], validate)
+# } else {
+#   #  giorgi.RE <- compute_avg_RE(H.giorgi, echam, analysis[[2]], validate)
+#   #  giorgi.corr <- compute_avg_corr(H.giorgi, echam, analysis[[2]], validate)
+#   giorgi.RE <- compute_avg_RE(H.giorgi, echam, analysis, validate)
+#   giorgi.corr <- compute_avg_corr(H.giorgi, echam, analysis, validate)
+# }
+# varname <- c('temp2', 'precip', 'slp')
+# varn <- 1
+# 
+# pdf(paste(figpath,'RE_giorgi_temp.pdf',sep='/'), width=9, height=6, paper='special')
+# #if (pseudoproxy){
+# par(mfrow=c(4,1), mar=c(1,3,1,1), oma=c(0,0,0,0), cex.axis=1.2, cex.lab=1.2)
+# #} else {
+# #  par(mfrow=c(2,1), mar=c(1,3,1,1), oma=c(0,0,0,0), cex.axis=1.2, cex.lab=1.2)
+# #}
+# ncorr <- length(giorgi.short)
+# RE.mat <- giorgi.RE[ncorr*(varn-1) + 1:ncorr,,]
+# indind <- 1:ncorr
+# for (se in 1:2){
+#   plot(0, type='n', xaxt='n', ylim=c(-1,1), xlim=c(1,max(indind)), xlab='', ylab='')
+#   polygon(c(-3, -3, max(indind)+5, max(indind+5)), c(0,-2,-2,0), border=NA, col=grey(0.8))
+#   if (pseudoproxy){
+#     boxplot(t(RE.mat[,se,1:29]), at=indind, col=hcl((varn-1)*120, c=40, l=50),
+#             add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5)
+#     points(indind - 0.3, RE.mat[,se,30], pch='>', lwd=3, cex=1.2)
+#   } else {
+#     boxplot(t(RE.mat[,se,1:30]), at=indind, col=hcl((varn-1)*120, c=40, l=50),
+#             add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5)
+#     points(indind - 0.3, RE.mat[,se,31], pch='>', lwd=3, cex=1.2)
+#   }
+#   text(indind, rep(-0.8,length(indind)), giorgi.short, cex=1, adj=c(0.5,1.3))
+#   text(0.5,1,c('Winter', 'Summer')[se], cex=1.2, adj=c(0,1))
+#   abline(v=seq(1.5, max(indind), 1), lty=3)
+# }
+# 
+# 
+# ncorr <- length(giorgi.short)*2
+# corr.mat <- giorgi.corr[ncorr*(varn-1) + 1:ncorr,,]
+# indind <- rbind(seq(1, by=4, length=ncorr/2), seq(2, by=4, length=ncorr/2))
+# 
+# for (se in 1:2){
+#   plot(0, type='n', xaxt='n', ylim=c(-1,1), xlim=c(2,max(indind)-1), xlab='', ylab='')
+#   polygon(c(-3, -3, max(indind)+5, max(indind+5)), c(0,-2,-2,0), border=NA, col=grey(0.8))
+#   if (pseudoproxy){
+#     boxplot(t(corr.mat[,se,1:29]), at=as.vector(indind), col=hcl((varn-1)*120, c=40, l=c(90,50)), add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1)
+#     points(apply(indind, 2, mean) - 1.4, corr.mat[seq(1,ncorr,2),se,30], pch='>', lwd=3, cex=1.2)
+#     points(apply(indind, 2, mean) + 1.4, corr.mat[seq(2,ncorr,2),se,30], pch='<', lwd=3, cex=1.2)
+#   } else {
+#     boxplot(t(corr.mat[,se,1:30]), at=as.vector(indind), col=hcl((varn-1)*120, c=40, l=c(90,50)), add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1)
+#     points(apply(indind, 2, mean) - 1.4, corr.mat[seq(1,ncorr,2),se,31], pch='>', lwd=3, cex=1.2)
+#     points(apply(indind, 2, mean) + 1.4, corr.mat[seq(2,ncorr,2),se,31], pch='<', lwd=3, cex=1.2) 
+#   }  
+#   text(apply(indind, 2, mean), rep(-0.8,ncol(indind)), giorgi.short, cex=1, adj=c(0.5,1.3))
+#   text(0.5,1,c('Winter', 'Summer')[se], cex=1.2, adj=c(0,1))
+#   abline(v=seq(3.5,max(indind), by=4), lty=3)
+# }
+# dev.off() 
+# #    \caption{Skill in reconstructing area-average temperature in different subcontinental regions as defined in \citet{Giorgi2000}}
+# }
 
 #  
 # ################################################################################

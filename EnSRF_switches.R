@@ -1,4 +1,4 @@
-expname="proxies_only_NTREND_nevin" # "EKF400_v1.3_full_res" #
+expname="pagesprox_instr_test" # "EKF400_v1.3_full_res" #
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -280,8 +280,8 @@ reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=T            # calc on land only
 fasttest=F             # use even less data
-tps_only=F             # only use temp, precip and slp in state vector, remove other vars
-no_stream=T            # all echam vars but stream function as there is problem with 
+tps_only=T             # only use temp, precip and slp in state vector, remove other vars
+no_stream=F            # all echam vars but stream function as there is problem with 
 #                       # 5/9 levels, which are in lat dimension before and after 1880
 loo=F                  # leave-one-out validation 
 if (loo) {tps_only=T;no_stream=F}  # reduce state vector for faster validation
@@ -299,6 +299,8 @@ check_assimdata=T      # screen assimilation data before using it
 if (no_stream & tps_only) {
   tps_only = F
   print('ACHTUNG: tps_only was set to FALSE')
+}else if(!tps_only &!no_stream){
+  no_stream=T
 }
 
 
@@ -356,7 +358,7 @@ if (!monthly_out & write_netcdf) {
 # 1902-2003, because it creates time series
 load_prepplot=T  # ATTENTION check if folder prepplot on scratch contains monthly or seasonal data!
                  # saves image and only needs to be run once, afterward set "load_image=T" 
-statyr=1903    # 1941 1850/69 year, when station network is kept constant
+statyr=1905    # 1941 1850/69 year, when station network is kept constant
 load_image=T     # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
 calc_vali_stat=T # calculate validation statistics after preparation (set "load_image=T")
 CRPS = TRUE      # calculate Continuous Ranked Probability Score
@@ -369,7 +371,7 @@ ind_anom=F       # calculate indices from anomaly data
 #####################################################################################
 # plot switches
 #####################################################################################
-validation_set=c("cru_vali","twentycr_vali")
+validation_set=c("cru_vali")
 monthly=F
 pseudoproxy=F
 plot_dweights=F

@@ -15,8 +15,8 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
-syr=1899
-eyr=1904
+syr=1903
+eyr=1930
 
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
@@ -100,7 +100,7 @@ for (cyr in syr2:eyr) {
     #  ind_recon=F
   }
   if ((cyr > 1901) & (eyr < 2004)) {
-    twentycr_vali=T             
+    twentycr_vali=F             
   } else {
     twentycr_vali=F 
   }

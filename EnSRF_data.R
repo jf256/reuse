@@ -17,7 +17,7 @@ rm(list=ls())
 
 
 syr=1903
-eyr=1960
+eyr=1930
 
 
 # read syr and eyr from Rscript parameters entered in bash and 
@@ -42,6 +42,7 @@ if (user=="veronika") {
   workdir = '/scratch3/nevin/reuse/reuse_git/'
 } else{
   stop("Unknown user!")
+  
 }
 dataextdir='/mnt/climstor/giub/EKF400/'
 dataintdir=paste0(workdir,'../data/')
@@ -101,7 +102,7 @@ for (cyr in syr2:eyr) {
     #  ind_recon=F
   }
   if ((cyr > 1901) & (eyr < 2004)) {
-    twentycr_vali=T             
+    twentycr_vali=F             
   } else {
     twentycr_vali=F 
   }
@@ -1335,7 +1336,7 @@ for (cyr in syr2:eyr) {
       if ((real_proxies) & ((instrumental) | (docum))) { 
         Rcal <- c(temp2=0.9, precip=50, slp=10)[calibrate$names]
         #        if (avg_prox_per_grid) {Rcal <- Rcal*(1/calibrate$numavg)}
-        Rcal[calibrate$names=="prox"] <- realprox$var_residu 
+        Rcal[calibrate$names=="prox"] <- realprox$var_residu/4
         # previously used residuals/2 for 1. paper version to give proxies more weight
         # better delete "/2"
         # probably should have given instrumentals more error instead!

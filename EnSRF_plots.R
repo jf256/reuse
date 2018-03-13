@@ -408,13 +408,14 @@ dev.off()
 
 ################################################################################
 # Fig. xx: Talagrant diagram
+# Bug in plotting the analysis rank histograms is fixed by Roni (2018.03)
 if (vali) {
   if (!recon_vali) {
     if (anomaly_assim) {
       ereliable <- ereliable.anom
-      areliable <- ereliable.anom
+      areliable <- areliable.anom
       erel_obserr <- erel_obserr.anom
-      arel_obserr <- erel_obserr.anom
+      arel_obserr <- arel_obserr.anom
     }
   
 # ereliable <- tapply(apply(echam$data[1:(dim(validate$data)[1]),,] > 
@@ -480,6 +481,66 @@ if (vali) {
  # }
 }
 }
+
+
+
+# Fig. xx: Talagrant diagram summer
+# Added by Roni (2018.03)
+if (vali) {
+  if (!recon_vali) {
+    if (anomaly_assim) {
+      ereliable.summer <- ereliable.anom.summer
+      areliable.summer <- areliable.anom.summer
+      # erel_obserr <- erel_obserr.anom
+      # arel_obserr <- arel_obserr.anom
+    }
+    if (length(names(ereliable$temp2)) == 31) {
+      pdf(paste(figpath,'talagrant_temp_summer.pdf',sep='/'), width=6, height=6, paper='special') 
+      par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+      names(ereliable.summer$temp2) <- seq(0,30)
+      barplot(ereliable.summer$temp2)
+      names(areliable.summer$temp2) <- seq(0,30)
+      barplot(areliable.summer$temp2)
+      dev.off()
+    }
+    if (length(names(ereliable$precip)) == 31) {
+      pdf(paste(figpath,'talagrant_precip_summer.pdf',sep='/'), width=6, height=6, paper='special') 
+      par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+      names(ereliable.summer$precip) <- seq(0,30)
+      barplot(ereliable.summer$precip)
+      names(areliable.summer$precip) <- seq(0,30)
+      barplot(areliable.summer$precip)
+      dev.off()
+    }
+    if (length(names(ereliable$slp)) == 31) {
+      pdf(paste(figpath,'talagrant_slp_summer.pdf',sep='/'), width=6, height=6, paper='special') 
+      par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+      names(ereliable.summer$slp) <- seq(0,30)
+      barplot(ereliable.summer$slp)
+      names(areliable.summer$slp) <- seq(0,30)
+      barplot(areliable.summer$slp)
+      dev.off()
+    }
+    # if (length(names(erel_obserr$temp2)) == 31) {
+    #   pdf(paste(figpath,'talagrant_obserr_temp.pdf',sep='/'), width=6, height=6, paper='special') 
+    #   par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+    #   names(erel_obserr$temp2) <- seq(0,30)
+    #   barplot(erel_obserr$temp2)
+    #   names(arel_obserr$temp2) <- seq(0,30)
+    #   barplot(arel_obserr$temp2)
+    #   dev.off()
+    # }
+  }
+}
+
+
+
+
+
+
+
+
+
 
 # if (!real_proxies){
 # ################################################################################
@@ -1830,7 +1891,7 @@ pdf(paste(figpath,'crps.clim_ech-ana_temp.pdf',sep='/'), width=9, height=3.5, pa
 layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
 
 par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.01,0.02,0.04,0.08,0.1,0.12)
+levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.01,0.02,0.04,0.08,0.1,Inf)
 
 plot_echam(crps, cex.pt=1.5, names=pnames[1:dim(crps$data)[3]], lev=levs, st.col=NULL, 
            stations=calibrate,add=TRUE)
@@ -1844,7 +1905,7 @@ pdf(paste(figpath,'crps.clim_ech-ana_precip.pdf',sep='/'), width=9, height=3.5, 
 layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
 
 par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,Inf)
 
 plot_echam(crps,varname="precip", cex.pt=1.5, names=pnames[1:dim(crps$data)[3]], lev=levs, st.col=NULL, 
            stations=calibrate,add=TRUE)

@@ -13,8 +13,8 @@ rm(list=ls())
 #}
 
 # enter syr ane eyr manually
-syr=1903 #1902 #1941
-eyr=1960 #2003 #1970
+syr=1902 #1902 #1941
+eyr=2003 #2003 #1970
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
 args <- commandArgs(TRUE)
@@ -865,7 +865,7 @@ if (load_prepplot){
     print(paste("vali=",vali))
     
     # load data and make normal calendar year Jan-Dec
-#    if (cyr==eyr) {stop("last year cannot be created because oct-dec data is missing")}
+    # if (cyr==eyr) {stop("last year cannot be created because oct-dec data is missing")}
     if (every2grid) {
       load(file=paste0(prepplotdir,'analysis_',(cyr+1),'_2ndgrid.Rdata')) 
     } else {
@@ -1729,6 +1729,15 @@ if (vali) {
   areliable.anom <- tapply(apply(analysis.anom$data[1:(dim(validate.anom$data)[1]),,] > 
                       as.vector(validate.anom$data[,]),1:2,mean), rep(analysis.anom$names,
                       length=length(validate.anom$data[,])), table) 
+  # Compute the rank histogram only for summer
+  # Added by added by Roni (2018.03)
+  summer = seq(2,dim(validate.anom$data)[2],2)
+  ereliable.anom.summer <- tapply(apply(echam.anom$data[1:(dim(validate.anom$data)[1]),summer,] > 
+                                   as.vector(validate.anom$data[,summer]),1:2,mean), rep(echam.anom$names,
+                                                                                   length=length(validate.anom$data[,summer])), table)
+  areliable.anom.summer <- tapply(apply(analysis.anom$data[1:(dim(validate.anom$data)[1]),summer,] > 
+                                   as.vector(validate.anom$data[,summer]),1:2,mean), rep(analysis.anom$names,
+                                                                                   length=length(validate.anom$data[,summer])), table) 
 #   ereliable.anom <- tapply(apply(echam.anom$data[1:(dim(validate.anom$data)[1]),1:160,] > 
 #                      as.vector(validate.anom$data[,1:160]),1:2,mean), rep(echam.anom$names,
 #                      length=length(validate.anom$data[,1:160])), table)

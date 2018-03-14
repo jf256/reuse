@@ -1,5 +1,6 @@
 # expname = "test"
  expname="EKF400_v1.3_merged_covarclim50_ncovar250_static2_PHclim_2times_loc_proxy" # EKF400_v1.3_merged_only_inst_with_temp_loc
+
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -177,7 +178,7 @@ generate_PROXIES=F
 #                  die colnames nicht Sinn!!!!! Zb Zeile:
 #                  Weil in Pages sind es nicht dieselben 
 generate_PROXIESnew=F
-
+if (generate_PROXIESnew==T) {
 # You can choose any combination of months and variable (T&P) for regression_months.
 # Then you can choose for each source whether it to be included or not. 
 # The resulting realprox$mr is a matrix of dimension [1:x,1:25], where x depends on your chosen sources.
@@ -194,21 +195,15 @@ regression_months = c('t.second','t.third','t.fourth','t.fifth','p.first','p.sec
   SCHWEINGR=T
   PAGES=F
 pages_lm_fit = "CRU"   # can be CRU or GISS to calculate the reg coeff-s
-type = c("coral","tree") 
+type = c("tree") 
 #          ^ it only works with tree and coral (and both indiviually as well)
 NTREND=F
- 
+} 
+
 
 generate_PAGES = F      # using the screened PAGES proxy dataset
 generate_NTREND = F
 
-if ((generate_PAGES & PAGES) | (generate_NTREND & NTREND) | generate_PROXIES & generate_PROXIESnew){
-  stop("WATCH! These switches should not be set to TRUE simultaneously: 
-
-       generate_PROXIES & generate_PROXIESnew 
-       generate_PAGES   & PAGES
-       generate_NTRED   & NTREND")
-}
 
 
 
@@ -218,11 +213,27 @@ yuri_slp=T
 ghcn_temp=T
 isti_instead_ghcn=F  # switch from ghcn to isti (ghcn_temp must still be set to TRUE)
 ghcn_prec=F
+import_luca=F        # new docu data 
 trw_only=F           # Petra's TRW only
 mxd_only=F           # Use only MXD tree ring proxies, NOT Petra's TRW
 schweingr_only=F     # Use Schweingruber MXD grid only
 
 # all available data selected above are automatically switched on when available in EnSRF_data
+
+if (generate_PROXIESnew){
+  if ((generate_PAGES & PAGES) | (generate_NTREND & NTREND) | (generate_PROXIES & generate_PROXIESnew) |
+      (trw_only) | (mxd_only) | (schweingr_only)){
+    stop("WARNING! These switches should not be set to TRUE simultaneously: 
+
+       generate_PROXIES & generate_PROXIESnew 
+       generate_PAGES   & PAGES
+       generate_NTRED   & NTREND
+       trw_only         & generate_PROXIESnew
+       mxd_only         & generate_PROXIESnew
+       schweingr_only   & generate_PROXIESnew
+         ")
+  }
+}
 
 
 # To use a bigger ensemble for the background
@@ -350,7 +361,7 @@ ncep_vali=F            # NCEP/NCAR reanalysis data for validation
 #####################################################################################
 # prepare plot switches
 #####################################################################################
-monthly_out = F    # if sixmonstatevector=T output is backtransformed to seasonal 
+monthly_out = T    # if sixmonstatevector=T output is backtransformed to seasonal 
                  # average or monthly data if monthly_out=T 
 calc_prepplot=T  # save half year averages calc from monthly data into /prepplot folder
   write_coor=F     # write ascii files with assimilated stations and data per ts
@@ -368,9 +379,9 @@ if (!monthly_out & write_netcdf) {
 # 1902-2003, because it creates time series
 load_prepplot=F  # ATTENTION check if folder prepplot on scratch contains monthly or seasonal data!
                  # saves image and only needs to be run once, afterward set "load_image=T" 
-statyr=1904      # 1941 1850/69 year, when station network is kept constant
-load_image=F     # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
-calc_vali_stat=F # calculate validation statistics after preparation (set "load_image=T")
+statyr=1934    # 1941 1850/69 year, when station network is kept constant
+load_image=T     # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
+calc_vali_stat=T # calculate validation statistics after preparation (set "load_image=T")
 CRPS = TRUE      # calculate Continuous Ranked Probability Score
 vali_plots=F     # source EnSRF_plots.R script 
 ind_ECHAM=F      # delete/comment code in prepplot script and then delete switches here
@@ -380,6 +391,7 @@ ind_recon=F      # delete/comment code in prepplot script and then delete switch
 #####################################################################################
 # plot switches
 #####################################################################################
+validation_set="cru_vali" #twentycr_vali/cru_vali
 monthly=F
 pseudoproxy=F
 plot_dweights=F

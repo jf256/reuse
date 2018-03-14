@@ -31,23 +31,26 @@
 rm(list=ls())
 
 
-workdir='/scratch4/lucaf/reuse/reuse_git/'
+workdir='/scratch3/lucaf/reuse/reuse_git/'
 setwd(workdir)
 dataextdir='/mnt/climstor/giub/EKF400/'
-dataintdir='/scratch4/lucaf/reuse/data/analysis/obs.error/'
-plotintdir='/scratch4/lucaf/reuse/figures/obs.error/'
-ana_dir="/scratch4/joerg/projects/reuse/data/analysis/EKF400_v1.3_corr_echam_clim/"
+dataintdir='/scratch3/lucaf/reuse/data/analysis/obs.error/'
+plotintdir='/scratch3/lucaf/reuse/figures/obs.error/'
+# ana_dir="/scratch4/joerg/projects/reuse/data/analysis/EKF400_v1.3_corr_echam_clim/"
+ana_dir='/scratch3/lucaf/reuse/data/analysis/1604-2003_MXD&TRW&SCHWEINGR_two-validation-sets_tps-only/'
+
+
 
 ## input
-expname="obs_error_inflation_factor_1604-2003_iter_8_errtime_40"
-initsyr=1604
+expname="1605-2004_iter_8_errtime_40_delta_off" #!!! EXPNAME HAS TO BE SPECIFIED IN SWITCHES AS WELL !!!
+initsyr=1605
 initeyr=2003 # always watch the nr of year you pick! because if nyr for ex. = 5 then 
          # errtime of 2 makes little sense
 niter=8 # 1660-1999, errtime=20,niter=4, nrcores=10 geht 11:40h
 errtime=40 # error is calculated for errtime years
 errtimeloop=TRUE #if F then you also need to comment lines 66-74
-calc.delta=TRUE
-nrcores=5 ## take a multiple of errtime
+calc.delta=FALSE
+nrcores=10 ## take a multiple of errtime
 notop4=FALSE
 cutoffoutliers=FALSE
 
@@ -202,20 +205,13 @@ for (iter in 1:niter) {
         etmp <- echam
         etmp$lon[is.na(etmp$lon)] <- 0
         etmp$lat[is.na(etmp$lat)] <- -90
-        
         if (instrumental) {
-          print(paste('Calculating Hcal1'))
-          Hcal1 <- array(NA,dim=c(dim(inst$data)[1],2))
           Hcal1 <- compute_Hi_Hredux_sixmonstatevector(inst, etmp, threshold=700)
         }
         if (real_proxies) {
-          print(paste('Calculating Hcal2'))
-          Hcal2 <- array(NA,dim=c(dim(realprox$data)[1],14))
           Hcal2 <- compute_Hi_Hredux_proxy(realprox, etmp, realprox$mr, threshold=700)
         }
         if (docum) {
-          print(paste('Calculating Hcal3'))
-          Hcal3 <- array(NA,dim=c(dim(docall$data)[1],2))
           Hcal3 <- compute_Hi_Hredux_sixmonstatevector(docall, etmp, threshold=700)
           Hcal3[Hcal3==0] <- NA
         }
@@ -225,39 +221,43 @@ for (iter in 1:niter) {
         } else if (instrumental & docum & sixmonstatevector & !real_proxies) {
           H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal3)),1))
         } else if (!instrumental & docum & sixmonstatevector & real_proxies) {
-          H.i <- array(NA,c((nrow(Hcal2)+nrow(Hcal3)),7))
+          H.i <- array(NA,c((nrow(Hcal2)+nrow(Hcal3)),(ncol(Hcal2))/2))
         } else if (instrumental & !docum & sixmonstatevector & real_proxies) {
-          H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal2)),7))
+          H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal2)),(ncol(Hcal2))/2))
+        } else if (!instrumental & !docum & real_proxies) { #new
+          H.i <- array(NA,c(nrow(Hcal2),(ncol(Hcal2))/2))
         } else { 
-          H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal2)+nrow(Hcal3)),7))
+          H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal2)+nrow(Hcal3)),(ncol(Hcal2))/2))
         }
+        
         Hredux <- H.i
         if (instrumental){
           H.i[1:nrow(Hcal1),1] <- Hcal1[,1] 
           Hredux[1:nrow(Hcal1),1] <- Hcal1[,2] 
         } 
         if (instrumental & real_proxies & docum) {
-          H.i[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,c(1,3,5,7,9,11,13)] 
-          Hredux[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,c(2,4,6,8,10,12,14)]   
+          H.i[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,seq(1,ncol(Hcal2),2)] 
+          Hredux[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,seq(2,ncol(Hcal2),2)]   
           H.i[((nrow(Hcal1)+nrow(Hcal2)+1):nrow(H.i)),1] <- Hcal3[,1]
           Hredux[((nrow(Hcal1)+nrow(Hcal2)+1):nrow(H.i)),1] <- Hcal3[,2]
         }
         if (!instrumental & real_proxies & docum) {
-          H.i[1:nrow(Hcal2),] <- Hcal2[,c(1,3,5,7,9,11,13)] 
-          Hredux[1:nrow(Hcal2),] <- Hcal2[,c(2,4,6,8,10,12,14)]   
+          H.i[1:nrow(Hcal2),] <- Hcal2[,seq(1,ncol(Hcal2),2)] 
+          Hredux[1:nrow(Hcal2),] <- Hcal2[,seq(2,ncol(Hcal2),2)]   
           H.i[((nrow(Hcal2)+1):nrow(H.i)),1] <- Hcal3[,1]
           Hredux[((nrow(Hcal2)+1):nrow(H.i)),1] <- Hcal3[,2]
         }
         if (instrumental & real_proxies & !docum) {
-          H.i[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,c(1,3,5,7,9,11,13)] 
-          Hredux[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,c(2,4,6,8,10,12,14)] 
+          H.i[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,seq(1,ncol(Hcal2),2)] 
+          Hredux[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,seq(2,ncol(Hcal2),2)] 
         }
-        if (instrumental & !real_proxies & docum) {
-          H.i[(nrow(Hcal1)+1):(nrow(H.i)),] <- Hcal3[,1]
-          Hredux[(nrow(Hcal1)+1):(nrow(H.i)),] <- Hcal3[,2]
+        if (!instrumental & !docum & real_proxies){ #new
+          H.i[1:nrow(Hcal2),]<-Hcal2[,seq(1,ncol(Hcal2),2)] 
+          Hredux[1:nrow(Hcal2),]<-Hcal2[,seq(2,ncol(Hcal2),2)] 
         }
         H.i[H.i==0] <- NA
         Hredux[Hredux==0] <- NA
+                
         
         # if ((real_proxies) & ((instrumental) | (docum))) { is it okay to leave this out because 
         #                                                    for 1961-1965 real_proxies is FALSE?!?
@@ -270,7 +270,7 @@ for (iter in 1:niter) {
           Rcal <- c(temp2=Rcalnew[(iter-1),1], precip=50, slp=Rcalnew[(iter-1),2])[calibrate$names]
           Rcal[calibrate$sour=="doc"] <- Rcalnew[iter-1,3]
         }
-        Rcal[calibrate$names=="prox"] <- realprox$var_residu/2 
+        # Rcal[calibrate$names=="prox"] <- realprox$var_residu/2 
         # previously used residuals/2 for 1. paper version to give proxies more weight
         # better delete "/2"
         # probably should have given instrumentals more error instead!

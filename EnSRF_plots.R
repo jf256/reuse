@@ -14,14 +14,65 @@
 #       calibrate$lat[which(calibrate$sour=="prox")],pch=1,col='red',cex=0.5)
 # points(analysis$lon[H.i[,1]],analysis$lat[H.i[,1]],col='blue',cex=0.5,pch=20) # nur die proxies sind in H.i
 
-figpath=paste0('../figures/',expname,'_',syr,'-',eyr,'/') #format(Sys.time(), "%Y%m%d_%H-%M_")
+
+rm(list=ls())
+
+syr=1930
+eyr=1960
+
+user <- system("echo $USER",intern=T)
+print(paste('User:',user))
+if (user=="veronika") {
+  # workdir('/scratch/veronika/rerun/r_code')
+  workdir ='/scratch3/veronika/reuse/reuse_git/' # where are the scripts from github
+} else if (user=="joerg") {
+  workdir='/scratch3/joerg/projects/reuse/reuse_git/'
+} else if (user=="lucaf") {
+  workdir='/scratch3/lucaf/reuse/reuse_git/'
+} else if (user == "nevin"){
+  workdir = '/scratch3/nevin/reuse_climcal/reuse_git/'
+} else {
+  stop("Unknown user!")
+
+}
+dataextdir='/mnt/climstor/giub/EKF400/'
+dataintdir=paste0(workdir,'../data/')
+setwd(workdir)
+
+source('EnSRF_switches.R')
+source('EnSRF_functions.R')
+
+## CHOOSE THE VALIDATION DATA SET IN SWITCHES (validation_set), PLOTS SCRIPT HAS TO BE RUN FOR VALIDATION SETS SEPARATELY
+if (every2grid) {
+  if (monthly_out) {
+    load(file=paste0("../data/image/",expname,"/prepplot_",validation_set,"_calc_vali_stat_image_",
+                     syr,"-",eyr,"_monthly_2ndgrid.Rdata"))  
+  } else {
+    load(file=paste0("../data/image/",expname,"/prepplot_",validation_set,"_calc_vali_stat_image_",
+                     syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
+  }  
+} else {
+  if (monthly_out) {
+    load(file=paste("../data/image/",expname,"/prepplot_",validation_set,"_calc_vali_stat_image_",
+                    syr,"-",eyr,"_monthly.Rdata",sep=""))
+  } else {
+    load(file=paste("../data/image/",expname,"/prepplot_",validation_set,"_calc_vali_stat_image_",
+                    syr,"-",eyr,"_seasonal.Rdata",sep=""))
+  }
+}
+validate.init <- validate
+
+validate <- validate[[validation_set]]
+
+figpath=paste0('../figures/',expname,'_',syr,'-',eyr) #format(Sys.time(), "%Y%m%d_%H-%M_")
 dir.create(figpath)
+
 
 pnames <- paste(c('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'), ')', sep='')
 data.dim <- dim(echam$data)[c(1,2,2,3)]
-data.dim[2:3] <- c(s,data.dim[3]/s)
-ens.dim <- c(nrow(echam$ensmean), s, ncol(echam$ensmean)/s)
-
+data.dim[2:3] <- c(s.plot,data.dim[3]/s.plot)
+ens.dim <- c(nrow(echam$ensmean), s.plot, ncol(echam$ensmean)/s.plot)
+print(paste0("monthly_out: ",monthly_out))
 #####################################################################################
 #if (recalc){
 #  source('EnSRF_data.R')
@@ -46,9 +97,9 @@ if ((monthly)&(!sixmonstatevector)) {
 if ((monthly)&(sixmonstatevector)&(monthly_out)) { 
   # just plot jan und jul
   if (!landcorrected){
-  ana.spread <- ana.spread[,c(4,10)]
-  ech.spread <- ech.spread[,c(4,10)]
-}
+    ana.spread <- ana.spread[,c(4,10)]
+    ech.spread <- ech.spread[,c(4,10)]
+  }
   corr.ech$ensmean <- corr.ech$ensmean[,c(4,10)]
   corr$ensmean <- corr$ensmean[,c(4,10)]
   bias.ech$ensmean <- bias.ech$ensmean[,c(4,10)]
@@ -91,27 +142,27 @@ if (loo) {  # quick plots to check loo
     } else {
       tmp <- merge(looensmean,looensmeanres,by=intersect(looensmean[,1],looensmeanres[,1]))
     }
-          #lev <- pretty(looensmeanres[,3:14],11)
-          lev <- c(-Inf,-2,-1,-0.5,0.5,1,2,Inf) #pretty(looensmeanres[,3:14],11)
-          br <- length(lev)
-          colpal <- two.colors(n=br,start="darkblue", end="darkred", alpha=0.5)
-          colpal[4:5] <- "#FFFFFFFF"
-          pdf(file=paste0(figpath,'/loo_',cyr,'.pdf'),width=5,height=36)
-            set.panel(12,1)
-            par(oma=c(.1,.1,.1,.1))
-            for (i in 3:14){
-              datcol <- colpal[as.numeric(cut(looensmeanres[,i],breaks=br))]
-              #plot(NULL,xlim=c(-170,40),ylim=c(20,80),xlab="lon",ylab="lon")
-              plot(NULL,xlim=c(-180,180),ylim=c(-60,80),xlab="lon",ylab="lon")
-              points(looensmeanres[,1], looensmeanres[,2],cex=0.5,pch=15,col=datcol,
-                xlab="Longitude",ylab="Latitude")                # point fill color
-              map("world",interior=F,add=T,ty='l',col='black',
-                xlim=c(-180,180),ylim=c(-60,80))
-                #xlim=c(-170,40),ylim=c(20,80))
-              legend("bottomleft", inset=0.01, as.character(lev),fill=colpal,bty="o",
-                bg="white",box.col="white",box.lwd=0,cex=0.7)
-            }
-          dev.off()
+    #lev <- pretty(looensmeanres[,3:14],11)
+    lev <- c(-Inf,-2,-1,-0.5,0.5,1,2,Inf) #pretty(looensmeanres[,3:14],11)
+    br <- length(lev)
+    colpal <- two.colors(n=br,start="darkblue", end="darkred", alpha=0.5)
+    colpal[4:5] <- "#FFFFFFFF"
+    pdf(file=paste0(figpath,'/loo_',cyr,'.pdf'),width=5,height=36)
+    set.panel(12,1)
+    par(oma=c(.1,.1,.1,.1))
+    for (i in 3:14){
+      datcol <- colpal[as.numeric(cut(looensmeanres[,i],breaks=br))]
+      #plot(NULL,xlim=c(-170,40),ylim=c(20,80),xlab="lon",ylab="lon")
+      plot(NULL,xlim=c(-180,180),ylim=c(-60,80),xlab="lon",ylab="lon")
+      points(looensmeanres[,1], looensmeanres[,2],cex=0.5,pch=15,col=datcol,
+             xlab="Longitude",ylab="Latitude")                # point fill color
+      map("world",interior=F,add=T,ty='l',col='black',
+          xlim=c(-180,180),ylim=c(-60,80))
+      #xlim=c(-170,40),ylim=c(20,80))
+      legend("bottomleft", inset=0.01, as.character(lev),fill=colpal,bty="o",
+             bg="white",box.col="white",box.lwd=0,cex=0.7)
+    }
+    dev.off()
   }
 }
 
@@ -119,9 +170,11 @@ if (loo) {  # quick plots to check loo
 
 
 
+
+
 # plot sample time series for Norway lon/lat:
 # plot sample time series for Siberia lon/lat:
-stat.pos1 <- which(calibrate$lon>105&calibrate$lon<120&calibrate$lat>70&calibrate$lat<80) #sibiria
+stat.pos1 <- which(calibrate$lon>50&calibrate$lon<70&calibrate$lat>60&calibrate$lat<70) #sibiria
 
 for (i in 1:length(stat.pos1)){
   if (monthly_out) {
@@ -133,7 +186,7 @@ for (i in 1:length(stat.pos1)){
   }
   par(oma=c(0,0,0,0),mar=c(2,4,2,0.5),mfrow=c(3,1))
   stat.pos<-stat.pos1[i]  
-  pos <- getgridboxnum(calibrate,echam)[stat.pos]
+  pos <- getgridboxnum(calibrate,echam) [stat.pos]
   
   
   par(oma=c(0,0,0,0),mar=c(2,4,2,0.5),mfrow=c(3,1))
@@ -165,29 +218,29 @@ for (i in 1:length(stat.pos1)){
   lines(period,calibrate$data[stat.pos,pos2]-3,col="yellow")
   
   # plot(stat$time[seq(2,48,2)],stat$data[pos,][201,seq(2,48,2)],ylim=c(min(stat$data[201,pos2]),
-  #   max(stat$data[201,pos2])),ty='l',col=rgb(0,0,10,10,maxColorValue=10),
-  #   main="Temperature",xlab='',ylab='ºC',xaxt='n')
+  #  max(stat$data[201,pos2])),ty='l',col=rgb(0,0,10,10,maxColorValue=10),
+  #      main="Temperature",xlab='',ylab='ºC',xaxt='n')
   # lines(stat$time[seq(2,48,2)],stat$data[pos,][216,seq(2,48,2)],col=rgb(10,0,0,10,maxColorValue=10))
   # lines(stat$time[seq(2,48,2)],stat$data[pos,][219,seq(2,48,2)],col=rgb(0,10,0,10,maxColorValue=10))
   # lines(analysis.anom$time[seq(2,48,2)],analysis.anom$ensmean[676,seq(2,48,2)],
   #       col=rgb(10,0,0,10,maxColorValue=10),ty='l')
-#  legend("topleft", c('Instrumental CRU TS3', 'CCC400', "EFK400"),col=c("blue", "black", "red"), 
-#         lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='white', 
-#         box.col='white', cex=1)
+  #  legend("topleft", c('Instrumental CRU TS3', 'CCC400', "EFK400"),col=c("blue", "black", "red"), 
+  #         lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='white', 
+  #         box.col='white', cex=1)
   #precip
   plot(period,validate$data[4608+pos,pos2],ylim=c(min(echam$data[4608+pos,pos2,]),
-    max(echam$data[4608+pos,pos2,])),ty='l',col=rgb(0,0,10,10,maxColorValue=10),
-    main="Precipitation",xlab='',ylab='mm',xaxt='n')
+                                                  max(echam$data[4608+pos,pos2,])),ty='l',col=rgb(0,0,10,10,maxColorValue=10),
+       main="Precipitation",xlab='',ylab='mm',xaxt='n')
   polygon(c(period,rev(period)),c(apply(echam$data[4608+pos,pos2,],1,max),
-    rev(apply(echam$data[4608+pos,pos2,],1,min))),density=NA,
-    col=rgb(1,1,1,3,maxColorValue=10))
+                                  rev(apply(echam$data[4608+pos,pos2,],1,min))),density=NA,
+          col=rgb(1,1,1,3,maxColorValue=10))
   lines(period,echam$ensmean[4608+pos,pos2],col=rgb(0,0,0,10,maxColorValue=10))
   polygon(c(period,rev(period)),c(apply(analysis$data[4608+pos,pos2,],1,max),
-    rev(apply(analysis$data[4608+pos,pos2,],1,min))),density=NA,
-    col=rgb(10,0,0,3,maxColorValue=10))
+                                  rev(apply(analysis$data[4608+pos,pos2,],1,min))),density=NA,
+          col=rgb(10,0,0,3,maxColorValue=10))
   lines(period,analysis$ensmean[4608+pos,pos2],col=rgb(10,0,0,10,maxColorValue=10))
   lines(period,validate$data[4608+pos,pos2],ylim=c(min(echam$data[pos,pos2,]),
-    max(echam$data[4608+pos,pos2,])),col=rgb(0,0,10,10,maxColorValue=10))
+                                                   max(echam$data[4608+pos,pos2,])),col=rgb(0,0,10,10,maxColorValue=10))
   lines(period,calibrate$data[stat.pos,pos2]+74,col="yellow")
   # lines(period,apply(calibrate$data[stat.pos,pos2],2,mean)+74,col="yellow")
   legend("topleft", c('CRU TS3', 'CCC400', "EFK400"),col=c("blue", "black", "red"), 
@@ -195,23 +248,25 @@ for (i in 1:length(stat.pos1)){
          box.col='white', cex=1)
   #slp
   plot(period,validate$data[2*4608+pos,pos2],ylim=c(min(echam$data[2*4608+pos,pos2,]),
-    max(echam$data[2*4608+pos,pos2,])),ty='l',col=rgb(0,0,10,10,maxColorValue=10),
-    main="SLP",xlab='',ylab='hPa')
+                                                    max(echam$data[2*4608+pos,pos2,])),ty='l',col=rgb(0,0,10,10,maxColorValue=10),
+       main="SLP",xlab='',ylab='hPa')
   polygon(c(period,rev(period)),c(apply(echam$data[2*4608+pos,pos2,],1,max),
-    rev(apply(echam$data[2*4608+pos,pos2,],1,min))),density=NA,
-    col=rgb(1,1,1,3,maxColorValue=10))
+                                  rev(apply(echam$data[2*4608+pos,pos2,],1,min))),density=NA,
+          col=rgb(1,1,1,3,maxColorValue=10))
   lines(period,echam$ensmean[2*4608+pos,pos2],col=rgb(0,0,0,10,maxColorValue=10))
   polygon(c(period,rev(period)),c(apply(analysis$data[2*4608+pos,pos2,],1,max),
-    rev(apply(analysis$data[2*4608+pos,pos2,],1,min))),density=NA,
-    col=rgb(10,0,0,3,maxColorValue=10))
+                                  rev(apply(analysis$data[2*4608+pos,pos2,],1,min))),density=NA,
+          col=rgb(10,0,0,3,maxColorValue=10))
   lines(period,analysis$ensmean[2*4608+pos,pos2],col=rgb(10,0,0,10,maxColorValue=10))
   lines(period,validate$data[2*4608+pos,pos2],ylim=c(min(echam$data[pos,pos2,]),
-    max(echam$data[2*4608+pos,pos2,])),col=rgb(0,0,10,10,maxColorValue=10))
+                                                     max(echam$data[2*4608+pos,pos2,])),col=rgb(0,0,10,10,maxColorValue=10))
   # legend("bottomleft", c('Instrumental CRU TS3', 'CCC400', "EFK400"),col=c("blue", "black", "red"), 
   #   lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='white', 
   #   box.col='white', cex=1)
-dev.off()
+  dev.off()
 }
+
+
 
 # plot sample time series for lon/lat:
 paste(validate$lon[278],validate$lat[278])
@@ -237,7 +292,7 @@ legend("bottomleft", c('Instrumental CRU TS3', 'CCC400', "EFK400"),col=c("blue",
        box.col='white', cex=1)
 dev.off()
 
- 
+
 #chose timestep for sample year plots
 t=2
 
@@ -356,7 +411,7 @@ plotdata=echam
 #plotdata$ensmean <- cbind(ech_spr_err_ratio,ana_spr_err_ratio)
 #plotdata$ensmean <- cbind(sprerr.win,sprerr.sum)
 plotdata$data <- array(cbind(sprerr.win,sprerr.sum,sprerr.c.win,sprerr.c.sum), 
-                   c(length(sprerr.c.win), 1, 4))
+                       c(length(sprerr.c.win), 1, 4))
 plotdata$names <- plotdata$names[echam$names=="temp2"]
 plotdata$lon <- plotdata$lon[echam$names=="temp2"]
 plotdata$lat <- plotdata$lat[echam$names=="temp2"]
@@ -417,69 +472,69 @@ if (vali) {
       erel_obserr <- erel_obserr.anom
       arel_obserr <- arel_obserr.anom
     }
-  
-# ereliable <- tapply(apply(echam$data[1:(dim(validate$data)[1]),,] > 
-#                             as.vector(validate$data),1:2,mean), rep(echam$names,
-#                             length=length(validate$data)), table)
-# areliable <- tapply(apply(analysis$data[1:(dim(validate$data)[1]),,] > 
-#                             as.vector(validate$data),1:2,mean), rep(analysis$names,
-#                             length=length(validate$data)), table)
- if (length(names(ereliable$temp2)) == 31) {
-  pdf(paste(figpath,'talagrant_temp.pdf',sep='/'), width=6, height=6, paper='special') 
-  par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
-  names(ereliable$temp2) <- seq(0,30)
-  barplot(ereliable$temp2)
-  names(areliable$temp2) <- seq(0,30)
-  barplot(areliable$temp2)
-  dev.off()
- }
- if (length(names(ereliable$precip)) == 31) {
-  pdf(paste(figpath,'talagrant_precip.pdf',sep='/'), width=6, height=6, paper='special') 
-  par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
-  names(ereliable$precip) <- seq(0,30)
-  barplot(ereliable$precip)
-  names(areliable$precip) <- seq(0,30)
-  barplot(areliable$precip)
-  dev.off()
- }
- if (length(names(ereliable$slp)) == 31) {
-  pdf(paste(figpath,'talagrant_slp.pdf',sep='/'), width=6, height=6, paper='special') 
-  par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
-  names(ereliable$slp) <- seq(0,30)
-  barplot(ereliable$slp)
-  names(areliable$slp) <- seq(0,30)
-  barplot(areliable$slp)
-  dev.off()
- }
- if (length(names(erel_obserr$temp2)) == 31) {
-   pdf(paste(figpath,'talagrant_obserr_temp.pdf',sep='/'), width=6, height=6, paper='special') 
-   par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
-   names(erel_obserr$temp2) <- seq(0,30)
-   barplot(erel_obserr$temp2)
-   names(arel_obserr$temp2) <- seq(0,30)
-   barplot(arel_obserr$temp2)
-   dev.off()
- }
- # next lines are commented because we don't have uncertainty estimates for instr. prec. and slp
- # if (length(names(erel_obserr$precip)) == 31) {
- #   pdf(paste(figpath,'talagrant_obserr_precip.pdf',sep='/'), width=6, height=6, paper='special') 
- #   par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
- #   names(erel_obserr$precip) <- seq(0,30)
- #   barplot(erel_obserr$precip)
- #   names(arel_obserr$precip) <- seq(0,30)
- #   barplot(arel_obserr$precip)
- #   dev.off()
- # }
- # if (length(names(erel_obserr$slp)) == 31) {
- #   pdf(paste(figpath,'talagrant_obserr_slp.pdf',sep='/'), width=6, height=6, paper='special') 
- #   par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
- #   names(erel_obserr$slp) <- seq(0,30)
- #   barplot(erel_obserr$slp)
- #   names(arel_obserr$slp) <- seq(0,30)
- #   barplot(arel_obserr$slp)
- #   dev.off()
- # }
-}
+    
+    # ereliable <- tapply(apply(echam$data[1:(dim(validate$data)[1]),,] > 
+    #                             as.vector(validate$data),1:2,mean), rep(echam$names,
+    #                             length=length(validate$data)), table)
+    # areliable <- tapply(apply(analysis$data[1:(dim(validate$data)[1]),,] > 
+    #                             as.vector(validate$data),1:2,mean), rep(analysis$names,
+    #                             length=length(validate$data)), table)
+    if (length(names(ereliable$temp2)) == 31) {
+      pdf(paste(figpath,'talagrant_temp.pdf',sep='/'), width=6, height=6, paper='special') 
+      par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+      names(ereliable$temp2) <- seq(0,30)
+      barplot(ereliable$temp2)
+      names(areliable$temp2) <- seq(0,30)
+      barplot(areliable$temp2)
+      dev.off()
+    }
+    if (length(names(ereliable$precip)) == 31) {
+      pdf(paste(figpath,'talagrant_precip.pdf',sep='/'), width=6, height=6, paper='special') 
+      par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+      names(ereliable$precip) <- seq(0,30)
+      barplot(ereliable$precip)
+      names(areliable$precip) <- seq(0,30)
+      barplot(areliable$precip)
+      dev.off()
+    }
+    if (length(names(ereliable$slp)) == 31) {
+      pdf(paste(figpath,'talagrant_slp.pdf',sep='/'), width=6, height=6, paper='special') 
+      par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+      names(ereliable$slp) <- seq(0,30)
+      barplot(ereliable$slp)
+      names(areliable$slp) <- seq(0,30)
+      barplot(areliable$slp)
+      dev.off()
+    }
+    if (length(names(erel_obserr$temp2)) == 31) {
+      pdf(paste(figpath,'talagrant_obserr_temp.pdf',sep='/'), width=6, height=6, paper='special') 
+      par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+      names(erel_obserr$temp2) <- seq(0,30)
+      barplot(erel_obserr$temp2)
+      names(arel_obserr$temp2) <- seq(0,30)
+      barplot(arel_obserr$temp2)
+      dev.off()
+    }
+    # next lines are commented because we don't have uncertainty estimates for instr. prec. and slp
+    # if (length(names(erel_obserr$precip)) == 31) {
+    #   pdf(paste(figpath,'talagrant_obserr_precip.pdf',sep='/'), width=6, height=6, paper='special') 
+    #   par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+    #   names(erel_obserr$precip) <- seq(0,30)
+    #   barplot(erel_obserr$precip)
+    #   names(arel_obserr$precip) <- seq(0,30)
+    #   barplot(arel_obserr$precip)
+    #   dev.off()
+    # }
+    # if (length(names(erel_obserr$slp)) == 31) {
+    #   pdf(paste(figpath,'talagrant_obserr_slp.pdf',sep='/'), width=6, height=6, paper='special') 
+    #   par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+    #   names(erel_obserr$slp) <- seq(0,30)
+    #   barplot(erel_obserr$slp)
+    #   names(arel_obserr$slp) <- seq(0,30)
+    #   barplot(arel_obserr$slp)
+    #   dev.off()
+    # }
+  }
 }
 
 
@@ -810,6 +865,13 @@ dev.off()
 
 corr.tot <- echam
 corr.tot$data <- array(cbind(corr.ech$ensmean,corr$ensmean),c(dim(corr$ensmean)[1],1,dim(corr$ensmean)[2]*2)) #[,,1:2,drop=F]
+## it doesn't make sense to put $ensmean into $data
+## and the choosing type='data'
+## different approach: put $ensmean into $ensmean and 
+## choose type='ensmean'
+corr.tot$ensmean <- array(cbind(corr.ech$ensmean,corr$ensmean),c(dim(corr$ensmean)[1],dim(corr$ensmean)[2]*2)) #[,,1:2,drop=F]
+
+
 #corr.ech <- corr               # analysis vs. validate
 #corr.ech$Analysis <- corr.ech  # echam vs. validate
 #names(corr.ech) <- c('echam', 'analysis_localized')
@@ -818,28 +880,42 @@ corr.tot$data <- array(cbind(corr.ech$ensmean,corr$ensmean),c(dim(corr$ensmean)[
 #corr.tot$data <- array(corr.tot$data[,,5:8], c(nrow(corr[[1]]$ensmean), 1, 4))
 #corr.tot$data <- array(corr.tot$data[,,], c(nrow(corr[[1]]$ensmean), 1, 4))
 
-pdf(paste(figpath,'corr_echam_anal-cru_temp.pdf',sep='/'), width=9, height=6, paper='special')
+# pdf(paste(figpath,'corr_echam_anal-cru_temp.pdf',sep='/'), width=9, height=5, paper='special')
 #pdf(paste(figpath,'corr_echam_anal-cru_temp.pdf',sep='/'), width=9, height=12, paper='special')
-layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-#layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
-par(oma=c(0,0,0,0))
+# layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+
+# layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
+# par(oma=c(0,0,0,0))
 levs <- c(-1,seq(-0.9,0.9,0.2),1)
 #levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.1,0.2,0.3, 0.5, 0.7, 1)
-plot_echam(corr.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat,add=TRUE)
+
+if (monthly_out) {
+  plot_echam4(corr.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('corr_echam_anal-',validation_set,'_temp_summer.pdf'), paper='special')
+  plot_echam4(corr.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('corr_echam_anal-',validation_set,'_temp_winter.pdf'), paper='special')
+} else {
+  plot_echam4(corr.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('corr_echam_anal-',validation_set,'_temp.pdf'), paper='special')
+}
+
 #plot_echam(corr.tot, cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs, st.col=1, stations=plstat,add=TRUE)
-dev.off()
+# dev.off()
 #    \caption{temp corr echam ens mean with cru validation (top) and analysis ens mean with cru validation (bottom). Winter left, summer right.}
 
 
 ################################################################################
 # Fig. 4b: average precip corr echam and analysis vs validation wrt ens. mean 
 
-pdf(paste(figpath,'corr_echam_anal-cru_precip.pdf',sep='/'), width=9, height=6, paper='special')
-layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-par(oma=c(0,0,0,0))
+# pdf(paste(figpath,'corr_echam_anal-cru_precip.pdf',sep='/'), width=9, height=6, paper='special')
+# layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+# par(oma=c(0,0,0,0))
 levs <- c(-1,seq(-0.9,0.9,0.2),1)
-plot_echam(corr.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat, add=TRUE)
-dev.off()
+
+if (monthly_out){
+  plot_echam4(corr.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('corr_echam_anal-',validation_set,'_precip_summer.pdf'), paper='special')
+  plot_echam4(corr.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('corr_echam_anal',validation_set,'_precip_winter.pdf'), paper='special')
+}else{
+  plot_echam4(corr.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('corr_echam_anal-',validation_set,'_precip.pdf'), paper='special')
+}
+# dev.off()
 #    \caption{precip corr echam ens mean with cru validation (top) and analysis ens mean with cru validation (bottom). Winter left, summer right.}
 
 
@@ -918,6 +994,17 @@ RE.tot <- echam
 #RE <- RE.bkp
 #anomalies and only 1 analysis with distance weighting
 RE.tot$data <- array(RE.anom$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$ensmean)[2]))
+RE.tot$ensmean <- array(RE.anom$ensmean,c(dim(RE$ensmean)[1], dim(RE$ensmean)[2]))
+
+levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+
+if (monthly_out){
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('re_anom_echam_anal-',validation_set,'_temp_summer.pdf'), paper='special')
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('re_anom_echam_anal-',validation_set,'_temp_winter.pdf'), paper='special')
+}else{
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('re_anom_echam_anal-',validation_set,'_temp.pdf'), paper='special')
+}
+
 #RE.tot$data <- array(cbind(RE.anom$ensmean,RE.ech.clim.anom$ensmean), 
 #                     c(dim(RE$ensmean)[1], 1, (dim(RE$ensmean)[2]*2)))
 #RE.tot$data <- array((rmse.anom$ensmean-rmse.clim.anom$ensmean), 
@@ -928,39 +1015,46 @@ RE.tot$data <- array(RE.anom$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$ensmean)[2]
 #}
 #RE.tot$data <- array(sapply(RE, function(x) x$ensmean), c(nrow(RE[[1]]$ensmean), 1, ncol(RE[[1]]$ensmean)*length(RE)))
 
-# only pseudoproxies including noise 
-#RE.tot$data <- array(RE.tot$data[,,5:8], c(nrow(RE[[1]]$ensmean), 1, 4)) 
-# instrumental data (only 4 fields (winter,summer,w/o and w localisation) because no noise added)
-#RE.tot$data <- array(RE.tot$data[,,1:4], c(nrow(RE[[1]]$ensmean), 1, 4))
-pdf(paste(figpath,'re_anom_echam_anal-cru_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
-#pdf(paste(figpath,'re_clim_echam-cru_temp.pdf',sep='/'), width=9, height=6, paper='special')
-#pdf(paste(figpath,'re_echam_anal-cru_temp_12mon.pdf',sep='/'), width=9, height=12, paper='special')
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-#layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-#layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
-#levs <- c(-Inf,seq(-1,1,0.2),Inf)
-plot_echam(RE.tot, cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, 
-           stations=calibrate,add=TRUE)
-#plot_echam(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=1, stations=plstat,add=TRUE)
-dev.off()
-#    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
+# # only pseudoproxies including noise
+# #RE.tot$data <- array(RE.tot$data[,,5:8], c(nrow(RE[[1]]$ensmean), 1, 4))
+# # instrumental data (only 4 fields (winter,summer,w/o and w localisation) because no noise added)
+# #RE.tot$data <- array(RE.tot$data[,,1:4], c(nrow(RE[[1]]$ensmean), 1, 4))
+# pdf(paste(figpath,'re_anom_echam_anal-cru_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
+# #pdf(paste(figpath,'re_clim_echam-cru_temp.pdf',sep='/'), width=9, height=6, paper='special')
+# #pdf(paste(figpath,'re_echam_anal-cru_temp_12mon.pdf',sep='/'), width=9, height=12, paper='special')
+# layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+# #layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+# #layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
+# par(oma=c(0,0,0,0))
+# levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+# #levs <- c(-Inf,seq(-1,1,0.2),Inf)
+# plot_echam(RE.tot, cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL,
+#            stations=calibrate,add=TRUE)
+# #plot_echam(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=1, stations=plstat,add=TRUE)
+# dev.off()
+# #    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
 
 
 
 ################################################################################
 # Fig. 6b: average precip RE wrt ens. mean 
 #<<label=rmse, echo=FALSE, fig=TRUE, width=8, height=9, results=hide, eps=FALSE>>=
+if (monthly_out){
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('re_anom_echam_anal-',validation_set,'_precip_summer.pdf'), paper='special')
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname='re_anom_echam_anal-',validation_set,'_precip_winter.pdf', paper='special')
+}else{
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname='re_anom_echam_anal-',validation_set,'_precip.pdf', paper='special')
+}
 
-pdf(paste(figpath,'re_anom_echam_anal-cru_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-#layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
-plot_echam(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat,add=TRUE)
-dev.off()
-#    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
+# 
+# pdf(paste(figpath,'re_anom_echam_anal-cru_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
+# layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+# #layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+# par(oma=c(0,0,0,0))
+# levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
+# plot_echam(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat,add=TRUE)
+# dev.off()
+# #    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
 
 
 ################################################################################
@@ -988,6 +1082,16 @@ RE.tot <- echam
 #RE <- RE.bkp
 #anomalies and only 1 analysis with distance weighting
 RE.tot$data <- array(RE$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$ensmean)[2]))
+RE.tot$ensmean <- array(RE$ensmean,c(dim(RE$ensmean)[1], dim(RE$ensmean)[2]))
+
+
+levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+if (monthly_out){
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('re_echam_anal-',validation_set,'_temp_summer.pdf'), paper='special')
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('re_echam_anal-',validation_set,'_temp_winter.pdf'), paper='special')
+}else{
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('re_echam_anal-',validation_set,'_temp.pdf'), paper='special')
+}
 #RE.tot$data <- array(cbind(RE.anom$ensmean,RE.ech.clim.anom$ensmean), 
 #                     c(dim(RE$ensmean)[1], 1, (dim(RE$ensmean)[2]*2)))
 #RE.tot$data <- array((rmse.anom$ensmean-rmse.clim.anom$ensmean), 
@@ -998,24 +1102,24 @@ RE.tot$data <- array(RE$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$ensmean)[2]))
 #}
 #RE.tot$data <- array(sapply(RE, function(x) x$ensmean), c(nrow(RE[[1]]$ensmean), 1, ncol(RE[[1]]$ensmean)*length(RE)))
 
-# only pseudoproxies including noise 
-#RE.tot$data <- array(RE.tot$data[,,5:8], c(nrow(RE[[1]]$ensmean), 1, 4)) 
-# instrumental data (only 4 fields (winter,summer,w/o and w localisation) because no noise added)
-#RE.tot$data <- array(RE.tot$data[,,1:4], c(nrow(RE[[1]]$ensmean), 1, 4))
-pdf(paste(figpath,'re_echam_anal-cru_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
-#pdf(paste(figpath,'re_clim_echam-cru_temp.pdf',sep='/'), width=9, height=6, paper='special')
-#pdf(paste(figpath,'re_echam_anal-cru_temp_12mon.pdf',sep='/'), width=9, height=12, paper='special')
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-#layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-#layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
-#levs <- c(-Inf,seq(-1,1,0.2),Inf)
-plot_echam(RE.tot, cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, 
-           stations=calibrate,add=TRUE)
-#plot_echam(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=1, stations=plstat,add=TRUE)
-dev.off()
-#    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
+# # only pseudoproxies including noise 
+# #RE.tot$data <- array(RE.tot$data[,,5:8], c(nrow(RE[[1]]$ensmean), 1, 4)) 
+# # instrumental data (only 4 fields (winter,summer,w/o and w localisation) because no noise added)
+# #RE.tot$data <- array(RE.tot$data[,,1:4], c(nrow(RE[[1]]$ensmean), 1, 4))
+# pdf(paste(figpath,'re_echam_anal-cru_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
+# #pdf(paste(figpath,'re_clim_echam-cru_temp.pdf',sep='/'), width=9, height=6, paper='special')
+# #pdf(paste(figpath,'re_echam_anal-cru_temp_12mon.pdf',sep='/'), width=9, height=12, paper='special')
+# layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+# #layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+# #layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
+# par(oma=c(0,0,0,0))
+# levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+# #levs <- c(-Inf,seq(-1,1,0.2),Inf)
+# plot_echam(RE.tot, cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, 
+#            stations=calibrate,add=TRUE)
+# #plot_echam(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=1, stations=plstat,add=TRUE)
+# dev.off()
+# #    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
 
 
 
@@ -1023,14 +1127,22 @@ dev.off()
 # Fig. 6b: average precip RE wrt ens. mean 
 #<<label=rmse, echo=FALSE, fig=TRUE, width=8, height=9, results=hide, eps=FALSE>>=
 
-pdf(paste(figpath,'re_echam_anal-cru_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-#layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
-plot_echam(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat,add=TRUE)
-dev.off()
-#    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
+if (monthly_out){
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('re_echam_anal-',validation_set,'_precip_summer.pdf'), paper='special')
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('re_echam_anal-',validation_set,'_precip_winter.pdf'), paper='special')
+}else{
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('re_echam_anal-',validation_set,'_precip.pdf'), paper='special')
+}
+# 
+# 
+# pdf(paste(figpath,'re_echam_anal-cru_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
+# layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+# #layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+# par(oma=c(0,0,0,0))
+# levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
+# plot_echam(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat,add=TRUE)
+# dev.off()
+# #    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
 
 
 ################################################################################
@@ -1057,6 +1169,17 @@ RE.tot <- echam
 #RE <- RE.bkp
 #anomalies and only 1 analysis with distance weighting
 RE.tot$data <- array(RE.echam.clim$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$ensmean)[2]))
+RE.tot$ensmean <- array(RE.echam.clim$ensmean,c(dim(RE$ensmean)[1],dim(RE$ensmean)[2]))
+
+
+levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+
+if (monthly_out){
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('re_clim_echam_anal-',validation_set,'_temp_summer.pdf'), paper='special')
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('re_clim_echam_anal-',validation_set,'_temp_winter.pdf'), paper='special')
+}else{
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('re_clim_echam_anal-',validation_set,'_temp.pdf'), paper='special')
+}
 #RE.tot$data <- array(cbind(RE.anom$ensmean,RE.ech.clim.anom$ensmean), 
 #                     c(dim(RE$ensmean)[1], 1, (dim(RE$ensmean)[2]*2)))
 #RE.tot$data <- array((rmse.anom$ensmean-rmse.clim.anom$ensmean), 
@@ -1071,20 +1194,20 @@ RE.tot$data <- array(RE.echam.clim$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$ensme
 #RE.tot$data <- array(RE.tot$data[,,5:8], c(nrow(RE[[1]]$ensmean), 1, 4)) 
 # instrumental data (only 4 fields (winter,summer,w/o and w localisation) because no noise added)
 #RE.tot$data <- array(RE.tot$data[,,1:4], c(nrow(RE[[1]]$ensmean), 1, 4))
-pdf(paste(figpath,'re_clim_echam_anal-cru_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
-#pdf(paste(figpath,'re_clim_echam-cru_temp.pdf',sep='/'), width=9, height=6, paper='special')
-#pdf(paste(figpath,'re_echam_anal-cru_temp_12mon.pdf',sep='/'), width=9, height=12, paper='special')
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-#layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-#layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
-#levs <- c(-Inf,seq(-1,1,0.2),Inf)
-plot_echam(RE.tot, cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, 
-           stations=calibrate,add=TRUE)
-#plot_echam(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=1, stations=plstat,add=TRUE)
-dev.off()
-#    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
+# pdf(paste(figpath,'re_clim_echam_anal-cru_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
+# #pdf(paste(figpath,'re_clim_echam-cru_temp.pdf',sep='/'), width=9, height=6, paper='special')
+# #pdf(paste(figpath,'re_echam_anal-cru_temp_12mon.pdf',sep='/'), width=9, height=12, paper='special')
+# layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+# #layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+# #layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
+# par(oma=c(0,0,0,0))
+# levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+# #levs <- c(-Inf,seq(-1,1,0.2),Inf)
+# plot_echam(RE.tot, cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, 
+#            stations=calibrate,add=TRUE)
+# #plot_echam(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=1, stations=plstat,add=TRUE)
+# dev.off()
+# #    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
 
 
 
@@ -1092,13 +1215,21 @@ dev.off()
 # Fig. 6b: average precip RE wrt ens. mean 
 #<<label=rmse, echo=FALSE, fig=TRUE, width=8, height=9, results=hide, eps=FALSE>>=
 
-pdf(paste(figpath,'re_clim_echam_anal-cru_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-#layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
-plot_echam(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat,add=TRUE)
-dev.off()
+if (monthly_out){
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('re_clim_echam_anal-',validation_set,'_precip_summer.pdf'), paper='special')
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('re_clim_echam_anal-',validation_set,'_precip_winter.pdf'), paper='special')
+}else{
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('re_clim_echam_anal-',validation_set,'_precip.pdf'), paper='special')
+}
+
+# 
+# pdf(paste(figpath,'re_clim_echam_anal-cru_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
+# layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+# #layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+# par(oma=c(0,0,0,0))
+# levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
+# plot_echam(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat,add=TRUE)
+# dev.off()
 #    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
 
 
@@ -1120,6 +1251,16 @@ RE.tot <- echam
 #RE <- RE.bkp
 #anomalies and only 1 analysis with distance weighting
 RE.tot$data <- array(RE.echam.clim.anom$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$ensmean)[2]))
+RE.tot$ensmean <- array(RE.echam.clim.anom$ensmean,c(dim(RE$ensmean)[1], dim(RE$ensmean)[2]))
+
+levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+
+if (monthly_out){
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('re_clim_anom_echam_anal-',validation_set,'_temp_summer.pdf'), paper='special')
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('re_clim_anom_echam_anal-',validation_set,'_temp_winter.pdf'), paper='special')
+}else{
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('re_clim_anom_echam_anal-',validation_set,'_temp.pdf'), paper='special')
+}
 #RE.tot$data <- array(cbind(RE.anom$ensmean,RE.ech.clim.anom$ensmean), 
 #                     c(dim(RE$ensmean)[1], 1, (dim(RE$ensmean)[2]*2)))
 #RE.tot$data <- array((rmse.anom$ensmean-rmse.clim.anom$ensmean), 
@@ -1130,24 +1271,24 @@ RE.tot$data <- array(RE.echam.clim.anom$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$
 #}
 #RE.tot$data <- array(sapply(RE, function(x) x$ensmean), c(nrow(RE[[1]]$ensmean), 1, ncol(RE[[1]]$ensmean)*length(RE)))
 
-# only pseudoproxies including noise 
-#RE.tot$data <- array(RE.tot$data[,,5:8], c(nrow(RE[[1]]$ensmean), 1, 4)) 
-# instrumental data (only 4 fields (winter,summer,w/o and w localisation) because no noise added)
-#RE.tot$data <- array(RE.tot$data[,,1:4], c(nrow(RE[[1]]$ensmean), 1, 4))
-pdf(paste(figpath,'re_clim_anom_echam_anal-cru_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
-#pdf(paste(figpath,'re_clim_echam-cru_temp.pdf',sep='/'), width=9, height=6, paper='special')
-#pdf(paste(figpath,'re_echam_anal-cru_temp_12mon.pdf',sep='/'), width=9, height=12, paper='special')
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-#layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-#layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
-#levs <- c(-Inf,seq(-1,1,0.2),Inf)
-plot_echam(RE.tot, cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, 
-           stations=calibrate,add=TRUE)
-#plot_echam(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=1, stations=plstat,add=TRUE)
-dev.off()
-#    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
+# # only pseudoproxies including noise 
+# #RE.tot$data <- array(RE.tot$data[,,5:8], c(nrow(RE[[1]]$ensmean), 1, 4)) 
+# # instrumental data (only 4 fields (winter,summer,w/o and w localisation) because no noise added)
+# #RE.tot$data <- array(RE.tot$data[,,1:4], c(nrow(RE[[1]]$ensmean), 1, 4))
+# pdf(paste(figpath,'re_clim_anom_echam_anal-cru_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
+# #pdf(paste(figpath,'re_clim_echam-cru_temp.pdf',sep='/'), width=9, height=6, paper='special')
+# #pdf(paste(figpath,'re_echam_anal-cru_temp_12mon.pdf',sep='/'), width=9, height=12, paper='special')
+# layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+# #layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+# #layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,13), 7, 2, byrow = TRUE), height=c(3,3,3,3,3,3,1))
+# par(oma=c(0,0,0,0))
+# levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+# #levs <- c(-Inf,seq(-1,1,0.2),Inf)
+# plot_echam(RE.tot, cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, 
+#            stations=calibrate,add=TRUE)
+# #plot_echam(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=1, stations=plstat,add=TRUE)
+# dev.off()
+# #    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
 
 
 
@@ -1155,14 +1296,22 @@ dev.off()
 # Fig. 6b: average precip RE wrt ens. mean 
 #<<label=rmse, echo=FALSE, fig=TRUE, width=8, height=9, results=hide, eps=FALSE>>=
 
-pdf(paste(figpath,'re_clim_anom_echam_anal-cru_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-#layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
-plot_echam(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat,add=TRUE)
-dev.off()
-#    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
+if (monthly_out){
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('re_clim_anom_echam_anal-',validation_set,'_precip_summer.pdf'), paper='special')
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('re_clim_anom_echam_anal-',validation_set,'_precip_winter.pdf'), paper='special')
+}else{
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('re_clim_anom_echam_anal-',validation_set,'_precip.pdf'), paper='special')
+}
+
+# 
+# pdf(paste(figpath,'re_clim_anom_echam_anal-cru_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
+# layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+# #layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
+# par(oma=c(0,0,0,0))
+# levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
+# plot_echam(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, st.col=NULL, stations=plstat,add=TRUE)
+# dev.off()
+# #    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
 
 
 ################################################################################
@@ -1287,181 +1436,181 @@ dev.off()
 # #    \caption{As in figure \ref{fig:indices} but for aggregated temperature, precipitation, mean sea level pressure }
 if (ind_ECHAM) {
   
-pdf(paste(figpath,'vali_ind.pdf',sep='/'), width=9, height=6, paper='special') 
-par(mfrow=c(4,2), cex.axis=1.4, cex.lab=1.4, mar=c(3,5,1,1), oma=c(0,0,0,0))
-
-vind2=vind
-vind2$data=array(vind$data,c(dim(vind$data)[1],2,dim(vind$data)[2]/2))
-eind2=eind
-eind2$ensmean=array(eind$ensmean,c(dim(eind$ensmean)[1],2,dim(eind$ensmean)[2]/2))
-eind2$min=array(apply(eind$data,1:2,min),c(dim(eind$ensmean)[1],2,dim(eind$ensmean)[2]/2))
-eind2$max=array(apply(eind$data,1:2,max),c(dim(eind$ensmean)[1],2,dim(eind$ensmean)[2]/2))
-aind2=aind
-aind2$ensmean=array(aind$ensmean,c(dim(aind$ensmean)[1],2,dim(aind$ensmean)[2]/2))
-aind2$min=array(apply(aind$data,1:2,min),c(dim(aind$ensmean)[1],2,dim(aind$ensmean)[2]/2))
-aind2$max=array(apply(aind$data,1:2,max),c(dim(aind$ensmean)[1],2,dim(aind$ensmean)[2]/2))
-
-for (ind in c(1,4,5,6)) {
-if (ind == 1) {mainname='NHt2m'}
-if (ind == 4) {mainname='NEUt2m'}
-if (ind == 5) {mainname='NEUpr'}
-if (ind == 6) {mainname='NEUslp'}
- for (seas in c(1,2)) {
-  if (seas == 1) {color='darkblue'; color3='blue'; color2='cyan'}
-  if (seas == 2) {color='darkred'; color3='red'; color2='orange'}
-  ymin=min(eind2$min[ind,seas,])
-  ymax=max(eind2$max[ind,seas,])
-  plot(vind2$data[ind,seas,],ty='l',col=color,lty=1,ylim=c(ymin,ymax),main=mainname)
-  lines(eind2$ensmean[ind,seas,],ty='l',col=color2,lwd=2,lty=2,main='')
-  lines(eind2$min[ind,seas,],ty='l',col=color2,lty=2,lwd=1,main='')
-  lines(eind2$max[ind,seas,],ty='l',col=color2,lty=2,lwd=1,main='')
-  lines(aind2$ensmean[ind,seas,],ty='l',col=color3,lwd=2,lty=3,main='')
-  lines(aind2$min[ind,seas,],ty='l',col=color3,lty=3,lwd=1,main='')
-  lines(aind2$max[ind,seas,],ty='l',col=color3,lty=3,lwd=1,main='')
- }
-}
-dev.off()
-
-
-
-################################################################################
-# Fig. 8: index correlation 
-# new like in the paper
-#<<label=indices_corr, echo=FALSE, fig=TRUE, width=12, height=7, results=hide, eps=FALSE>>=
-
-inds <- c('NH.temp2', 'NEU.temp2', 'NEU.precip', 'HC', 'SJ', 'Z100', 'Z300', 'PWC') 
-if (pseudoproxy) {
+  pdf(paste(figpath,'vali_ind.pdf',sep='/'), width=9, height=6, paper='special') 
+  par(mfrow=c(4,2), cex.axis=1.4, cex.lab=1.4, mar=c(3,5,1,1), oma=c(0,0,0,0))
+  
+  vind2=vind
+  vind2$data=array(vind$data,c(dim(vind$data)[1],2,dim(vind$data)[2]/2))
+  eind2=eind
+  eind2$ensmean=array(eind$ensmean,c(dim(eind$ensmean)[1],2,dim(eind$ensmean)[2]/2))
+  eind2$min=array(apply(eind$data,1:2,min),c(dim(eind$ensmean)[1],2,dim(eind$ensmean)[2]/2))
+  eind2$max=array(apply(eind$data,1:2,max),c(dim(eind$ensmean)[1],2,dim(eind$ensmean)[2]/2))
+  aind2=aind
+  aind2$ensmean=array(aind$ensmean,c(dim(aind$ensmean)[1],2,dim(aind$ensmean)[2]/2))
+  aind2$min=array(apply(aind$data,1:2,min),c(dim(aind$ensmean)[1],2,dim(aind$ensmean)[2]/2))
+  aind2$max=array(apply(aind$data,1:2,max),c(dim(aind$ensmean)[1],2,dim(aind$ensmean)[2]/2))
+  
+  for (ind in c(1,4,5,6)) {
+    if (ind == 1) {mainname='NHt2m'}
+    if (ind == 4) {mainname='NEUt2m'}
+    if (ind == 5) {mainname='NEUpr'}
+    if (ind == 6) {mainname='NEUslp'}
+    for (seas in c(1,2)) {
+      if (seas == 1) {color='darkblue'; color3='blue'; color2='cyan'}
+      if (seas == 2) {color='darkred'; color3='red'; color2='orange'}
+      ymin=min(eind2$min[ind,seas,])
+      ymax=max(eind2$max[ind,seas,])
+      plot(vind2$data[ind,seas,],ty='l',col=color,lty=1,ylim=c(ymin,ymax),main=mainname)
+      lines(eind2$ensmean[ind,seas,],ty='l',col=color2,lwd=2,lty=2,main='')
+      lines(eind2$min[ind,seas,],ty='l',col=color2,lty=2,lwd=1,main='')
+      lines(eind2$max[ind,seas,],ty='l',col=color2,lty=2,lwd=1,main='')
+      lines(aind2$ensmean[ind,seas,],ty='l',col=color3,lwd=2,lty=3,main='')
+      lines(aind2$min[ind,seas,],ty='l',col=color3,lty=3,lwd=1,main='')
+      lines(aind2$max[ind,seas,],ty='l',col=color3,lty=3,lwd=1,main='')
+    }
+  }
+  dev.off()
+  
+  
+  
+  ################################################################################
+  # Fig. 8: index correlation 
+  # new like in the paper
+  #<<label=indices_corr, echo=FALSE, fig=TRUE, width=12, height=7, results=hide, eps=FALSE>>=
+  
+  inds <- c('NH.temp2', 'NEU.temp2', 'NEU.precip', 'HC', 'SJ', 'Z100', 'Z300', 'PWC') 
+  if (pseudoproxy) {
     RE.mat <- array(NA, c(length(inds), 2, 30))
     corr.mat <- array(NA, c(length(inds)*2, 2, 30))
     ind.names <- list()
     for (se in 1:2){
-#        if (se == 2){
-#          inds <- c('NH.temp2', 'NEU.temp2', 'NEU.precip', 'HC', 'SJ', 'Z100', 'Z300', 'PWC')
-#        }
-        ind.names[[se]] <- inds
-        for (k in seq(inds)){
-          RE.mat[k,se,1:29] <- RE.ind$data[RE.ind$name == inds[k],se,]
-          RE.mat[k,se,30] <- RE.ind$ensmean[RE.ind$name == inds[k],se]
-          corr.mat[k*2,se,1:29] <- acorr.ind$data[acorr.ind$name == inds[k],se,]
-          corr.mat[k*2,se,30] <- acorr.ind$ensmean[acorr.ind$name == inds[k],se]
-          corr.mat[k*2-1,se,1:29] <- ecorr.ind$data[ecorr.ind$name == inds[k],se,]
-          corr.mat[k*2-1,se,30] <- ecorr.ind$ensmean[ecorr.ind$name == inds[k],se]
-        }
+      #        if (se == 2){
+      #          inds <- c('NH.temp2', 'NEU.temp2', 'NEU.precip', 'HC', 'SJ', 'Z100', 'Z300', 'PWC')
+      #        }
+      ind.names[[se]] <- inds
+      for (k in seq(inds)){
+        RE.mat[k,se,1:29] <- RE.ind$data[RE.ind$name == inds[k],se,]
+        RE.mat[k,se,30] <- RE.ind$ensmean[RE.ind$name == inds[k],se]
+        corr.mat[k*2,se,1:29] <- acorr.ind$data[acorr.ind$name == inds[k],se,]
+        corr.mat[k*2,se,30] <- acorr.ind$ensmean[acorr.ind$name == inds[k],se]
+        corr.mat[k*2-1,se,1:29] <- ecorr.ind$data[ecorr.ind$name == inds[k],se,]
+        corr.mat[k*2-1,se,30] <- ecorr.ind$ensmean[ecorr.ind$name == inds[k],se]
+      }
     }
-} else {
+  } else {
     RE.mat <- array(NA, c(length(inds), 2, 31))
     corr.mat <- array(NA, c(length(inds)*2, 2, 31))
     ind.names <- list()
     for (se in 1:2){
-#        if (se == 2){
-#          inds <- c('NH.temp2', 'NEU.temp2', 'NEU.precip', 'HC', 'SJ', 'Z100', 'Z300', 'PWC')
-#        }
-        ind.names[[se]] <- inds
-        for (k in seq(inds)){
-          RE.mat[k,se,1:30] <- RE.ind$data[RE.ind$name == inds[k],se,]
-          RE.mat[k,se,31] <- RE.ind$ensmean[RE.ind$name == inds[k],se]
-          corr.mat[k*2,se,1:30] <- acorr.ind$data[acorr.ind$name == inds[k],se,]
-          corr.mat[k*2,se,31] <- acorr.ind$ensmean[acorr.ind$name == inds[k],se]
-          corr.mat[k*2-1,se,1:30] <- ecorr.ind$data[ecorr.ind$name == inds[k],se,]
-          corr.mat[k*2-1,se,31] <- ecorr.ind$ensmean[ecorr.ind$name == inds[k],se]
-        }
+      #        if (se == 2){
+      #          inds <- c('NH.temp2', 'NEU.temp2', 'NEU.precip', 'HC', 'SJ', 'Z100', 'Z300', 'PWC')
+      #        }
+      ind.names[[se]] <- inds
+      for (k in seq(inds)){
+        RE.mat[k,se,1:30] <- RE.ind$data[RE.ind$name == inds[k],se,]
+        RE.mat[k,se,31] <- RE.ind$ensmean[RE.ind$name == inds[k],se]
+        corr.mat[k*2,se,1:30] <- acorr.ind$data[acorr.ind$name == inds[k],se,]
+        corr.mat[k*2,se,31] <- acorr.ind$ensmean[acorr.ind$name == inds[k],se]
+        corr.mat[k*2-1,se,1:30] <- ecorr.ind$data[ecorr.ind$name == inds[k],se,]
+        corr.mat[k*2-1,se,31] <- ecorr.ind$ensmean[ecorr.ind$name == inds[k],se]
+      }
     }
-}
-    ind.col <- list()
-    ind.col2 <- list()
-    ind.col[[1]] <- hcl(c(0,0,120,240,270,300), c=40, l=50)
-    ind.col[[2]] <- hcl(c(0,0,120,240,270,200), c=40, l=50)
-    ind.col2[[1]] <- hcl(rep(c(0,0,120,240,270,300), each=2), c=40, l=c(90,50))
-    ind.col2[[2]] <- hcl(rep(c(0,0,120,240,270,200), each=2), c=40, l=c(90,50))
-
-#pdf('figures/inst/indices.pdf', width=9, height=6, paper='special')
-pdf(paste(figpath,'indices.pdf',sep='/'), width=9, height=6, paper='special')
-    par(mfrow=c(2,2), mar=c(1,1,0,0), oma=c(0,2,1,0), cex.axis=1.4, cex.lab=1.4)
-    for (se in 1:2){
-        plot(0, type='n', xaxt='n', ylim=c(-1.1,1.1), xlim=c(0.5,length(inds) + .5), xlab='', ylab='', yaxt=if (se == 2) 'n' else 's')
-        polygon(c(-1,-1,9,9), c(0,-2,-2,0), border=NA, col=grey(0.9))
-        #boxplot(t(RE.mat[,se,1:29]), at=seq(inds), col=ind.col[[se]],
-        #    add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5, range=0, lty=1)
-if (pseudoproxy){
-        boxplot(t(RE.mat[,se,1:29]), at=seq(inds), col=hcl(rep(seq(indices)/length(indices)*360, each=1), c=45, l=75),add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5, range=0, lty=1)
-        points(seq(inds) - 0.35, RE.mat[,se,30], pch='>', lwd=3, cex=1.4)
-} else {
-        boxplot(t(RE.mat[,se,1:30]), at=seq(inds), col=hcl(rep(seq(indices)/length(indices)*360, each=1), c=45, l=75),add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5, range=0, lty=1)
-        points(seq(inds) - 0.35, RE.mat[,se,31], pch='>', lwd=3, cex=1.4)  
-}
-        text(seq(inds), rep(-0.9,3), ind.names[[se]], cex=1.2, adj=c(0.5,1))
-        text(0.5,1.1,paste(pnames[se], ' Skill (RE) in ', c('October to March', 'April to September')[se], sep='') , cex=1.4, adj=c(0,1))
+  }
+  ind.col <- list()
+  ind.col2 <- list()
+  ind.col[[1]] <- hcl(c(0,0,120,240,270,300), c=40, l=50)
+  ind.col[[2]] <- hcl(c(0,0,120,240,270,200), c=40, l=50)
+  ind.col2[[1]] <- hcl(rep(c(0,0,120,240,270,300), each=2), c=40, l=c(90,50))
+  ind.col2[[2]] <- hcl(rep(c(0,0,120,240,270,200), each=2), c=40, l=c(90,50))
+  
+  #pdf('figures/inst/indices.pdf', width=9, height=6, paper='special')
+  pdf(paste(figpath,'indices.pdf',sep='/'), width=9, height=6, paper='special')
+  par(mfrow=c(2,2), mar=c(1,1,0,0), oma=c(0,2,1,0), cex.axis=1.4, cex.lab=1.4)
+  for (se in 1:2){
+    plot(0, type='n', xaxt='n', ylim=c(-1.1,1.1), xlim=c(0.5,length(inds) + .5), xlab='', ylab='', yaxt=if (se == 2) 'n' else 's')
+    polygon(c(-1,-1,9,9), c(0,-2,-2,0), border=NA, col=grey(0.9))
+    #boxplot(t(RE.mat[,se,1:29]), at=seq(inds), col=ind.col[[se]],
+    #    add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5, range=0, lty=1)
+    if (pseudoproxy){
+      boxplot(t(RE.mat[,se,1:29]), at=seq(inds), col=hcl(rep(seq(indices)/length(indices)*360, each=1), c=45, l=75),add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5, range=0, lty=1)
+      points(seq(inds) - 0.35, RE.mat[,se,30], pch='>', lwd=3, cex=1.4)
+    } else {
+      boxplot(t(RE.mat[,se,1:30]), at=seq(inds), col=hcl(rep(seq(indices)/length(indices)*360, each=1), c=45, l=75),add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5, range=0, lty=1)
+      points(seq(inds) - 0.35, RE.mat[,se,31], pch='>', lwd=3, cex=1.4)  
     }
-
-#    indind <- c(1,2,4,5,7,8,10,11,13,14,16,17)
-indind <- c(1,2,4,5,7,8,10,11,13,14,16,17,19,20,22,23)
-    for (se in 1:2){
-        plot(0, type='n', xaxt='n', ylim=c(-1.1,1.1), xlim=c(0,max(indind)+1), xlab='', ylab='', yaxt=if (se == 2) 'n' else 's')
-        polygon(c(-1,-1,max(indind)+c(2,2)), c(0,-2,-2,0), border=NA, col=grey(0.9))
-        #boxplot(t(corr.mat[,se,1:29]), at=indind, col=ind.col2[[se]],
-        #    add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, range=0, lty=1)
-if (pseudoproxy){
-            boxplot(t(corr.mat[,se,1:29]), at=indind, col=hcl(rep(seq(indices)/length(indices)*360, each=2), c=c(30,60), l=c(95,50)),
-            add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, range=0, lty=1)
-        points(seq(1.5,max(indind),3) - 1.2, corr.mat[seq(1,nrow(corr.mat),2),se,30], pch='>', lwd=3, cex=1.4)
-        points(seq(1.5,max(indind),3) + 1.2, corr.mat[seq(2,nrow(corr.mat),2),se,30], pch='<', lwd=3, cex=1.4)
-} else {
-            boxplot(t(corr.mat[,se,1:30]), at=indind, col=hcl(rep(seq(indices)/length(indices)*360, each=2), c=c(30,60), l=c(95,50)),
-            add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, range=0, lty=1)
-        points(seq(1.5,max(indind),3) - 1.2, corr.mat[seq(1,nrow(corr.mat),2),se,31], pch='>', lwd=3, cex=1.4)
-        points(seq(1.5,max(indind),3) + 1.2, corr.mat[seq(2,nrow(corr.mat),2),se,31], pch='<', lwd=3, cex=1.4)
-}        
-        text(seq(1.5,max(indind),3), rep(-0.9,3), ind.names[[se]], cex=1.2, adj=c(0.5,1))
-        text(0,1.1,paste(pnames[se + 2], ' Correlation in ', c('October to March', 'April to September')[se], sep=''), cex=1.4, adj=c(0,1))
-    }
-dev.off()
-
-# old version
-
-# ind <- nrow(corr[[4]]$data) - rev(seq(indices)) + 1
-# ind.arr <- array(NA, c(length(indices)*2, 2, dim(echam$data)[3]))
-# ind.arr[seq(1,dim(ind.arr)[1],2),,] <- corr.ech$data[ind,,]  
-# ind.arr[seq(2,dim(ind.arr)[1],2),,] <- corr[[4]]$data[ind,,]  
-# xind <- sort(c(seq(1, length(indices)*3, 3), seq(2, length(indices)*3, 3)))
-# 
-# par(mfrow=c(2,1), oma=c(6,0,1,0), mar=c(1,3,1,2), cex.axis=1.4, cex.lab=1.4, cex.main=1.4)
-# for (i in 1:2) {
-#   plot(0, type='n', xlim=range(xind), ylim=c(-1,1), xaxt='n')
-#   polygon(c(-1,rep(max(xind)+2, 2), -1), c(0,0,-2,-2), border=NA, col=grey(0.8))
-#   box()
-#   boxplot(t(ind.arr[,i,]), at=xind, add=T, xaxt='n', col=hcl(rep(seq(indices)/length(indices)*360, each=2), c=c(30,60), l=c(95,50)))
-#   text(1,1,c('Winter', 'Summer')[i], adj=c(0,1), font=1, cex=1.4)
-# #  points(seq(2.8, length(indices)*3, 3), corr.analogue[[2]]$data[ind,i], pch='<', cex=1.4) 
-# }
-# axis(1, at=seq(1.5, length(indices)*3, 3), labels=indices, las=2, tick=F)
-
-#    \caption{Correlation of the indices in the ECHAM ensemble (light boxes) and the localized pseudo proxy analysis (dark boxes) with the respective validation time series.}
-
-
-# 
-# ################################################################################
-# # Tab x: RE for indices 
-# 
-# #<<label=tabREwinter, echo=FALSE, results=tex>>=
-# require(xtable)
-# RE.ind <- RE.tot$data[nrow(RE.tot$data) - length(indices):1 + 1,1,seq(1,8,2)]
-# 
-# rownames(RE.ind) <- indices
-# colnames(RE.ind) <- pnames[seq(along=analysis)]
-# 
-# print(xtable(RE.ind, caption=paste('RE for different indices in winter (October to March), the columns contain the results for', paste(pnames[seq(along=analysis)], names(analysis), collapse=', '), collapse=' '), label="tab:REwinter", digits=3, table.placement='htbp', caption.placement='top'))
-#       
-# #<<label=tabREsummer, echo=FALSE, results=tex>>=
-# require(xtable)
-# RE.ind <- RE.tot$data[nrow(RE.tot$data) - length(indices):1 + 1,1,seq(2,8,2)]
-# 
-# rownames(RE.ind) <- indices
-# colnames(RE.ind) <- pnames[seq(along=analysis)]
-# 
-# print(xtable(RE.ind, caption=paste('RE for different indices in winter (April to September), the columns contain the results for', paste(pnames[seq(along=analysis)], names(analysis), collapse=', '), collapse=' '), label="tab:REsummer", digits=3, table.placement='htbp', caption.placement='top'))
-
+    text(seq(inds), rep(-0.9,3), ind.names[[se]], cex=1.2, adj=c(0.5,1))
+    text(0.5,1.1,paste(pnames[se], ' Skill (RE) in ', c('October to March', 'April to September')[se], sep='') , cex=1.4, adj=c(0,1))
+  }
+  
+  #    indind <- c(1,2,4,5,7,8,10,11,13,14,16,17)
+  indind <- c(1,2,4,5,7,8,10,11,13,14,16,17,19,20,22,23)
+  for (se in 1:2){
+    plot(0, type='n', xaxt='n', ylim=c(-1.1,1.1), xlim=c(0,max(indind)+1), xlab='', ylab='', yaxt=if (se == 2) 'n' else 's')
+    polygon(c(-1,-1,max(indind)+c(2,2)), c(0,-2,-2,0), border=NA, col=grey(0.9))
+    #boxplot(t(corr.mat[,se,1:29]), at=indind, col=ind.col2[[se]],
+    #    add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, range=0, lty=1)
+    if (pseudoproxy){
+      boxplot(t(corr.mat[,se,1:29]), at=indind, col=hcl(rep(seq(indices)/length(indices)*360, each=2), c=c(30,60), l=c(95,50)),
+              add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, range=0, lty=1)
+      points(seq(1.5,max(indind),3) - 1.2, corr.mat[seq(1,nrow(corr.mat),2),se,30], pch='>', lwd=3, cex=1.4)
+      points(seq(1.5,max(indind),3) + 1.2, corr.mat[seq(2,nrow(corr.mat),2),se,30], pch='<', lwd=3, cex=1.4)
+    } else {
+      boxplot(t(corr.mat[,se,1:30]), at=indind, col=hcl(rep(seq(indices)/length(indices)*360, each=2), c=c(30,60), l=c(95,50)),
+              add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, range=0, lty=1)
+      points(seq(1.5,max(indind),3) - 1.2, corr.mat[seq(1,nrow(corr.mat),2),se,31], pch='>', lwd=3, cex=1.4)
+      points(seq(1.5,max(indind),3) + 1.2, corr.mat[seq(2,nrow(corr.mat),2),se,31], pch='<', lwd=3, cex=1.4)
+    }        
+    text(seq(1.5,max(indind),3), rep(-0.9,3), ind.names[[se]], cex=1.2, adj=c(0.5,1))
+    text(0,1.1,paste(pnames[se + 2], ' Correlation in ', c('October to March', 'April to September')[se], sep=''), cex=1.4, adj=c(0,1))
+  }
+  dev.off()
+  
+  # old version
+  
+  # ind <- nrow(corr[[4]]$data) - rev(seq(indices)) + 1
+  # ind.arr <- array(NA, c(length(indices)*2, 2, dim(echam$data)[3]))
+  # ind.arr[seq(1,dim(ind.arr)[1],2),,] <- corr.ech$data[ind,,]  
+  # ind.arr[seq(2,dim(ind.arr)[1],2),,] <- corr[[4]]$data[ind,,]  
+  # xind <- sort(c(seq(1, length(indices)*3, 3), seq(2, length(indices)*3, 3)))
+  # 
+  # par(mfrow=c(2,1), oma=c(6,0,1,0), mar=c(1,3,1,2), cex.axis=1.4, cex.lab=1.4, cex.main=1.4)
+  # for (i in 1:2) {
+  #   plot(0, type='n', xlim=range(xind), ylim=c(-1,1), xaxt='n')
+  #   polygon(c(-1,rep(max(xind)+2, 2), -1), c(0,0,-2,-2), border=NA, col=grey(0.8))
+  #   box()
+  #   boxplot(t(ind.arr[,i,]), at=xind, add=T, xaxt='n', col=hcl(rep(seq(indices)/length(indices)*360, each=2), c=c(30,60), l=c(95,50)))
+  #   text(1,1,c('Winter', 'Summer')[i], adj=c(0,1), font=1, cex=1.4)
+  # #  points(seq(2.8, length(indices)*3, 3), corr.analogue[[2]]$data[ind,i], pch='<', cex=1.4) 
+  # }
+  # axis(1, at=seq(1.5, length(indices)*3, 3), labels=indices, las=2, tick=F)
+  
+  #    \caption{Correlation of the indices in the ECHAM ensemble (light boxes) and the localized pseudo proxy analysis (dark boxes) with the respective validation time series.}
+  
+  
+  # 
+  # ################################################################################
+  # # Tab x: RE for indices 
+  # 
+  # #<<label=tabREwinter, echo=FALSE, results=tex>>=
+  # require(xtable)
+  # RE.ind <- RE.tot$data[nrow(RE.tot$data) - length(indices):1 + 1,1,seq(1,8,2)]
+  # 
+  # rownames(RE.ind) <- indices
+  # colnames(RE.ind) <- pnames[seq(along=analysis)]
+  # 
+  # print(xtable(RE.ind, caption=paste('RE for different indices in winter (October to March), the columns contain the results for', paste(pnames[seq(along=analysis)], names(analysis), collapse=', '), collapse=' '), label="tab:REwinter", digits=3, table.placement='htbp', caption.placement='top'))
+  #       
+  # #<<label=tabREsummer, echo=FALSE, results=tex>>=
+  # require(xtable)
+  # RE.ind <- RE.tot$data[nrow(RE.tot$data) - length(indices):1 + 1,1,seq(2,8,2)]
+  # 
+  # rownames(RE.ind) <- indices
+  # colnames(RE.ind) <- pnames[seq(along=analysis)]
+  # 
+  # print(xtable(RE.ind, caption=paste('RE for different indices in winter (April to September), the columns contain the results for', paste(pnames[seq(along=analysis)], names(analysis), collapse=', '), collapse=' '), label="tab:REsummer", digits=3, table.placement='htbp', caption.placement='top'))
+  
 } # end if(echam_ind)
-      
+
 ################################################################################
 # Fig. 9a: temperature reconstruction skill 
 
@@ -1470,8 +1619,8 @@ if (pseudoproxy){
   giorgi.RE <- compute_avg_RE_pseudoproxy(H.giorgi, echam, analysis[[2]], validate)
   giorgi.corr <- compute_avg_corr_pseudoproxy(H.giorgi, echam, analysis[[i]], validate)
 } else {
-#  giorgi.RE <- compute_avg_RE(H.giorgi, echam, analysis[[2]], validate)
-#  giorgi.corr <- compute_avg_corr(H.giorgi, echam, analysis[[2]], validate)
+  #  giorgi.RE <- compute_avg_RE(H.giorgi, echam, analysis[[2]], validate)
+  #  giorgi.corr <- compute_avg_corr(H.giorgi, echam, analysis[[2]], validate)
   giorgi.RE <- compute_avg_RE(H.giorgi, echam, analysis, validate)
   giorgi.corr <- compute_avg_corr(H.giorgi, echam, analysis, validate)
 }
@@ -1480,29 +1629,29 @@ varn <- 1
 
 pdf(paste(figpath,'RE_giorgi_temp.pdf',sep='/'), width=9, height=6, paper='special')
 #if (pseudoproxy){
-  par(mfrow=c(4,1), mar=c(1,3,1,1), oma=c(0,0,0,0), cex.axis=1.2, cex.lab=1.2)
+par(mfrow=c(4,1), mar=c(1,3,1,1), oma=c(0,0,0,0), cex.axis=1.2, cex.lab=1.2)
 #} else {
 #  par(mfrow=c(2,1), mar=c(1,3,1,1), oma=c(0,0,0,0), cex.axis=1.2, cex.lab=1.2)
 #}
-  ncorr <- length(giorgi.short)
-  RE.mat <- giorgi.RE[ncorr*(varn-1) + 1:ncorr,,]
-  indind <- 1:ncorr
-  for (se in 1:2){
-    plot(0, type='n', xaxt='n', ylim=c(-1,1), xlim=c(1,max(indind)), xlab='', ylab='')
-    polygon(c(-3, -3, max(indind)+5, max(indind+5)), c(0,-2,-2,0), border=NA, col=grey(0.8))
-    if (pseudoproxy){
-      boxplot(t(RE.mat[,se,1:29]), at=indind, col=hcl((varn-1)*120, c=40, l=50),
-          add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5)
-      points(indind - 0.3, RE.mat[,se,30], pch='>', lwd=3, cex=1.2)
-    } else {
-      boxplot(t(RE.mat[,se,1:30]), at=indind, col=hcl((varn-1)*120, c=40, l=50),
+ncorr <- length(giorgi.short)
+RE.mat <- giorgi.RE[ncorr*(varn-1) + 1:ncorr,,]
+indind <- 1:ncorr
+for (se in 1:2){
+  plot(0, type='n', xaxt='n', ylim=c(-1,1), xlim=c(1,max(indind)), xlab='', ylab='')
+  polygon(c(-3, -3, max(indind)+5, max(indind+5)), c(0,-2,-2,0), border=NA, col=grey(0.8))
+  if (pseudoproxy){
+    boxplot(t(RE.mat[,se,1:29]), at=indind, col=hcl((varn-1)*120, c=40, l=50),
             add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5)
-      points(indind - 0.3, RE.mat[,se,31], pch='>', lwd=3, cex=1.2)
-    }
-    text(indind, rep(-0.8,length(indind)), giorgi.short, cex=1, adj=c(0.5,1.3))
-    text(0.5,1,c('Winter', 'Summer')[se], cex=1.2, adj=c(0,1))
-    abline(v=seq(1.5, max(indind), 1), lty=3)
+    points(indind - 0.3, RE.mat[,se,30], pch='>', lwd=3, cex=1.2)
+  } else {
+    boxplot(t(RE.mat[,se,1:30]), at=indind, col=hcl((varn-1)*120, c=40, l=50),
+            add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5)
+    points(indind - 0.3, RE.mat[,se,31], pch='>', lwd=3, cex=1.2)
   }
+  text(indind, rep(-0.8,length(indind)), giorgi.short, cex=1, adj=c(0.5,1.3))
+  text(0.5,1,c('Winter', 'Summer')[se], cex=1.2, adj=c(0,1))
+  abline(v=seq(1.5, max(indind), 1), lty=3)
+}
 
 
 ncorr <- length(giorgi.short)*2
@@ -1514,12 +1663,12 @@ for (se in 1:2){
   polygon(c(-3, -3, max(indind)+5, max(indind+5)), c(0,-2,-2,0), border=NA, col=grey(0.8))
   if (pseudoproxy){
     boxplot(t(corr.mat[,se,1:29]), at=as.vector(indind), col=hcl((varn-1)*120, c=40, l=c(90,50)), add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1)
-  points(apply(indind, 2, mean) - 1.4, corr.mat[seq(1,ncorr,2),se,30], pch='>', lwd=3, cex=1.2)
-  points(apply(indind, 2, mean) + 1.4, corr.mat[seq(2,ncorr,2),se,30], pch='<', lwd=3, cex=1.2)
+    points(apply(indind, 2, mean) - 1.4, corr.mat[seq(1,ncorr,2),se,30], pch='>', lwd=3, cex=1.2)
+    points(apply(indind, 2, mean) + 1.4, corr.mat[seq(2,ncorr,2),se,30], pch='<', lwd=3, cex=1.2)
   } else {
-   boxplot(t(corr.mat[,se,1:30]), at=as.vector(indind), col=hcl((varn-1)*120, c=40, l=c(90,50)), add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1)
-  points(apply(indind, 2, mean) - 1.4, corr.mat[seq(1,ncorr,2),se,31], pch='>', lwd=3, cex=1.2)
-  points(apply(indind, 2, mean) + 1.4, corr.mat[seq(2,ncorr,2),se,31], pch='<', lwd=3, cex=1.2) 
+    boxplot(t(corr.mat[,se,1:30]), at=as.vector(indind), col=hcl((varn-1)*120, c=40, l=c(90,50)), add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1)
+    points(apply(indind, 2, mean) - 1.4, corr.mat[seq(1,ncorr,2),se,31], pch='>', lwd=3, cex=1.2)
+    points(apply(indind, 2, mean) + 1.4, corr.mat[seq(2,ncorr,2),se,31], pch='<', lwd=3, cex=1.2) 
   }  
   text(apply(indind, 2, mean), rep(-0.8,ncol(indind)), giorgi.short, cex=1, adj=c(0.5,1.3))
   text(0.5,1,c('Winter', 'Summer')[se], cex=1.2, adj=c(0,1))
@@ -1527,8 +1676,8 @@ for (se in 1:2){
 }
 dev.off() 
 #    \caption{Skill in reconstructing area-average temperature in different subcontinental regions as defined in \citet{Giorgi2000}}
- 
- 
+
+
 #  
 # ################################################################################
 # # Fig. 9b: precip reconstruction skill 
@@ -1582,8 +1731,8 @@ dev.off()
 if (plot_dweights) {
   library(raster)
   pdf(paste(figpath,'distance_weights.pdf',sep='/'), width=4.5, height=4.5, 
-            paper='special')
-    image(d.weights_all)
+      paper='special')
+  image(d.weights_all)
   dev.off()
 }
 
@@ -1761,153 +1910,37 @@ if (plot_dweights) {
 # ################################################################################
 # # Fig. 10: Continuous Ranked Probability Score (CRPS)
 # pdf(paste(figpath,'CRPS_new.pdf',sep='/'), width=9, height=6, paper='special')
-# layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
-# par(mfrow=c(2, 2))
-# for (s in 1:2) { ## if s==1 then crps is crps.ana which is the score of the analysis, if s==2 crps is the difference 
-#   if (s==1) {    ## in score of echam and analysis. It should be positive. 
-#     crps <- crps.ana[,seq(2,ncol(crps.ana),2)] ## the one that's updated (rem: proxies only half a year)
-#     crps[which(is.na(crps))]<-0
-#     title<-"analysis"
-#   } else { 
-#     crps <- crps.ech[,seq(2,ncol(crps.ech),2)]-crps.ana[,seq(2,ncol(crps.ana),2)] ## difference of score between updated and not, should be positive
-#     if (PAGES){
-#       crps <- crps.ech-crps.ana
-#     }
-#     crps[which(is.na(crps))]<-0
-#     title<-"Score Diff: CCC400 - EKF400"
-#   }
-#   crps.tot<-data.frame(averaged=apply(crps,1,mean))
-#   crps.tot$lon<-echam$lon
-#   crps.tot$lat<-echam$lat
-#   crps.tot$names<-echam$names
-#   
-#   
-#   
-#   
-#   crps.plot<-crps.tot[which(crps.tot$names=="temp2"),]
-#   if (s==1){
-#     lev <- pretty(crps.plot$averaged,12) 
-#     br <- length(lev)
-#     colpal <- two.colors(n=br,start="white",middle="orange", end="red", alpha=1.0)
-#   }else{
-#     # lev <- c(-0.05,-0.04,-0.03,-0.02,-0.01,0.03,0.06,0.09,0.12,0.15)
-#     lev <- pretty(crps.plot$averaged,12) # for PAGES and NTREND
-#     br <- length(lev)
-#     colpal <- two.colors(n=br,start="blue",middle="white", end="red", alpha=1.0)
-#   }
-#   
-#   datcol <- colpal[as.numeric(cut(crps.plot$averaged,breaks=lev))] 
-#   datcol[which(crps.plot$averaged>(-0.02)&crps.plot$averaged<0.02)]<-"#FFFFFF" #NTREND
-#   
-#   # png(filename=paste0(plotintdir,expname,'/map_DOC_month_',m,'.png'),width=1400,height = 800)
-#   plot(crps.plot$lon, crps.plot$lat,
-#        xlim=c(-180,180),ylim=c(-90,90),   
-#        cex=1.2,                   # cex=point size~precip
-#        pch=15,                    # point type: 15 is square with possible color filling
-#        col=datcol[which(!is.na(crps.plot$averaged))],
-#        xlab="Longitude",ylab="Latitude",main=paste0("Temperature, ",title))# point fill color
-#   map("world",interior=F,add=T,ty='l',col='black',xlim=c(-180,180),ylim=c(-90,90))
-#   legend("bottomleft", inset=0.01, as.character(lev),fill=colpal,bty="o",
-#          bg="white",box.col="white",box.lwd=0,cex=0.7)
-#   
-#   crps.plot<-crps.tot[which(crps.tot$names=="precip"),]
-#   if (s==1){
-#     lev <- pretty(crps.plot$averaged,12) 
-#     br <- length(lev)
-#     colpal <- two.colors(n=br,start="white",middle="orange", end="red", alpha=1.0)
-#   }else{
-#     # lev <- c(-0.5,-0.4,-0.3,-0.2,-0.1,0.3,0.6,0.9,1.2,1.5) # for normal proxies
-#     # lev <- c(-2.2,-2,-1.8,-1.6,-1.4,-1.2,-1,-0.8,-0.6,-0.4,-0.2,0,0.2,0.4,0.6,0.8,1,1.2,1.6,1.8,2,2.2) # for PAGES
-#     lev <- c(-1.2,-1,-0.8,-0.6,-0.4,-0.2,0.2,0.4,0.6,0.8,1,1.2) #NTREND
-#     br <- length(lev)
-#     colpal <- two.colors(n=br,start="blue",middle="white", end="red", alpha=1.0)
-#   }
-#   datcol <- colpal[as.numeric(cut(crps.plot$averaged,breaks=lev))] 
-#   datcol[which(crps.plot$averaged>(-0.2)&crps.plot$averaged<0.2)]<-"#FFFFFF" #NTREND
-#   # png(filename=paste0(plotintdir,expname,'/map_DOC_month_',m,'.png'),width=1400,height = 800)
-#   plot(crps.plot$lon, crps.plot$lat,
-#        xlim=c(-180,180),ylim=c(-90,90),   
-#        cex=1.2,                   # cex=point size~precip
-#        pch=15,                    # point type: 15 is square with possible color filling
-#        col=datcol[which(!is.na(crps.plot$averaged))],
-#        xlab="Longitude",ylab="Latitude",main=paste0("Precip, ",title))# point fill color
-#   map("world",interior=F,add=T,ty='l',col='black',xlim=c(-180,180),ylim=c(-90,90))
-#   legend("bottomleft", inset=0.01, as.character(lev),fill=colpal,bty="o",
-#          bg="white",box.col="white",box.lwd=0,cex=0.7)
-#   # dev.off()
-#   
-# }
-# dev.off()
-# par(mfrow=c(1, 1))
 
-
-
-### plot CRPS with plot_echam Temp
-
-
-crps <- echam
-
-crps$data<-array(cbind(crps.ana.winter,crps.ana.summer),c(dim(echam$ensmean)[1], 1, 2))
-
-pdf(paste(figpath,'crps.ana.clim_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
-
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
-
-plot_echam(crps, cex.pt=1.5, names=pnames[1:dim(crps$data)[3]], lev=levs, st.col=NULL, 
-           stations=calibrate,add=TRUE)
-
-dev.off()
-
-### plot CRPS with plot_echam Precip
-
-pdf(paste(figpath,'crps.ana.clim_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
-
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-
-par(oma=c(0,0,0,0))
-levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
-
-plot_echam(crps, varname='precip', cex.pt=1.5, names=pnames[1:dim(crps$data)[3]], lev=levs, st.col=NULL, 
-           stations=calibrate,add=TRUE)
-
-dev.off()
 
 ### plot CRPS score difference ech-ana (positive values are good) with plot_echam: Temp
 
-crps <- echam
+crps <- crps.ech-crps.ana
+crps.tot <- echam
+crps.tot$ensmean <- crps
 
-
-crps_ech_ana.winter <- crps.ech.winter-crps.ana.winter
-crps_ech_ana.summer <- crps.ech.summer-crps.ana.summer
-
-
-crps$data<-array(cbind(crps_ech_ana.winter,crps_ech_ana.summer),c(dim(echam$ensmean)[1], 1, 2))
-
-pdf(paste(figpath,'crps.clim_ech-ana_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
-
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-
-par(oma=c(0,0,0,0))
 levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.01,0.02,0.04,0.08,0.1,Inf)
 
-plot_echam(crps, cex.pt=1.5, names=pnames[1:dim(crps$data)[3]], lev=levs, st.col=NULL, 
-           stations=calibrate,add=TRUE)
+if (monthly_out){
+  plot_echam4(crps.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('crps_anom_echam_anal-',validation_set,'_temp_summer.pdf'), paper='special')
+  plot_echam4(crps.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('crps_anom_echam_anal-',validation_set,'_temp_winter.pdf'), paper='special')
+}else{
+  plot_echam4(crps.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('crps_anom_echam_anal-',validation_set,'_temp.pdf'), paper='special')
+}
 
-dev.off()
+
+
 
 ### plot CRPS score difference ech-ana (positive values are good) with plot_echam: Precip
 
-pdf(paste(figpath,'crps.clim_ech-ana_precip.pdf',sep='/'), width=9, height=3.5, paper='special')
 
-layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-
-par(oma=c(0,0,0,0))
 levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,Inf)
+if (monthly_out) {
+  plot_echam4(crps.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('crps_anom_echam_anal-',validation_set,'_precip_summer.pdf'), paper='special')
+  plot_echam4(crps.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('crps_anom_echam_anal-',validation_set,'_precip_winter.pdf'), paper='special')
+}else{
+  plot_echam4(crps.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('crps_anom_echam_anal-',validation_set,'_precip.pdf'), paper='special')
+}
 
-plot_echam(crps,varname="precip", cex.pt=1.5, names=pnames[1:dim(crps$data)[3]], lev=levs, st.col=NULL, 
-           stations=calibrate,add=TRUE)
 
-dev.off()
+
+validate <- validate.init

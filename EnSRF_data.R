@@ -15,8 +15,10 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
-syr=2002
-eyr=2003
+
+syr=1903
+eyr=1960
+
 
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
@@ -33,9 +35,11 @@ if (user=="veronika") {
   # workdir('/scratch/veronika/rerun/r_code')
   workdir ='/scratch3/veronika/reuse/reuse_git/' # where are the scripts from github
 } else if (user=="lucaf") {
-  workdir='/scratch4/lucaf/reuse/reuse_git/'
+  workdir='/scratch3/lucaf/reuse/reuse_git/'
 } else if (user=="joerg") {
   workdir='/scratch3/joerg/projects/reuse/reuse_git/'
+} else if (user == "nevin"){
+  workdir = '/scratch3/nevin/reuse_climcal/reuse_git/'
 } else {
   stop("Unknown user!")
 }
@@ -108,15 +112,21 @@ for (cyr in syr2:eyr) {
     cru_vali=F 
     #  ind_recon=F
   }
+  if ((cyr > 1901) & (eyr < 2004)) {
+    twentycr_vali=T             
+  } else {
+    twentycr_vali=F 
+  }
+  
   #if ((syr < 1901) & (eyr > 1749)) {
   #  recon_vali=T           # seasonal luterbacher, pauling, kuettel recons (1750-1999)
   #} else {
   recon_vali=F
   #}
-  print(paste("instr:",instrumental, "; proxies:",real_proxies, "; documentary:",docum, 
-              "; validation data:",vali,"; CRU:",cru_vali,"; Recon:",recon_vali))
+  print(paste0("instr:",instrumental, "; proxies:",real_proxies, "; documentary:",docum, 
+              "; validation data:",vali,"; CRU:",cru_vali,"; 20cr:",twentycr_vali,"; Recon:",recon_vali))
   write(paste("instr:",instrumental, "; proxies:",real_proxies, "; documentary:",docum, 
-              "; validation data:",vali,"; CRU:",cru_vali,"; Recon:",recon_vali),
+              "; validation data:",vali,"; CRU:",cru_vali,"; 20cr:",twentycr_vali,"; Recon:",recon_vali),
         file=paste0('../log/',logfn),append=T)
   asyr <- cyr-35 # "a" for anomaly
   if (asyr < 1601) {asyr = 1601}
@@ -418,18 +428,20 @@ for (cyr in syr2:eyr) {
     # change array to have 6 months in state vector for winter and summer
     # first winter starts in oct of syr
     # 6 mon stat vectors for oct-mar and apr and sep
-    echam <- convert_to_sixmonstatevector(echam,cyr)
+
+    echam <-convert_to_2_seasons(echam,source="echam")
     if (!no_forc_big_ens & covarclim== 0) {
-      echam.anom <- convert_to_sixmonstatevector(echam.anom,cyr)
+      echam.anom <- convert_to_2_seasons(echam.anom,source="echam")
     } else if (state != "static" & no_forc_big_ens) {
-      echam.anom <- convert_to_sixmonstatevector(echam.anom,cyr)
+      echam.anom <- convert_to_2_seasons(echam.anom,source="echam")
     } else if (covarclim>0) {
-      echam.anom <- convert_to_sixmonstatevector(echam.anom,cyr)
+      echam.anom <- convert_to_2_seasons(echam.anom,source="echam")
     }
     
     if (state=="changing" & (covarclim > 0)) {
-      echanomallts = convert_to_sixmonstatevector(echanomallts,cry)
+      echanomallts = convert_to_2_seasons(echanomallts,source="echam")
     }
+
     
     if (landcorr) {
       land41 <- array(landcorrected.anom$data,c(dim(landcorrected.anom$data)[1]*
@@ -443,6 +455,7 @@ for (cyr in syr2:eyr) {
       landcorrected.anom$time <- c(cyr,cyr+0.5)
     }
     
+
     if (no_forc_big_ens) {
       # Special because climatology is only 1 year long -> reorder months
       tmp61 <- array(echam.clim$data,c(dim(echam.clim$data)[1]*dim(echam.clim$data)[2],
@@ -461,8 +474,9 @@ for (cyr in syr2:eyr) {
       echam.clim$time <-  c(cyr,cyr+0.5) # what shall be the year???
       rm(tmp71);rm(tmp72);rm(tmp73);rm(tmp74)
     } else {
-      echam.clim<-convert_to_sixmonstatevector(echam.clim,cyr)
+      echam.clim<-convert_to_2_seasons(echam.clim,source="echam")
     }    
+
     echam.clim$names <- rep(echam.clim$names,6)
     
     if (landcorr) {
@@ -544,27 +558,57 @@ for (cyr in syr2:eyr) {
   
   # 2.1 Loading the validation data set
   if (vali) {
-    if (every2grid) {
-      if (ncep_vali) {load(paste(dataextdir,"vali_data/ncep/ncep_allvar_",syr_ncep,"-",eyr_ncep,"_2ndgrid.Rdata",sep=""))
-      } else if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,"_2ndgrid.Rdata",sep=""))
-      } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid.Rdata",sep=""))} 
-    } else {
-      if (ncep_vali) {load(paste(dataextdir,"vali_data/ncep/ncep_allvar_",syr_ncep,"-",eyr_ncep,".Rdata",sep=""))
-      } else if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,".Rdata",sep=""))
-      } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,".Rdata",sep=""))} 
-    }
-    # if (ind_recon) {
-    #   load(file=paste("../data/indices/indices_recon_",syr,"-",eyr,".Rdata",sep=""))
-    # }
-    if (cru_vali) {
-      valiall <- cruall
-      valiall$data <- valiall$data[,,1]
-    } else if (ncep_vali) {
-      valiall <- ncepall
-    } else if (recon_vali) {
-      valiall <- reconall
-      valiall$data <- valiall$data[,,1]
-    } else { vali = F }
+    validate = list()
+    l=0
+    ## this part enables experiments with multiple vali data sets. valiname is a variable with all the vali data sets  
+    ## set to true. The for loop adds the validata set to a list. 
+    valiname = c("cru_vali","ncep_vali","recon_vali","twentycr_vali")[c(cru_vali,ncep_vali,recon_vali,twentycr_vali)] 
+    for (v in valiname) {
+      l=l+1
+      print(v)
+      cru_vali=F
+      ncep_vali=F
+      recon_vali=F
+      twentycr_vali=F
+      if (v=="cru_vali"){
+        cru_vali=T
+        print("cru is true")
+      } else if (v=="ncep_vali"){
+        ncep_vali=T
+        print("ncep is true")
+      } else if (v=="recon_vali"){
+        recon_vali=T
+        print("recon is true")
+      } else if (v=="twentycr_vali"){
+        twentycr_vali=T
+        print("20cr is true")
+      }
+    
+      if (every2grid) {
+        if (ncep_vali) {load(paste(dataextdir,"vali_data/ncep/ncep_allvar_",syr_ncep,"-",eyr_ncep,"_2ndgrid.Rdata",sep=""))
+        } else if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,"_2ndgrid.Rdata",sep=""))
+        } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid.Rdata",sep=""))
+        } else if (twentycr_vali){load(paste0(twentycrpath,"twentycr_allvar_1901-2004_2ndgrid.Rdata"))}
+      } else {
+        if (ncep_vali) {load(paste(dataextdir,"vali_data/ncep/ncep_allvar_",syr_ncep,"-",eyr_ncep,".Rdata",sep=""))
+        } else if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,".Rdata",sep=""))
+        } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,".Rdata",sep=""))} 
+      }
+      # if (ind_recon) {
+      #   load(file=paste("../data/indices/indices_recon_",syr,"-",eyr,".Rdata",sep=""))
+      # }
+      if (cru_vali) {
+        valiall <- cruall
+        valiall$data <- valiall$data[,,1]
+      } else if (ncep_vali) {
+        valiall <- ncepall
+      } else if (recon_vali) {
+        valiall <- reconall
+        valiall$data <- valiall$data[,,1]
+      } else if (twentycr_vali){
+        valiall <- twentycr.all
+        valiall$data <- valiall$data[,,1]
+      } else { vali = F }
     
     # 2.2 Choose which variables want to use from the data set
     if (tps_only) {
@@ -591,27 +635,13 @@ for (cyr in syr2:eyr) {
     
     # 2.3 Cut out the 24 months around current year 
     valiall.allts=valiall
-    if (cru_vali) {
+
       ti=which(floor(valiall$time)==(cyr-1) | floor(valiall$time)==cyr) 
       sts=ti[1]
       ets=ti[length(ti)]
       valiall$data=valiall$data[,sts:ets]
       valiall$time=valiall$time[sts:ets]
-    }
-    if (ncep_vali) {
-      ti=which(floor(valiall$time)==(cyr-1) | floor(valiall$time)==cyr) 
-      sts=ti[1]
-      ets=ti[length(ti)]
-      valiall$data=valiall$data[,sts:ets]
-      valiall$time=valiall$time[sts:ets]
-    }
-    if (recon_vali) {
-      ti=which(floor(valiall$time)==(cyr-1) | floor(valiall$time)==cyr) 
-      sts=ti[1]
-      ets=ti[length(ti)]
-      valiall$data=valiall$data[,sts:ets]
-      valiall$time=valiall$time[sts:ets]
-    }
+
     
     # 2.4 Convert it to 2 season per year
     if (!recon_vali) {
@@ -633,20 +663,24 @@ for (cyr in syr2:eyr) {
       valiall$data <- valiall$data[,pos]      
     }
     
-    # 2.5 Warning message
-    if (sum(c(ncep_vali,cru_vali,recon_vali))>1) {
-      print("WARNING: more than 1 validation data set selected!")
-      write("WARNING: more than 1 validation data set selected!",
-            file=paste0('../log/',logfn),append=T)
-    } else {
-      write(paste("ncep_vali:",ncep_vali,"; cru_vali:",cru_vali,"; recon_vali:",recon_vali),
-            file=paste0('../log/',logfn),append=T)
+      # 2.5 Warning message
+      # if (sum(c(ncep_vali,cru_vali,recon_vali))>1) {
+      #   print("WARNING: more than 1 validation data set selected!")
+      #   write("WARNING: more than 1 validation data set selected!",
+      #         file=paste0('../log/',logfn),append=T)
+      # } else {
+      #   write(paste("ncep_vali:",ncep_vali,"; cru_vali:",cru_vali,"; recon_vali:",recon_vali),
+      #         file=paste0('../log/',logfn),append=T)
+      # }
+      # 
+      # 2.6 Set validate$ensmean equal to validate$data
+      validate[[paste(v)]] <- valiall
+      validate[[paste(v)]]$ensmean <- validate[[paste(v)]]$data
     }
-    
-    # 2.6 Set validate$ensmean equal to validate$data
-    validate=valiall
-    validate$ensmean=validate$data
-    
+    if ("cru_vali"%in%valiname) cru_vali=T
+    if ("ncep_vali"%in%valiname) ncep_vali=T
+    if ("recon_vali"%in%valiname) recon_vali=T
+    if ("twentycr_vali"%in%valiname) twentycr_vali=T
   }
   
   

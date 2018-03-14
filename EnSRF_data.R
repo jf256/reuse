@@ -15,8 +15,10 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
+
 syr=1903
 eyr=1960
+
 
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
@@ -54,6 +56,18 @@ logfn <- paste0(expname,'_',syr,'-',eyr,'_',format(Sys.time(),"%Y%m%d_%H%M"),'.l
 write(c(user),file=paste0('../log/',logfn),append=F)
 if (loo) {dir.create(paste0("../data/loo/",expname))}
 
+# it can be useful to save how the switches were set
+con <- file(paste0(workdir,"../data/analysis/",expname,"/switches_",format(Sys.time(),"%Y%m%d_%H%M"),".log"))
+sink(con, append=TRUE)
+sink(con, append=TRUE, type="message")
+# This will echo all input and not truncate 150+ character lines...
+source('EnSRF_switches.R', echo = TRUE, max.deparse.length=10000)
+# Restore output to console
+sink() 
+sink(type="message")
+# And look at the log...
+# cat(readLines("test.log"), sep="\n")
+
 source('EnSRF_generate.R')
 
 
@@ -65,12 +79,12 @@ for (cyr in syr2:eyr) {
   print(cyr)
   write(cyr,file=paste0('../log/',logfn),append=T)
   if (cyr > 1659) {
-    instrumental=T        # all instrumental stations
+    instrumental=T        # all instrumental stations 
   } else {
     instrumental=F
   }
-  if (cyr < 1960) {
-    real_proxies=T         # Proxy data experiment (regression NOT H operator)
+  if (cyr < 1960) {        
+    real_proxies=T         # Proxy data experiment (regression NOT H operator) 
   } else {
     real_proxies=F
   }
@@ -123,6 +137,7 @@ for (cyr in syr2:eyr) {
   ##########################################################################################
   # 1. Echam Part
   # 1.1 Loading echam, echam_anom, echam_clim, landcorrected_anom, landcorrected_clim
+  # 1.1.2 Load/creat bigger ensemble size 
   # 1.2 Choose which variables want to use from the model
   # 1.3 Calc echam st. dev. for each grid point and month over ens memb. to scale docu data
   # 1.4 Calculate decorrelation distance
@@ -131,17 +146,10 @@ for (cyr in syr2:eyr) {
   ##########################################################################################
   
   # 1.1 Loading echam, echam_anom, echam_clim, landcorrected_anom, landcorrected_clim
-  if ((cyr==syr2) & (covarclim>0)) {
-    load(file="../data/echam/echallts_for_covar.Rdata")
-    #just use limited number of years (n_covar) to make calculation faster
-    echanomallts$data <- echanomallts$data[,,sample(seq(1,dim(echanomallts$data)[3]),n_covar)]
-  }
   if (every2grid) {
     load(paste(dataextdir,"echam/echam_",(cyr-1),"-",cyr,"_2ndgrid.Rdata",sep=""))
-    #load(paste(dataintdir,"echam/echam_",(cyr-1),"-",cyr,"_2ndgrid.Rdata",sep=""))
   } else {
     load(paste(dataextdir,"echam/echam_",(cyr-1),"-",cyr,".Rdata",sep=""))
-    #load(paste(dataintdir,"echam/echam_",(cyr-1),"-",cyr,".Rdata",sep=""))
   }
   if ((anomaly_assim) & (!no_forc_big_ens)) {  
     # anomalies calculated efficiently with cdo, slow calculation within R has been removed
@@ -170,26 +178,23 @@ for (cyr in syr2:eyr) {
     }
   }
   
-  if (no_forc_big_ens) {
-    yrs <- floor(runif(n_no_forc,1602,2004))
-    m <- floor(runif(n_no_forc,1,30))
-    for (n in 1:n_no_forc) {
-      yr1 <- yrs[n]
-      yr2 <- yr1+1
-      if (every2grid) {
-        load(paste0(echanompath,'echam_anom_',yr1,'-',yr2,'_2ndgrid.Rdata'))
-      } else {
-        load(paste0(echanompath,'echam_anom_',yr1,'-',yr2,'.Rdata'))
-      }
-      if (n==1){
-        echam_anom_data <- echam_anom$data[,,m[n]]
-      } else {
-        echam_anom_data <- abind(echam_anom_data,echam_anom$data[,,m[n]],along=3)
-      }
-    }
-    echam_anom$data <- echam_anom_data
-    echam_anom$ensmean <- apply(echam_anom_data,1:2,mean)
-  } # end no_forc_big_ens
+  # 1.1.2 Load/creat bigger ensemble size 
+  # covarclim: estimate of the background covariance matrix by blending with the climatology
+  # no_forc_big_ens: use in the whole assimilation
+  # just use limited number of years (n_covar) to make calculation faster
+  # state ="static": already in 6monstatevector format and units are correct
+  if (covarclim>0) {
+    echanomallts <- background_matrix(state ,n_covar, echanomallts)
+  } else if (no_forc_big_ens) {
+    echam_anom = background_matrix(state ,n_covar, echam_anom)
+    load(paste0(dataextdir,"echam_400yr_ensmean_clim/400yr_monthly_ensmean.clim_2ndgrid.Rdata"))
+    echam_clim = echam_clim_400yr
+    echam_clim$ensmean = echam_clim_400yr$data
+    echam_clim$data = array(echam_clim$data, c(dim(echam_clim$data),1))
+    print(state)
+    print(echam_anom$data[1,1,])
+  }
+  
   
   # 1.2 Choose which variables want to use from the model
   # just leave temp precip slp in state vector
@@ -221,6 +226,9 @@ for (cyr in syr2:eyr) {
       echam_anom$data <- echam_anom$data[tpspos,,]
       echam_anom$ensmean <- echam_anom$ensmean[tpspos,]
       echam_anom$names <- echam_anom$names[tpspos]
+      if (state == "static" & no_forc_big_ens ) {
+        tpspos <- c(which(echam_clim$names!='stream'))
+      }
       echam_clim$data <- echam_clim$data[tpspos,,]
       echam_clim$ensmean <- echam_clim$ensmean[tpspos,]
       echam_clim$names <- echam_clim$names[tpspos]
@@ -272,16 +280,43 @@ for (cyr in syr2:eyr) {
     echam_anom$data[echam_anom$names=='slp',,] <- echam_anom$data[echam_anom$names=='slp',,]/100
     echam_anom$ensmean[echam_anom$names=='slp',] <- echam_anom$ensmean[echam_anom$names=='slp',]/100
     echam.anom <- echam_anom
-    # echam_clim$data[echam_clim$names=='temp2',,] <- echam_clim$data[echam_clim$names=='temp2',,]-273.15
-    # echam_clim$ensmean[echam_clim$names=='temp2',] <- echam_clim$ensmean[echam_clim$names=='temp2',]-273.15
-    # echam_clim$data[echam_clim$names=='precip',,] <- echam_clim$data[echam_clim$names=='precip',,]*3600 * 24 * 30
-    # echam_clim$ensmean[echam_clim$names=='precip',] <- echam_clim$ensmean[echam_clim$names=='precip',]*3600 * 24 * 30
-    # echam_clim$data[echam_clim$names=='slp',,] <- echam_clim$data[echam_clim$names=='slp',,]/100
-    # echam_clim$ensmean[echam_clim$names=='slp',] <- echam_clim$ensmean[echam_clim$names=='slp',]/100
+    if (state =="changing" & (covarclim > 0) | no_forc_big_ens) {
+      if (no_forc_big_ens) {
+        echam_anom$data[echam_anom$names=='precip',,] <- 
+          echam_anom$data[echam_anom$names=='precip',,] * 3600 * 24 * 30
+        echam_anom$ensmean[echam_anom$names=='precip',] <- 
+          echam_anom$ensmean[echam_anom$names=='precip',] * 3600 * 24 * 30
+        echam_anom$data[echam_anom$names=='slp',,] <- echam_anom$data[echam_anom$names=='slp',,]/100
+        echam_anom$ensmean[echam_anom$names=='slp',] <- echam_anom$ensmean[echam_anom$names=='slp',]/100
+        echam.anom <- echam_anom
+      } else if (covarclim > 0) {
+        echanomallts$data[echanomallts$names=='precip',,] <- echanomallts$data[echanomallts$names=='precip',,] * 3600 * 24 * 30
+        echanomallts$ensmean[echanomallts$names=='precip',] <- echanomallts$ensmean[echanomallts$names=='precip',] * 3600 * 24 * 30
+        echanomallts$data[echanomallts$names=='slp',,] <- echanomallts$data[echanomallts$names=='slp',,]/100
+        echanomallts$ensmean[echanomallts$names=='slp',] <- echanomallts$ensmean[echanomallts$names=='slp',]/100
+        echam.anom <- echam_anom
+      }
+    }
+    if (no_forc_big_ens) {
+      echam_clim$data = array(echam_clim$data, c(dim(echam_clim$data),1))  
+      echam_clim$data[echam_clim$names=='temp2',,] <- echam_clim$data[echam_clim$names=='temp2',,]-273.15
+      echam_clim$ensmean[echam_clim$names=='temp2',] <- echam_clim$ensmean[echam_clim$names=='temp2',]-273.15
+      echam_clim$data[echam_clim$names=='precip',,] <- echam_clim$data[echam_clim$names=='precip',,]*3600 * 24 * 30
+      echam_clim$ensmean[echam_clim$names=='precip',] <- echam_clim$ensmean[echam_clim$names=='precip',]*3600 * 24 * 30
+      echam_clim$data[echam_clim$names=='slp',,] <- echam_clim$data[echam_clim$names=='slp',,]/100
+      echam_clim$ensmean[echam_clim$names=='slp',] <- echam_clim$ensmean[echam_clim$names=='slp',]/100
+    }
     echam.clim <- echam_clim
     # echam_clim_mon_ensmean (next line) stays 12 months version for instr screening
-    echam_clim_mon_ensmean <- echam_clim$ensmean[,10:21]
-    rm(echam_anom,echam_clim)
+    if (!no_forc_big_ens) {
+      echam_clim_mon_ensmean <- echam_clim$ensmean[,10:21] 
+    } else {
+      echam_clim_mon_ensmean <- echam_clim$ensmean[,c(10,11,12,1,2,3,4,5,6,7,8,9)]
+    }
+    if (state=="changing") { # Roni: why I delete it only if state = "changing ?? -> I think because if it is "static" I need it in the background_matrix function
+      rm (echam_anom)
+    }
+    rm(echam_clim)
     if (landcorr) {
       # They (temp2, precip, slp) are corrected for the climatology
       # They (precip, slp) are NOT corrected for the anomaly
@@ -313,15 +348,77 @@ for (cyr in syr2:eyr) {
   
   # 1.4 Calculate decorrelation distance
   if (calc_decorr_dist) { 
-    d <- compute_dist_2d(echam$lon,echam$lat,echam$lon,echam$lat)
-    for (i in unique(echam$names)) {
-      tmp <- echam.anom$ensmean[echam$names==i,]
-      corens <- cor(t(tmp[,]))
-      png(paste0('../figures/decorr_',i,'.png'), width = 1024, height = 768)
-      plot(as.vector(d),as.vector(corens),col='#4c8bff01',
-           xlim=c(0,5000),ylim=c(0,1))
-      lines(exp(-1/2 * (seq(1:5000)/get(paste0('l_dist_',i)))**2),col='red')
-      dev.off()
+    if (covarclim == 0) {
+      d <- compute_dist_2d(echam$lon,echam$lat,echam$lon,echam$lat, region) 
+    } else if (covarclim > 0) {
+      d <- compute_dist_2d(echanomallts$lon[1:4608],echanomallts$lat[1:4608],echanomallts$lon[1:4608],echanomallts$lat[1:4608], region)
+    }
+    if (covarclim == 0) {
+      ech = echam.anom
+    } else if (covarclim > 0) {
+      ech = echanomallts
+    }
+    for (i in unique(ech$names)) {
+      if (covarclim == 0) {
+        tmp <- corr_over_region(echam.anom,-90,90,"global",cor_length_period)
+      } else if (covarclim > 0) {
+        if (region == "global") {
+          tmp = corr_over_region(echanomallts,-90,90,"global",cor_length_period)
+        } else if (region == "ENH") {
+          tmp = corr_over_region(echanomallts,20,90,"ENH",cor_length_period)
+        } else if (region == "ESH") {
+          tmp = corr_over_region(echanomallts,-90,-20,"ESH",cor_length_period)
+        } else if (region == "tropics") {
+          tmp = corr_over_region(echanomallts,-20,20,"tropics",cor_length_period)
+        }
+        if (region == "lat_band" ) {
+          for (k in unique(echanomallts$lat)) {
+            if (k == unique(echanomallts$lat)[1]) {
+              tmp1 = corr_over_region(echanomallts,k-0.5,k+0.5,"lat_band",cor_length_period)
+              tmp1 = array(tmp1, c(dim(tmp1),1))
+              tmp = tmp1
+            } else {
+              tmp1 = corr_over_region(echanomallts,k-0.5,k+0.5,"lat_band",cor_length_period)
+              tmp1 = array(tmp1, c(dim(tmp1),1))
+              tmp = abind(tmp,tmp1, along=3)
+            }
+          }
+        } else if (region == "lon_band") {
+          for (k in unique(echanomallts$lon)) {
+            if (k == unique(echanomallts$lon)[1]) {
+              tmp1 = corr_over_region(echanomallts,k-0.5,k+0.5,"lon_band",cor_length_period)
+              tmp1 = array(tmp1, c(dim(tmp1),1))
+              tmp = tmp1
+            } else {
+              tmp1 = corr_over_region(echanomallts,k-0.5,k+0.5,"lon_band", cor_length_period)
+              tmp1 = array(tmp1, c(dim(tmp1),1))
+              tmp = abind(tmp,tmp1, along=3)
+            }
+          }
+        }
+      }
+      if (region == "lat_band" | region == "lon_band") {
+        for (k in 1:dim(tmp)[3]) {
+          if (region == "lat_band") {
+            png(paste0('../figures/decorr_lat_',cor_length_period,'_',i,'_lat:',unique(echanomallts$lat)[k],'.png'), width = 1024, height = 768)
+          } else {
+            png(paste0('../figures/decorr_lon_',cor_length_period,'_',i,'_lon:',unique(echanomallts$lon)[k],'.png'), width = 1024, height = 768)
+          }
+          d_dist = d[,,k]
+          tmp_cor = tmp[,,k]
+          corens <- cor(t(tmp_cor[,]))
+          plot(as.vector(d_dist),as.vector(corens),col='blue', xlim=c(0,5000),ylim=c(0,1), pch = 16)
+          lines(exp(-1/2 * (seq(1:5000)/get(paste0('l_dist_',i)))**2),col='red')
+          dev.off()
+        }
+      } else {
+        corens <- cor(t(tmp[,]))
+        png(paste0('../figures/decorr_',cor_length_period,'_',i,'.png'), width = 1024, height = 768)
+        plot(as.vector(d),as.vector(corens),col='#4c8bff01',
+             xlim=c(0,5000),ylim=c(0,1))
+        lines(exp(-1/2 * (seq(1:5000)/get(paste0('l_dist_',i)))**2),col='red')
+        dev.off()
+      }
     }
   }
   
@@ -331,8 +428,20 @@ for (cyr in syr2:eyr) {
     # change array to have 6 months in state vector for winter and summer
     # first winter starts in oct of syr
     # 6 mon stat vectors for oct-mar and apr and sep
-    echam<-convert_to_2_seasons(echam,source="echam")
-    echam.anom <- convert_to_2_seasons(echam.anom,source="echam")
+
+    echam <-convert_to_2_seasons(echam,source="echam")
+    if (!no_forc_big_ens & covarclim== 0) {
+      echam.anom <- convert_to_2_seasons(echam.anom,source="echam")
+    } else if (state != "static" & no_forc_big_ens) {
+      echam.anom <- convert_to_2_seasons(echam.anom,source="echam")
+    } else if (covarclim>0) {
+      echam.anom <- convert_to_2_seasons(echam.anom,source="echam")
+    }
+    
+    if (state=="changing" & (covarclim > 0)) {
+      echanomallts = convert_to_2_seasons(echanomallts,source="echam")
+    }
+
     
     if (landcorr) {
       land41 <- array(landcorrected.anom$data,c(dim(landcorrected.anom$data)[1]*
@@ -346,7 +455,28 @@ for (cyr in syr2:eyr) {
       landcorrected.anom$time <- c(cyr,cyr+0.5)
     }
     
-    echam.clim<-convert_to_2_seasons(echam.clim,source="echam")
+
+    if (no_forc_big_ens) {
+      # Special because climatology is only 1 year long -> reorder months
+      tmp61 <- array(echam.clim$data,c(dim(echam.clim$data)[1]*dim(echam.clim$data)[2],
+                                       dim(echam.clim$data)[3]))
+      tmp62 <- tmp61[((9*dim(echam.clim$data)[1]+1):(dim(tmp61)[1])),] # cut from oct till dec
+      tmp63 <- tmp61[(1:(9*dim(echam.clim$data)[1])),] # from jan till sept
+      tmp64 <- rbind(tmp62,tmp63)
+      echam.clim$data <- array(tmp64,c(dim(tmp64)[1]/(((dim(echam.clim$data)[2]/12))*2),
+                                       (((dim(echam.clim$data)[2]/12))*2),dim(tmp64)[2])) 
+      tmp71 <- array(echam.clim$ensmean,c(dim(echam.clim$ensmean)[1]*dim(echam.clim$ensmean)[2]))
+      tmp72 <- tmp71[((9*dim(echam.clim$ensmean)[1]+1):(dim(tmp71)[1]))] # cut oct syr to sep eyr
+      tmp73 <- tmp71[(1:(9*dim(echam.clim$ensmean)[1]))]
+      tmp74 <- c(tmp72,tmp73)
+      echam.clim$ensmean <- array(tmp74,c(length(tmp74)/(((dim(echam.clim$ensmean)[2]/12))*2),
+                                          (((dim(echam.clim$ensmean)[2]/12))*2)))  
+      echam.clim$time <-  c(cyr,cyr+0.5) # what shall be the year???
+      rm(tmp71);rm(tmp72);rm(tmp73);rm(tmp74)
+    } else {
+      echam.clim<-convert_to_2_seasons(echam.clim,source="echam")
+    }    
+
     echam.clim$names <- rep(echam.clim$names,6)
     
     if (landcorr) {
@@ -359,7 +489,6 @@ for (cyr in syr2:eyr) {
       landcorrected.clim$names <- rep(landcorrected.clim$names,6)
       rm(land41);rm(land42);rm(land61);rm(land62)
     }
-    # rm(tmp41);rm(tmp42);rm(tmp51);rm(tmp52);rm(tmp61);rm(tmp62);rm(tmp71);rm(tmp72)
   }
   
   # rename echam.amon to echam if anomaly_assim==T
@@ -371,12 +500,18 @@ for (cyr in syr2:eyr) {
   # convert lon, lat, names sixmonstatevector data format
   # ACHTUNG: only 11 vars withOUT stream function included so far
   if (sixmonstatevector) {
-    one_var_dim <- length(echam$lon)
+    one_var_dim = length(echam$lon)
     numvar <- length(unique(echam$names)) 
     echam$lon <-  c(rep(echam$lon, (numvar*6)))
     echam$lat <- c(rep(echam$lat, (numvar*6)))
     echam$names <- c(rep(echam$names, 6))
     echam <- echam[c('data', 'ensmean', 'lon', 'lat', 'height', 'lsm.i', 'time', 'names')]
+    if (state =="changing" & (covarclim > 0)) {
+      echanomallts$lon <-  c(rep(echanomallts$lon, (numvar*6)))
+      echanomallts$lat <- c(rep(echanomallts$lat, (numvar*6)))
+      echanomallts$names <- c(rep(echanomallts$names, 6))
+      echanomallts <- echanomallts[c('data', 'ensmean', 'lon', 'lat', 'height', 'lsm.i', 'time', 'names')]
+    }
     if (landcorr) {
       landcorrected.anom$lon <-  c(rep(landcorrected.anom$lon, (numvar*6)))
       landcorrected.anom$lat <- c(rep(landcorrected.anom$lat, (numvar*6)))
@@ -404,7 +539,11 @@ for (cyr in syr2:eyr) {
   print('calc time for loading data')
   print(proc.time() - ptm1)
   
-  
+  if (covarclim > 0) {
+    if (PHclim_loc) {
+      PHclim_lvec = lvec*PHclim_lvec_factor
+    }
+  }
   
   
   ##########################################################################################
@@ -559,8 +698,11 @@ for (cyr in syr2:eyr) {
   
   # 3.1 Loading proxy data
   if (real_proxies){
-    load(paste0(dataextdir,"assimil_data/rdata_files/real_proxies_",fsyr,"-",feyr,".Rdata"))  
+    if (!generate_PROXIESnew) {
+    load(paste0(dataextdir,"assimil_data/rdata_files/real_proxies_",fsyr,"-",feyr,".Rdata")) 
+    } else {
     load(paste0("../data/proxies/real_proxies_",fsyr,"-",feyr,".Rdata"))
+    }
     
     # 3.2 Screen the proxy data
     if (check_assimdata) {
@@ -1346,6 +1488,10 @@ for (cyr in syr2:eyr) {
       analysis <- echam
       # take anomalies
       analysis$data <- echam$data - as.vector(echam$ensmean)
+      if (covarclim>0 & covarclim<=100) { 
+        ananomallts = echanomallts
+        ananomallts$data <- echanomallts$data - as.vector(echanomallts$ensmean)
+      }
       nmonths <- 6
       ndim <- nrow(analysis$data)
       ntim <- ncol(analysis$data)
@@ -1371,36 +1517,74 @@ for (cyr in syr2:eyr) {
           pos <- which(is.na(echam$lon))
           echam$lon[pos] <- 0
           echam$lat[pos] <- -90
-          dist <- compute_dist_2d(echam$lon, echam$lat, echam$lon[h.i], echam$lat[h.i]) 
-          # weights are a matrix of ndim x nh (non-null elements in H, here different months)
-          # NO temporal correlation for use of monthly instr. data and 1 col H operator          
-          wgt <- corr_function(dist,outer(lvec[echam$names], lvec[echam$names[h.i]], pmin))
-          wgt[which(echam$names %in% c("DIMI","z100","z300","PWC","HC","SJ")),] <- 1
-          # temporal correlation quickly drops to zero (~ 0.6 for 1-month lag, 
-          # ~0.4 for two months, etc.)
+          if (shape_wgt == "circle") {
+            dist <- compute_dist_2d(echam$lon, echam$lat, echam$lon[h.i], echam$lat[h.i],region) 
+            # weights are a matrix of ndim x nh (non-null elements in H, here different months)
+            # NO temporal correlation for use of monthly instr. data and 1 col H operator          
+            wgt <- corr_function(dist,outer(lvec[echam$names], lvec[echam$names[h.i]], pmin))
+            wgt[which(echam$names %in% c("DIMI","z100","z300","PWC","HC","SJ")),] <- 1
+            # temporal correlation quickly drops to zero (~ 0.6 for 1-month lag, 
+            # ~0.4 for two months, etc.)
+          } else if (shape_wgt == "ellipse") {
+            wgt = compute_dist_2d_ellipse (echam$lon, echam$lat, echam$lon[h.i], echam$lat[h.i],echam$names,lvec,calibrate$sour[j])
+          }
+          if (covarclim>0 & covarclim<100) { 
+            if (PHclim_loc) {
+              dist <- compute_dist_2d(echam$lon, echam$lat, echam$lon[h.i], echam$lat[h.i],region) 
+              wgt_PHclim <- corr_function(dist,outer(PHclim_lvec[echam$names], PHclim_lvec[echam$names[h.i]], pmin))
+              wgt_PHclim[which(echam$names %in% c("DIMI","z100","z300","PWC","HC","SJ")),] <- 1
+            }
+          }
         } else {
           dist <- NA
           wgt <- NA
         }
         if (!landcorr) {
-          if ((!is.na(dist[1])) & (!is.na(wgt[1]))){
+          if (!is.na(wgt[1])){ # for shape_wgt = ellipse there is no dist
             for (i in 1:ntim){
               if (!is.na(calibrate$data[j,i])) {
                 x2tmp <- analysis$data[,i,] # entire state vector at time step i, all members
                 x2 <- x2tmp[h.i,,drop=F] # state vector at time step i and h.i, all members
                 PH <- (analysis$data[,i,] %*% t(x2) / (nens - 1) * wgt) %*% t(H)
                 if (covarclim>0 & covarclim<100) { 
-                  x2climtmp <- echanomallts$data[,i,] 
+                  x2climtmp <- ananomallts$data[,i,] 
                   x2clim <- x2climtmp[h.i,,drop=F] 
-                  PHclim <- (echanomallts$data[,i,] %*% t(x2clim) / 
-                               ((dim(echanomallts$data)[3]) - 1) * wgt) %*% t(H)
+                  if (PHclim_loc) {
+                    PHclim <- (ananomallts$data[,i,] %*% t(x2clim) / 
+                                 ((dim(ananomallts$data)[3]) - 1) * wgt_PHclim) %*% t(H)
+                  } else {
+                    PHclim <- (ananomallts$data[,i,] %*% t(x2clim) / 
+                                 ((dim(ananomallts$data)[3]) - 1) ) %*% t(H)
+                  }
                   PH <- (PH*(1-(covarclim/100))) + (PHclim*(covarclim/100))
                 } else if (covarclim==100) {
-                  x2climtmp <- echanomallts$data[,i,] 
+                  x2climtmp <- ananomallts$data[,i,] 
                   x2clim <- x2climtmp[h.i,,drop=F] 
-                  PH <- (echanomallts$data[,i,] %*% t(x2clim) / 
-                           ((dim(echanomallts$data)[3]) - 1) * wgt) %*% t(H) 
+                  if (PHclim_loc) {
+                    PH <- (ananomallts$data[,i,] %*% t(x2clim) / 
+                             ((dim(ananomallts$data)[3]) - 1) * wgt_PHclim) %*% t(H) 
+                  } else {
+                    PH <- (ananomallts$data[,i,] %*% t(x2clim) / 
+                             ((dim(ananomallts$data)[3]) - 1) ) %*% t(H) 
+                  }
                 } 
+                if (ins_tim_loc) {
+                  if (calibrate$sour[j] == "inst") {
+                    # time localization on PH for instrumental data
+                    # let influence only the variables of the current month of the observations
+                    month_start = seq(1,dim(PH)[1],dim(PH)[1]/6)
+                    month_end = month_start + (dim(PH)[1]/6 - 1)
+                    time_loc = array(NA,dim(PH))
+                    for (k in 1:6) {
+                      if (month_start[k]<=h.i & month_end[k]>=h.i) {
+                        time_loc[month_start[k]:month_end[k],] = 1
+                      } else {
+                        time_loc[month_start[k]:month_end[k],] = 0
+                      }
+                    }
+                    PH <- time_loc * PH
+                  }
+                }
                 HPHR <- as.vector(H %*% PH[h.i,] + Rcal[j])
                 K <- PH / HPHR
                 Ktilde <- K / (1 + sqrt(Rcal[j]/HPHR))

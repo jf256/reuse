@@ -1,4 +1,6 @@
-expname="proxies_only_NTREND_1-6th" # "EKF400_v1.3_full_res" #
+# expname = "test"
+ expname="EKF400_v1.3_merged_covarclim50_ncovar250_static2_PHclim_2times_loc_proxy" # EKF400_v1.3_merged_only_inst_with_temp_loc
+
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -175,7 +177,7 @@ generate_PROXIES=F
 #        Abklären: ist in den jeweiligen  read_proxy_mxd zb t4 immer von t1-t12, weil sonst machen 
 #                  die colnames nicht Sinn!!!!! Zb Zeile:
 #                  Weil in Pages sind es nicht dieselben 
-generate_PROXIESnew=T
+generate_PROXIESnew=F
 if (generate_PROXIESnew==T) {
 # You can choose any combination of months and variable (T&P) for regression_months.
 # Then you can choose for each source whether it to be included or not. 
@@ -185,18 +187,19 @@ if (generate_PROXIESnew==T) {
 # For MXD and SCHWEINGR it only takes the temperature and leaves the precip. months NA.
 # PAGES_tree data also consists of location on the SH: if for ex. t4 (is chosen), it takes t10 (t4+6) 
 # for any locations with lat<0. 
-regression_months = c('t.first','t.second','t.third','t.fourth','t.fifth','t.sixth')
+regression_months = c('t.second','t.third','t.fourth','t.fifth','p.first','p.second','p.third')
 # ^ for MXD it will only take the temp. part of regression months
 # for pages trees on SH if you choose first April it automatically takes October of SH
-  TRW=F
-  MXD=F
-  SCHWEINGR=F
-  PAGES=T
+  TRW=T
+  MXD=T
+  SCHWEINGR=T
+  PAGES=F
 pages_lm_fit = "CRU"   # can be CRU or GISS to calculate the reg coeff-s
 type = c("tree") 
 #          ^ it only works with tree and coral (and both indiviually as well)
 NTREND=F
 } 
+
 
 generate_PAGES = F      # using the screened PAGES proxy dataset
 generate_NTREND = F
@@ -233,12 +236,31 @@ if (generate_PROXIESnew){
 }
 
 
-loc=T      # T = WITH localization, F without
-covarclim=0 # set 50 or 100 [%] how much echam climatology covariance should be used
-# default=0, i.e. current year covar from ECHAM ensemble
-n_covar=500  # set sample size for covar calc, e.g. 250 or 500
+# To use a bigger ensemble for the background
+no_forc_big_ens= F      # use all years as one big ensemble regardless of forcing like LMR
+                        # ONLY works with next option load_71yr_anom=T
+covarclim=50             # set 50 or 100 [%] how much echam climatology covariance should be used
+                            # default=0, i.e. current year covar from ECHAM ensemble
+# Only used if no_forx_big_ens=T or covarclim=0
+state = "static"        # can be "static" or "changing" (static = the same big ens used for all year, changing = it is recalculated for every year)
+n_covar=250             # set sample size for covar calc or for no_forc LMR like experiment, e.g. 250 or 500
+PHclim_loc = T          # whether we want to localize the PHclim, only works if covarclim > 0
+PHclim_lvec_factor = 2  # if PHclim_loc=T, we can use eg. 2times the distances as in the 30 ensemble member, at the moment only works for shape_wgt= "circle"
 
-calc_decorr_dist=F     # calculate decorrelation distance for each variable from ECHAM to set L
+
+# Calculate decorr length -> was done already
+calc_decorr_dist=F      # calculate decorrelation distance for each variable from ECHAM to set L
+region = "global"       # region: where the decorrelation length should be calculated
+                            # default = "global"
+                            # can select: "golbal", "ENH", "ESH", "tropics", "lat_band", "lon_band"
+cor_length_period = "annual"   # period: over which the decorrelation length should be calculated
+                                   # default = "annual
+                                   # can select: "annual", "summer", "winter"
+                                   # for corr_over_region function both region and cor_length_period is needed
+                                   # for compute_dist_2d function region is needed
+
+# Localizing the 30 ensemble members: distance and shape
+loc=T      # T = WITH localization, F without
 if (loc) {
   l_dist_temp2=1000*1.5  # factor *1.5 after stefans recommendation
   l_dist_slp=1800*1.5
@@ -266,6 +288,9 @@ if (loc) {
   l_dist_t850=999999
   l_dist_ind=999999 
 }
+shape_wgt = "circle" # can be "circle" or "ellipse" depends on how we want to do the localization
+                      # default is "circle"
+
 
 # ATTENTION: landcorrected only works with anomaly_assim==T and every2grid==T!!!
   landcorr = F      # use simulation WITHOUT land use bug if TRUE
@@ -275,6 +300,7 @@ first_prox_per_grid=F  # first proxy per echam grid box ATTENTION: only this
   firstproxres=10      # grid resolution for instr. stations (5 = echamgrid/5)
 avg_prox_per_grid=T    # average more than one proxy per echam grid box 
                        # and calc proxy vs echam correlation
+ins_tim_loc = F        # whether the instrumental obs-s should be localized in time or not
 instmaskprox=F         # remove proxy data from grid boxes that have instr. data
 reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
@@ -285,9 +311,6 @@ no_stream=T            # all echam vars but stream function as there is problem 
 #                       # 5/9 levels, which are in lat dimension before and after 1880
 loo=F                  # leave-one-out validation 
 if (loo) {tps_only=T;no_stream=F}  # reduce state vector for faster validation
-no_forc_big_ens=F      # use all years as one big ensemble regardless of forcing like LMR
-                       # ONLY works with next option load_71yr_anom=T
-  n_no_forc=500         # ensemble size for no_forc LMR like experiment
 #load_71yr_anom=T       # load 71yr echam anomalies calculated with cdo
 #anom_reload=F          # reload anom calculated in R (next option)
 #anom_save=F            # save anom calculated in R to reload next time
@@ -354,7 +377,7 @@ if (!monthly_out & write_netcdf) {
 }
 # run next option "load_prepplot" for entire validation period, usually 
 # 1902-2003, because it creates time series
-load_prepplot=T  # ATTENTION check if folder prepplot on scratch contains monthly or seasonal data!
+load_prepplot=F  # ATTENTION check if folder prepplot on scratch contains monthly or seasonal data!
                  # saves image and only needs to be run once, afterward set "load_image=T" 
 statyr=1934    # 1941 1850/69 year, when station network is kept constant
 load_image=T     # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image

@@ -21,7 +21,7 @@ ntrendpath = '/scratch3/veronika/reuse/'
 schweingrpath <- paste0(dataextdir,'assimil_data/proxies/schweingr/')
 nceppath <- paste0(dataintdir,'reanalysis/ncep/')
 twentycrpath <- paste0(workdir,'../comparison_data/20cr/')
-
+indicespath <- paste0(dataextdir,'vali_data/indices/')
 
 # install.packages("akima")
 # install.packages("maps")
@@ -61,6 +61,8 @@ suppressMessages(library(reshape2))
 suppressMessages(library(ggplot2))
 suppressMessages(library(grid))
 suppressMessages(library(cowplot))
+suppressMessages(library(lubridate)) # decinmal year to date conversion
+suppressMessages(library(birk)) # which.closest function
 
 #library(pspline)
 # first install ncdfUtils of Jonas with all his functions 
@@ -1140,10 +1142,10 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
         }
       }else{ # we can calculate the regression
         # make variable for each month
-        t5 = t3[c(4:(length(t3)-3))]
+        t5 = t3[c(4:(length(t3)-9))]
         t4 = t(array(t5,c(6,length(t5)/6))) #makes half year bunches
         tSH = t4[seq(2,nrow(t4),2),] #takes the months from Oct to March
-        tNH = t4[seq(1,nrow(t4),2),][-c(1),] #takes the months from April to September, shortened because easier later
+        tNH = t4[seq(1,nrow(t4),2),] #takes the months from April to September, shortened because easier later
         # t4 = t(array(t5,c(12,length(t5)/12))) # 70 years from Apr-March, cuts the last half year without warning
         
         if (p_tree$lat[i] > 0) { # which half a year we want to use for calculating the regression
@@ -1325,10 +1327,10 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
           }
         } else { # we can calculate the regression
           # make variable for each month
-          t5 = t3[c(4:(length(t3)-3))]
+          t5 = t3[c(4:(length(t3)-9))]
           t4 = t(array(t5,c(6,length(t5)/6))) #makes half year bunches
           tSH = t4[seq(2,nrow(t4),2),] #takes the months from Oct to March
-          tNH = t4[seq(1,nrow(t4),2),][-c(1),] #takes the months from April to September
+          tNH = t4[seq(1,nrow(t4),2),] #takes the months from April to September
           # t4 = t(array(t5,c(12,length(t5)/12))) # 70 years from Apr-March
           
           if (p_coral$lat[i] > 0) { # which half a year we want to use for calculating the regression

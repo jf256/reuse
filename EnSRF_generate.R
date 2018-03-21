@@ -93,17 +93,7 @@ if (generate_ind_recon){
   
 }
 
-if (generate_NCEP) {
-  print("generate_NCEP")
-  #  see script in EnSRF/script/merge_ncep.sh for regridding and co of orig. ncep data set
-  ncepall <- read_echam1('ncep_allvar_1948-2009',timlim=c(syr_ncep,eyr_ncep),
-                         path=nceppath,small=every2grid)
-  if (every2grid) {
-    save(ncepall, file=paste0("../data/ncep/ncep_allvar_",syr_ncep,"-",eyr_ncep,"_2ndgrid.Rdata"))
-  } else {
-    save(ncepall, file=paste0("../data/ncep/ncep_allvar_",syr_ncep,"-",eyr_ncep,".Rdata"))
-  }
-}
+
 
 if (generate_CRUALLVAR) {
   print("generate_CRUALLVAR")

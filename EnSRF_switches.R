@@ -1,4 +1,4 @@
-expname="pagesprox_instr_test" # "EKF400_v1.3_full_res" #
+expname="pages_ntrend_coral_tree_instr_cru_twentycr_before_vali" # "EKF400_v1.3_full_res" #
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -118,8 +118,8 @@ syr_cru=1901
 eyr_cru=2004
 syr_recon=1750
 eyr_recon=1900
-syr_ncep=1948
-eyr_ncep=2009
+syr_twentycr=1901 # currently statistics only work for same periods of CRU and 20CR (20CR data actually start from 1850)
+eyr_twentycr=2004
 #syr_ind=1901
 #eyr_ind=2004
 
@@ -193,7 +193,7 @@ regression_months = c('t.first','t.second','t.third','t.fourth','t.fifth','t.six
   SCHWEINGR=F
   PAGES=T
 pages_lm_fit = "CRU"   # can be CRU or GISS to calculate the reg coeff-s
-type = c("tree") 
+type = c("tree","coral") 
 #          ^ it only works with tree and coral (and both indiviually as well)
 NTREND=F
 } 
@@ -303,7 +303,6 @@ if (no_stream & tps_only) {
   no_stream=T
 }
 
->>>>>>> origin/test_climcal
 
 # other options
 scaleprox=T            # scale standardized docu and prox data the echam variance at location
@@ -314,29 +313,12 @@ check_dist=F           # test for ideal cut-off distance of spatial correlations
 ana.enssize=F
 NCEP_SOCOL=F
 
-# choose validation data set
-# ONLY one can be TRUE
-# # next line not included yet: 
-# if (eyr < 1750) {
-#   vali=F                 # switch off prepplot if no vali data selected
-# } else {
-#   vali=T
-# }
-twcr_vali=F            # 20CR reanalysis data for validation
-ncep_vali=F            # NCEP/NCAR reanalysis data for validation
-# if ((syr > 1900) & (eyr < 2006)) {
-#   cru_vali=T             # monthly CRU TS3 temp, precip and HADSLP2 gridded instrumentals (1901-2004)
-# #  ind_recon=T            # Stefan's reconstructed indices until 1948 and NCAR reanalysis later added to CRU and NCEP
-# } else {
-#   cru_vali=F 
-# #  ind_recon=F
-# }
-# #ind_recon=F
-# if ((syr < 1901) & (eyr > 1749)) {
-#   recon_vali=T           # seasonal luterbacher, pauling, kuettel recons (1750-1999)
-# } else {
-#   recon_vali=F
-# }
+# choose validation data set:
+# (all three can be selected simultaneously)
+vali_cru=T
+vali_twentycr=F
+vali_recon=F
+
 
 #####################################################################################
 # prepare plot switches
@@ -360,11 +342,12 @@ if (!monthly_out & write_netcdf) {
 load_prepplot=T  # ATTENTION check if folder prepplot on scratch contains monthly or seasonal data!
                  # saves image and only needs to be run once, afterward set "load_image=T" 
 statyr=1905    # 1941 1850/69 year, when station network is kept constant
+load_indices=T   # if TRUE: indices are combined to allts variables for whole period (e.g. also for 1604-2004) and saved into image folder for TS-plots
 load_image=T     # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
 calc_vali_stat=T # calculate validation statistics after preparation (set "load_image=T")
-CRPS = F      # calculate Continuous Ranked Probability Score
+CRPS = T      # calculate Continuous Ranked Probability Score
 vali_plots=F     # source EnSRF_plots.R script 
-ind_ECHAM=F      # delete/comment code in prepplot script and then delete switches here
+ind_ECHAM=T      # delete/comment code in prepplot script and then delete switches here
 ind_recon=F      # delete/comment code in prepplot script and then delete switches here
 ind_anom=F       # calculate indices from anomaly data
 
@@ -379,7 +362,7 @@ write_nc=F
 recalc <- F
 reload <- F
 plstat <- NULL #calibrate # NULL or calibrate
-countseries <- F
+countseries <- T
 #PAGES <- F          # write output for PAGES paper
 
 

@@ -1,4 +1,4 @@
-expname="pagesprox_instr_test" # "EKF400_v1.3_full_res" #
+expname="proxies_only_NTREND_PAGES_tree_coral" # "EKF400_v1.3_full_res" #
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -193,9 +193,9 @@ regression_months = c('t.first','t.second','t.third','t.fourth','t.fifth','t.six
   SCHWEINGR=F
   PAGES=T
 pages_lm_fit = "CRU"   # can be CRU or GISS to calculate the reg coeff-s
-type = c("tree") 
+type = c("tree","coral") 
 #          ^ it only works with tree and coral (and both indiviually as well)
-NTREND=F
+NTREND=T
 } 
 
 generate_PAGES = F      # using the screened PAGES proxy dataset
@@ -205,9 +205,9 @@ generate_NTREND = F
 
 
 
-yuri_temp=T          # yuri's data compilation, SLP always loaded
-yuri_slp=T
-ghcn_temp=T
+yuri_temp=F          # yuri's data compilation, SLP always loaded
+yuri_slp=F
+ghcn_temp=F
 isti_instead_ghcn=F  # switch from ghcn to isti (ghcn_temp must still be set to TRUE)
 ghcn_prec=F
 import_luca=F        # new docu data 
@@ -278,7 +278,7 @@ avg_prox_per_grid=T    # average more than one proxy per echam grid box
 instmaskprox=F         # remove proxy data from grid boxes that have instr. data
 reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
-land_only=T            # calc on land only
+land_only=F            # calc on land only
 fasttest=F             # use even less data
 tps_only=T             # only use temp, precip and slp in state vector, remove other vars
 no_stream=F            # all echam vars but stream function as there is problem with 
@@ -361,7 +361,7 @@ load_prepplot=T  # ATTENTION check if folder prepplot on scratch contains monthl
 statyr=1905    # 1941 1850/69 year, when station network is kept constant
 load_image=T     # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
 calc_vali_stat=T # calculate validation statistics after preparation (set "load_image=T")
-CRPS = TRUE      # calculate Continuous Ranked Probability Score
+CRPS = F      # calculate Continuous Ranked Probability Score
 vali_plots=F     # source EnSRF_plots.R script 
 ind_ECHAM=F      # delete/comment code in prepplot script and then delete switches here
 ind_recon=F      # delete/comment code in prepplot script and then delete switches here

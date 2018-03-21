@@ -15,8 +15,8 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
-syr=1903
-eyr=1930
+syr=1604
+eyr=1903
 
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
@@ -56,6 +56,7 @@ write(c(user),file=paste0('../log/',logfn),append=F)
 if (loo) {dir.create(paste0("../data/loo/",expname))}
 
 source('EnSRF_generate.R')
+print(expname)
 
 
 ##########################################################################################
@@ -1328,7 +1329,7 @@ for (cyr in syr2:eyr) {
       if ((real_proxies) & ((instrumental) | (docum))) { 
         Rcal <- c(temp2=0.9, precip=50, slp=10)[calibrate$names]
         #        if (avg_prox_per_grid) {Rcal <- Rcal*(1/calibrate$numavg)}
-        Rcal[calibrate$names=="prox"] <- realprox$var_residu/4
+        Rcal[calibrate$names=="prox"] <- realprox$var_residu
         # previously used residuals/2 for 1. paper version to give proxies more weight
         # better delete "/2"
         # probably should have given instrumentals more error instead!
@@ -1684,6 +1685,6 @@ for (cyr in syr2:eyr) {
   print("calc time for a year")
   print(proc.time() - ptm1)
 } # end of yearly analysis loop
-
+print(expname)
 warnings()
 #quit(save='no')

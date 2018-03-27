@@ -64,17 +64,6 @@ if (generate_ECHAM_covar){
 #   save(indall, file=paste("../data/indices/indices_recon_",syr_ind,"-",eyr_ind,".Rdata",sep=""))
 # }
 
-if (generate_NCEP) {
-  print("generate_NCEP")
-  #  see script in EnSRF/script/merge_ncep.sh for regridding and co of orig. ncep data set
-  ncepall <- read_echam1('ncep_allvar_1948-2009',timlim=c(syr_ncep,eyr_ncep),
-                         path=nceppath,small=every2grid)
-  if (every2grid) {
-    save(ncepall, file=paste0("../data/ncep/ncep_allvar_",syr_ncep,"-",eyr_ncep,"_2ndgrid.Rdata"))
-  } else {
-    save(ncepall, file=paste0("../data/ncep/ncep_allvar_",syr_ncep,"-",eyr_ncep,".Rdata"))
-  }
-}
 
 if (generate_CRUALLVAR) {
   print("generate_CRUALLVAR")
@@ -159,7 +148,7 @@ if (generate_PROXIESnew){
  
   
   print("generate_PROXIESnew")
-  read.these <- c("trw","mxd","schweingr","pages","ntrend")[c(TRW,MXD,SCHWEINGR,PAGES,NTREND)]
+  read.these <- c("trw","mxd","schweingr","pages","ntrend","trw_petra")[c(TRW,MXD,SCHWEINGR,PAGES,NTREND,TRW_PETRA)]
   if(exists("realprox")){rm(realprox)}
   for (varname in read.these){
     if (varname=="trw") {
@@ -235,7 +224,20 @@ if (generate_PROXIESnew){
         
       } else { realprox<-ntrend}
     }
-    
+    if (varname=="trw_petra") {
+      print("reading trw_petra")
+      trw_petra <- read_trw_petra(fsyr,feyr, validate=pages_lm_fit) 
+      
+      if (exists("realprox")){
+        
+        realprox$data <- cbind(realprox$data, trw_petra$data)
+        realprox$lon <- c(realprox$lon, trw_petra$lon)
+        realprox$lat <- c(realprox$lat, trw_petra$lat)
+        realprox$mr <- rbind(realprox$mr, trw_petra$mr)
+        realprox$var_residu <- c(realprox$var_residu, trw_petra$var_residu)
+        
+      } else { realprox<-trw_petra}
+    }
   }
   save(realprox, file=paste0("../data/proxies/real_proxies_",fsyr,"-",feyr,".Rdata"))
 }
@@ -339,6 +341,12 @@ if (generate_NTREND) {
   ntrend = read_ntrend(fsyr,feyr, validate=pages_lm_fit)
   realprox = ntrend
   save(realprox, file=paste0(workdir,"../n-trend_",fsyr,"-",feyr,"_",pages_lm_fit,".Rdata"))
+}
+
+if (generate_PSEUDO){
+  print("generate_PSEUDO")
+  pseudoprox<-read_pseudo()
+  save(pseudoprox, file=paste0(workdir,"../pseudo_prox_",fsyr,"-",feyr,"_",pages_lm_fit,".Rdata"))
 }
 
 

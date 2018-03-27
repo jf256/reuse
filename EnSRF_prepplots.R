@@ -14,8 +14,8 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
-syr=1901 #1902 #1941
-eyr=1911 #2003 #1970
+syr=1904 #1902 #1941
+eyr=1930 #2003 #1970
 
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
@@ -707,7 +707,9 @@ if (load_indices){
       vind.allts<-vind.allts_all
     }
     # stores validate.allts into allvalits for the next year to check then whether the validation set already was running in the previous year
-    allvindts<-vind.allts
+    if(vali){
+      allvindts<-vind.allts
+    }
   } # end loop over years
   vind.tot<-vind.allts
   aind.tot<-aind.allts
@@ -1505,6 +1507,9 @@ print(proc.time() - ptm1)
 # complete validate (all data sets) are saved. 
 # ------------------------------------------------------------------------------
 if (load_image){
+  if(syr<=min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)])){
+    syr<-min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)])+1
+  }
   if (every2grid) {
     if (monthly_out) {
       
@@ -2344,45 +2349,24 @@ if (calc_vali_stat){
     validate <- validate_init
     validate.anom <- validate.anom_init
     vind<-vind_init
-    
+    rm(validate.anom_init, validate_init, allvalits, analysis.anom.init,analysis.init,cali,calibrate.anom.init,calibrate.clim.init,calibrate.init,cru4_may_sep,cru4_oct_apr, echam.anom.init, echam.init, v.sum, v.win, vind.allts_all,vind.allts_init, vind.tot.init, a.sum, a.win,atala,atmp,atmp2,e.abs.ll,etala,etmp,etmp2,land, landll,landpos,landpos2,landpos_init,landposv,rdat,vtmp)
     print("saving...")
-    if (CRPS){
-      if (every2grid) {
-        if (monthly_out) {
-          save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,sprerr.win,sprerr.sum,sprerr.c.win,sprerr.c.sum,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim,s.plot,vali,recon_vali,vind,eind,aind, ecorr.ind, acorr.ind, ermse.ind, armse.ind, ebias.ind, abias.ind, RE.ind,
-               file=paste0("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",syr,"-",eyr,"_monthly_2ndgrid.Rdata"))
-          
-        } else {
-          save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,sprerr.win,sprerr.sum,sprerr.c.win,sprerr.c.sum,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim,s.plot,vali,recon_vali,vind,eind,aind, ecorr.ind, acorr.ind, ermse.ind, armse.ind, ebias.ind, abias.ind, RE.ind,
-               file=paste0("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
-        }  
+    
+    if (every2grid) {
+      if (monthly_out) {
+        save.image(file=paste0("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+                               syr,"-",eyr,"_monthly_2ndgrid.Rdata"))  
       } else {
-        if (monthly_out) {
-          save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,sprerr.win,sprerr.sum,sprerr.c.win,sprerr.c.sum,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim,s.plot,vali,recon_vali,vind,eind,aind, ecorr.ind, acorr.ind, ermse.ind, armse.ind, ebias.ind, abias.ind, RE.ind,
-               file=paste("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",syr,"-",eyr,"_monthly.Rdata",sep=""))
-        } else {
-          save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,sprerr.win,sprerr.sum,sprerr.c.win,sprerr.c.sum,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim,s.plot,vali,recon_vali,vind,eind,aind, ecorr.ind, acorr.ind, ermse.ind, armse.ind, ebias.ind, abias.ind, RE.ind,
-               file=paste("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",syr,"-",eyr,"_seasonal.Rdata",sep=""))
-        }
-      }
-    } else{
-      if (every2grid) {
-        if (monthly_out) {
-          save(ana.spread,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,sprerr.win,sprerr.sum,sprerr.c.win,sprerr.c.sum,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim,s.plot,vali,recon_vali, vind,eind,aind, ecorr.ind, acorr.ind, ermse.ind, armse.ind, ebias.ind, abias.ind, RE.ind,
-               file=paste0("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",syr,"-",eyr,"_monthly_2ndgrid.Rdata"))
-          
-        } else {
-          save(ana.spread,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,sprerr.win,sprerr.sum,sprerr.c.win,sprerr.c.sum,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim,s.plot,vali,recon_vali,vind,eind,aind, ecorr.ind, acorr.ind, ermse.ind, armse.ind, ebias.ind, abias.ind, RE.ind,
-               file=paste0("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
-        }  
+        save.image(file=paste0("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+                               syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
+      }  
+    } else {
+      if (monthly_out) {
+        save.image(file=paste("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+                              syr,"-",eyr,"_monthly.Rdata",sep=""))
       } else {
-        if (monthly_out) {
-          save(ana.spread,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,sprerr.win,sprerr.sum,sprerr.c.win,sprerr.c.sum,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim,s.plot,vali,recon_vali,vind,eind,aind, ecorr.ind, acorr.ind, ermse.ind, armse.ind, ebias.ind, abias.ind, RE.ind,
-               file=paste("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",syr,"-",eyr,"_monthly.Rdata",sep=""))
-        } else {
-          save(ana.spread,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,sprerr.win,sprerr.sum,sprerr.c.win,sprerr.c.sum,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim,s.plot,vali,recon_vali,vind,eind,aind, ecorr.ind, acorr.ind, ermse.ind, armse.ind, ebias.ind, abias.ind, RE.ind,
-               file=paste("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",syr,"-",eyr,"_seasonal.Rdata",sep=""))
-        }
+        save.image(file=paste("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+                              syr,"-",eyr,"_seasonal.Rdata",sep=""))
       }
     }
   }#end of validate-loop

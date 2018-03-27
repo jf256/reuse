@@ -1628,9 +1628,10 @@ read_trw_petra<-function(fsyr, feyr, validate){
   invisible(tree_petra)
 }
 
+
 read_pseudo<-function(){
-  pseudodata<-as.matrix(read.table('/home/nevin/Downloads/pseudoproxy_no_gaps.txt'))
-  lonlat<-as.matrix(read.table('/home/nevin/Downloads/lonlat_no_gaps.txt',header=T))
+  pseudodata<-as.matrix(read.table('../pseudoproxy_no_gaps.txt'))
+  lonlat<-as.matrix(read.table('../lonlat_no_gaps.txt',header=T))
   colnames(lonlat)<-NULL
   rownames(lonlat)<-NULL
   colnames(pseudodata)<-NULL
@@ -1641,17 +1642,38 @@ read_pseudo<-function(){
   pseudolist$time<-pseudotime
   pseudolist$lat<-lonlat[,2]
   pseudolist$lon<-lonlat[,1]
+  
+  nc=nc_open(paste(crupath,'/cru_allvar_abs_1901-2004.nc',sep=''), write=F)
+  t1=ncvar_get(nc, "temp2") # for CRU temp
+  t2 <- t1[,,1:1248] # from year 1901 till 1971
+  lonlist=ncvar_get(nc, "lon")
+  lonlist[lonlist > 180] <- lonlist[lonlist > 180] - 360
+  latlist=ncvar_get(nc, "lat")
+  nc_close(nc)
+  
   nlat_nh<-length(which(pseudolist$lat>0))
   nhpos<-which(pseudolist$lat>0)
-  pseudoprox<-list(data=matrix(rep(NA,117*nlat_nh),117,nlat_nh),time=rep(NA,117), lon=rep(NA,nlat_nh),lat=rep(NA,nlat_nh),mr=matrix(rep(NA,13*nlat_nh),nlat_nh,13))
-  pseudoprox$data<-pseudolist$data[,nhpos]
-  pseudoprox$time<-pseudolist$time
+  ti=which(pseudolist$time<=2004&pseudolist$time>=1901)
+  
+  pseudoprox<-list(data=matrix(rep(NA,104*nlat_nh),104,nlat_nh),time=rep(NA,104), lon=rep(NA,nlat_nh),lat=rep(NA,nlat_nh),mr=matrix(rep(NA,13*nlat_nh),nlat_nh,13),var_residu=rep(NA,nlat_nh))
+  pseudoprox$data<-pseudolist$data[ti,nhpos]
+  pseudoprox$time<-pseudolist$time[ti]
   pseudoprox$lat<-pseudolist$lat[nhpos]
   pseudoprox$lon<-pseudolist$lon[nhpos]
   pseudoprox$mr<-cbind(rep(0,nlat_nh),matrix(rep(1/12,12*nlat_nh),nlat_nh,12))
-  
+  residus<-rep(NA,104)
+  for(i in 1:length(pseudoprox$lon)){
+    k=which(abs(lonlist-pseudoprox$lon[i]+0.001)==min(abs(lonlist-pseudoprox$lon[i]+0.001)))
+    l=which(abs(latlist-pseudoprox$lat[i])==min(abs(latlist-pseudoprox$lat[i])))
+    t3 <- t2[k,l,]
+    for(j in 1:104){
+      residus[j]<-1/12*sum(t3[(12*(j-1)+1):(j*12)])-pseudoprox$data[j,i]
+    }
+    pseudoprox$var_residu[i]<-var(residus)
+  }
   invisible(pseudoprox)
 }
+
 
 
 

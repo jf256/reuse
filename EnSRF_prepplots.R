@@ -2349,49 +2349,31 @@ if (calc_vali_stat){
     }
     
     
-    
-    
-    
-    
-    
-    
     validate <- validate_init
     validate.anom <- validate.anom_init
     vind<-vind_init
-    rm(validate.anom_init, validate_init)
+    rm(validate.anom_init, validate_init, allvalits, analysis.anom.init,analysis.init,cali,calibrate.anom.init,calibrate.clim.init,calibrate.init,cru4_may_sep,cru4_oct_apr, echam.anom.init, echam.init, v.sum, v.win, vind.allts_all,vind.allts_init, vind.tot.init, a.sum, a.win,atala,atmp,atmp2,e.abs.ll,etala,etmp,etmp2,land, landll,landpos,landpos2,landpos_init,landposv,rdat,vtmp)
     print("saving...")
     
     if (every2grid) {
       if (monthly_out) {
-        save.image(file=paste0("../data/image/",expname,"/prepplot_",v,"/_calc_vali_stat_image_",
+        save.image(file=paste0("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                                syr,"-",eyr,"_monthly_2ndgrid.Rdata"))  
       } else {
-        save.image(file=paste0("../data/image/",expname,"/prepplot_",v,"/_calc_vali_stat_image_",
+        save.image(file=paste0("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                                syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
       }  
     } else {
       if (monthly_out) {
-        save.image(file=paste("../data/image/",expname,"/prepplot_",v,"/_calc_vali_stat_image_",
+        save.image(file=paste("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                               syr,"-",eyr,"_monthly.Rdata",sep=""))
       } else {
-        save.image(file=paste("../data/image/",expname,"/prepplot_",v,"/_calc_vali_stat_image_",
+        save.image(file=paste("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                               syr,"-",eyr,"_seasonal.Rdata",sep=""))
       }
     }
   }#end of validate-loop
 } # end calc_vali_stat
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

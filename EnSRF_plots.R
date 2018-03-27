@@ -66,6 +66,94 @@ figpath=paste0('../figures/',expname,'_',syr,'-',eyr) #format(Sys.time(), "%Y%m%
 dir.create(figpath)
 
 
+
+# the plots will be reordered in future
+################################################################################
+# Fig. 0: station locations 
+#
+if (countseries) {
+  # count number of assimilation data of each type and add to plot
+  nmxd <- ntrw <- nprox <- ndoc <-ninstslp <-ninsttemp <- ninst <- rep(NA,length(syr:eyr))
+  i <- 1
+  for (cyr in syr:eyr) {
+    print(cyr)
+    if (every2grid) {
+      load(file=paste0(prepplotdir,'analysis_',cyr,'_2ndgrid.Rdata')) 
+    } else {
+      load(file=paste0(prepplotdir,'analysis_',cyr,'.Rdata')) 
+    }
+    ninst[i] <- length(which(calibrate$sour=="inst"))
+    ninsttemp[i] <- length(which(calibrate$sour=="inst"&calibrate$names=="temp2"))
+    ninstslp[i] <- length(which(calibrate$sour=="inst"&calibrate$names=="slp"))
+    ndoc[i] <- length(which(calibrate$sour=="doc"))
+    nprox[i] <- length(which(calibrate$sour=="prox"))
+    ctrw <- 0
+    cmxd <- 0
+    if (!is.null(nrow(calibrate$mr))) {
+      for (j in 1:nrow(calibrate$mr)) {
+        #print(c(j,length(which(!is.na(calibrate$mr[j,])))))
+        if (length(which(!is.na(calibrate$mr[j,])))==5) cmxd <- cmxd+1
+        if (length(which(!is.na(calibrate$mr[j,])))==8) ctrw <- ctrw+1
+      }
+      ntrw[i] <- ctrw
+      nmxd[i] <- cmxd
+    } else {
+      ntrw[i] <- 0
+      nmxd[i] <- 0
+    }
+    i <- i+1
+  }
+  nrecords <- cbind((syr:eyr),ninst,ninsttemp,ninstslp,ndoc,nprox,ntrw,nmxd,rep(0,length(syr:eyr)))
+  #nrecords[41,] <- nrecords[40,] <- nrecords[39,] <- nrecords[38,] # check input data 1639-41!
+  pdf(paste(figpath,'record_no.pdf',sep='/'), width=9, height=3.5, paper='special')
+  par(oma=c(0,0,0,0),mar=c(4,4,0.4,0.4))
+  plot(nrecords[,1],nrecords[,9],ty="l",col='white',ylim=c(0,10000),xlab="year",ylab="No of records")
+  polygon(c(nrecords[,1],rev(nrecords[,1])),c(nrecords[,6],rev(nrecords[,9])),col="seagreen3")
+  polygon(c(nrecords[,1],rev(nrecords[,1])),c((nrecords[,7]+nrecords[,6]),rev((nrecords[,6]))),col="salmon4")
+  polygon(c(nrecords[,1],rev(nrecords[,1])),c((nrecords[,8]+nrecords[,7]+nrecords[,6]),rev((nrecords[,7]+nrecords[,6]))),col="royalblue")
+  
+  polygon(c(nrecords[,1],rev(nrecords[,1])),c((nrecords[,5]+nrecords[,8]+nrecords[,7]+nrecords[,6]),rev((nrecords[,8]+nrecords[,7]+nrecords[,6]))),col="plum2")
+  polygon(c(nrecords[,1],rev(nrecords[,1])), c((nrecords[,3]+nrecords[,5]+nrecords[,8]+nrecords[,7]+nrecords[,6]),rev((nrecords[,5]+nrecords[,8]+nrecords[,7]+nrecords[,6]))),col="firebrick1")
+  polygon(c(nrecords[,1],rev(nrecords[,1])), c((nrecords[,4]+nrecords[,3]+nrecords[,5]+nrecords[,8]+nrecords[,7]+nrecords[,6]),rev((nrecords[,3]+nrecords[,5]+nrecords[,8]+nrecords[,7]+nrecords[,6]))),col="goldenrod1")
+  legend("topleft", c("Instr. SLP","Instr. temp.", "Docum. temp.", 'MXD','TRW','Proxies'), 
+         pch=rep(15,6), col=c("goldenrod1","firebrick1", "plum2", "royalblue", "salmon4", "seagreen3"), pt.cex=1, pt.lwd=1, 
+         inset=0.005, bg='white', box.col='white', cex=1)
+  dev.off()
+  
+  
+  #statsyr=1790
+  #stateyr=1804
+  if (every2grid) {
+    load(file=paste0(prepplotdir,'analysis_',statyr,'_2ndgrid.Rdata')) 
+  } else {
+    load(file=paste0(prepplotdir,'analysis_',statyr,'.Rdata')) 
+  }
+  #statll <- unique(cbind(calibrate$lon,calibrate$lat))
+  #for (statyr in seq(from=(statsyr+1),to=stateyr)) {
+  #  load(paste0(datadir,"EnSRF_analysis/prepplot_v3_seasonal/analysis_",statyr,".Rdata"))
+  #  statll <- unique(rbind(statll,unique(cbind(calibrate$lon,calibrate$lat))))
+  #}
+  dat <- echam
+  #dat$data <- array(corr$ensmean*0, c(dim(corr$ensmean)[1], 1, dim(corr$ensmean)[2]))
+  dat$data <- array(echam$ensmean[1:4608,]*0, c(4608, 1, 2))
+  dat$lat <- dat$lat[1:dim(dat$data)[1]]
+  dat$lon <- dat$lon[1:dim(dat$data)[1]]
+  dat$names <- dat$names[1:dim(dat$data)[1]]
+  pdf(paste0(figpath,'/stat_locations_',statyr,'.pdf'), width=9, height=3.5, paper='special')
+  #layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
+  layout(matrix(c(1,2), 1, 2, byrow = TRUE))
+  par(oma=c(0,0,0,0))
+  levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+  plot_echam(dat,type='data',cex.pt=1.5,names=pnames[1:dim(dat$data)[3]],lev=levs,colorbar=F,
+             stations=calibrate,st.col=NULL,statpanel=c(1,2),add=T)
+  dev.off()
+}
+
+
+################VALIDATION PLOTS################
+
+
+
 for (v in validation_set){
 
 ## CHOOSE THE VALIDATION DATA SET IN SWITCHES (validation_set), PLOTS SCRIPT HAS TO BE RUN FOR VALIDATION SETS SEPARATELY
@@ -489,92 +577,6 @@ levs <- c(-Inf, seq(-1.2,1.2,0.2), Inf)
 plot_echam(plotdata, varname='slp', type='data', cex.pt=1.5, names=pnames[1:dim(plotdata$data)[3]], lev=levs, st.col=NULL, stations=NULL, add=T)
 dev.off()
 }
-
-
-
-################################################################################
-# Fig. 0: station locations 
-#
-if (countseries) {
-  # count number of assimilation data of each type and add to plot
-  nmxd <- ntrw <- nprox <- ndoc <-ninstslp <-ninsttemp <- ninst <- rep(NA,length(syr:eyr))
-  i <- 1
-  for (cyr in syr:eyr) {
-    print(cyr)
-    if (every2grid) {
-      load(file=paste0(prepplotdir,'analysis_',cyr,'_2ndgrid.Rdata')) 
-    } else {
-      load(file=paste0(prepplotdir,'analysis_',cyr,'.Rdata')) 
-    }
-    ninst[i] <- length(which(calibrate$sour=="inst"))
-    ninsttemp[i] <- length(which(calibrate$sour=="inst"&calibrate$names=="temp2"))
-    ninstslp[i] <- length(which(calibrate$sour=="inst"&calibrate$names=="slp"))
-    ndoc[i] <- length(which(calibrate$sour=="doc"))
-    nprox[i] <- length(which(calibrate$sour=="prox"))
-    ctrw <- 0
-    cmxd <- 0
-    if (!is.null(nrow(calibrate$mr))) {
-      for (j in 1:nrow(calibrate$mr)) {
-        #print(c(j,length(which(!is.na(calibrate$mr[j,])))))
-        if (length(which(!is.na(calibrate$mr[j,])))==5) cmxd <- cmxd+1
-        if (length(which(!is.na(calibrate$mr[j,])))==8) ctrw <- ctrw+1
-      }
-      ntrw[i] <- ctrw
-      nmxd[i] <- cmxd
-    } else {
-      ntrw[i] <- 0
-      nmxd[i] <- 0
-    }
-    i <- i+1
-  }
-  nrecords <- cbind((syr:eyr),ninst,ninsttemp,ninstslp,ndoc,nprox,ntrw,nmxd,rep(0,length(syr:eyr)))
-  #nrecords[41,] <- nrecords[40,] <- nrecords[39,] <- nrecords[38,] # check input data 1639-41!
-  pdf(paste(figpath,'record_no.pdf',sep='/'), width=9, height=3.5, paper='special')
-  par(oma=c(0,0,0,0),mar=c(4,4,0.4,0.4))
-  plot(nrecords[,1],nrecords[,9],ty="l",col='white',ylim=c(0,10000),xlab="year",ylab="No of records")
-  polygon(c(nrecords[,1],rev(nrecords[,1])),c(nrecords[,6],rev(nrecords[,9])),col="seagreen3")
-  polygon(c(nrecords[,1],rev(nrecords[,1])),c((nrecords[,7]+nrecords[,6]),rev((nrecords[,6]))),col="salmon4")
-  polygon(c(nrecords[,1],rev(nrecords[,1])),c((nrecords[,8]+nrecords[,7]+nrecords[,6]),rev((nrecords[,7]+nrecords[,6]))),col="royalblue")
-  
-  polygon(c(nrecords[,1],rev(nrecords[,1])),c((nrecords[,5]+nrecords[,8]+nrecords[,7]+nrecords[,6]),rev((nrecords[,8]+nrecords[,7]+nrecords[,6]))),col="plum2")
-  polygon(c(nrecords[,1],rev(nrecords[,1])), c((nrecords[,3]+nrecords[,5]+nrecords[,8]+nrecords[,7]+nrecords[,6]),rev((nrecords[,5]+nrecords[,8]+nrecords[,7]+nrecords[,6]))),col="firebrick1")
-  polygon(c(nrecords[,1],rev(nrecords[,1])), c((nrecords[,4]+nrecords[,3]+nrecords[,5]+nrecords[,8]+nrecords[,7]+nrecords[,6]),rev((nrecords[,3]+nrecords[,5]+nrecords[,8]+nrecords[,7]+nrecords[,6]))),col="goldenrod1")
-  legend("topleft", c("Instr. SLP","Instr. temp.", "Docum. temp.", 'MXD','TRW','Proxies'), 
-         pch=rep(15,6), col=c("goldenrod1","firebrick1", "plum2", "royalblue", "salmon4", "seagreen3"), pt.cex=1, pt.lwd=1, 
-         inset=0.005, bg='white', box.col='white', cex=1)
-  dev.off()
-  
-  
-  #statsyr=1790
-  #stateyr=1804
-  if (every2grid) {
-    load(file=paste0(prepplotdir,'analysis_',statyr,'_2ndgrid.Rdata')) 
-  } else {
-    load(file=paste0(prepplotdir,'analysis_',statyr,'.Rdata')) 
-  }
-  #statll <- unique(cbind(calibrate$lon,calibrate$lat))
-  #for (statyr in seq(from=(statsyr+1),to=stateyr)) {
-  #  load(paste0(datadir,"EnSRF_analysis/prepplot_v3_seasonal/analysis_",statyr,".Rdata"))
-  #  statll <- unique(rbind(statll,unique(cbind(calibrate$lon,calibrate$lat))))
-  #}
-  dat <- echam
-  #dat$data <- array(corr$ensmean*0, c(dim(corr$ensmean)[1], 1, dim(corr$ensmean)[2]))
-  dat$data <- array(echam$ensmean[1:4608,]*0, c(4608, 1, 2))
-  dat$lat <- dat$lat[1:dim(dat$data)[1]]
-  dat$lon <- dat$lon[1:dim(dat$data)[1]]
-  dat$names <- dat$names[1:dim(dat$data)[1]]
-  pdf(paste0(figpath,'/stat_locations_',statyr,'.pdf'), width=9, height=3.5, paper='special')
-  #layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
-  layout(matrix(c(1,2), 1, 2, byrow = TRUE))
-  par(oma=c(0,0,0,0))
-  levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
-  plot_echam(dat,type='data',cex.pt=1.5,names=pnames[1:dim(dat$data)[3]],lev=levs,colorbar=F,
-             stations=calibrate,st.col=NULL,statpanel=c(1,2),add=T)
-  dev.off()
-}
-
-
-
 
 ###############################################################################
 # Fig. xx: spread-error ratio analysis
@@ -1194,7 +1196,7 @@ if (monthly_out){
 # #RE.tot$data <- array(RE.tot$data[,,5:8], c(nrow(RE[[1]]$ensmean), 1, 4))
 # # instrumental data (only 4 fields (winter,summer,w/o and w localisation) because no noise added)
 # #RE.tot$data <- array(RE.tot$data[,,1:4], c(nrow(RE[[1]]$ensmean), 1, 4))
-# pdf(paste(figpath,'re_anom_echam_anal-cru_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
+# pdf(paste(figpath,'/re_anom_echam_anal-cru_temp.pdf',sep='/'), width=9, height=3.5, paper='special')
 # #pdf(paste(figpath,'/re_clim_echam-cru_temp.pdf',sep='/'), width=9, height=6, paper='special')
 # #pdf(paste(figpath,'/re_echam_anal-cru_temp_12mon.pdf',sep='/'), width=9, height=12, paper='special')
 # layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), height=c(3,1))
@@ -1617,65 +1619,7 @@ if (monthly_out){
 # dev.off()
 # #    \caption{As in figure \ref{fig:indices} but for aggregated temperature, precipitation, mean sea level pressure }
 if (ind_ECHAM) {
-#
-#
-# pdf(paste(figpath,'/vali_ind.pdf',sep='/'), width=9, height=6, paper='special')
-# par(mfrow=c(4,2), cex.axis=1.4, cex.lab=1.4, mar=c(3,5,1,1), oma=c(0,0,0,0))
-#
-# vind2=vind.allts
-# vind2$data=array(vind.allts$data,c(dim(vind.allts$data)[1],2,dim(vind.allts$data)[2]/2))
-# eind2=eind.allts
-# eind2$ensmean=array(eind.allts$ensmean,c(dim(eind.allts$ensmean)[1],2,dim(eind.allts$ensmean)[2]/2))
-# eind2$min=array(apply(eind.allts$data,1:2,min),c(dim(eind.allts$ensmean)[1],2,dim(eind.allts$ensmean)[2]/2))
-# eind2$max=array(apply(eind.allts$data,1:2,max),c(dim(eind.allts$ensmean)[1],2,dim(eind.allts$ensmean)[2]/2))
-# aind2=aind.allts
-# aind2$ensmean=array(aind.allts$ensmean,c(dim(aind.allts$ensmean)[1],2,dim(aind.allts$ensmean)[2]/2))
-# aind2$min=array(apply(aind.allts$data,1:2,min),c(dim(aind.allts$ensmean)[1],2,dim(aind.allts$ensmean)[2]/2))
-# aind2$max=array(apply(aind.allts$data,1:2,max),c(dim(aind.allts$ensmean)[1],2,dim(aind.allts$ensmean)[2]/2))
-# t<-vind.allts$time[seq(1,length(vind.allts$time),by=2)]
-#
-# for (ind in c(31,9,19,29)) {
-# if (ind == 31) {mainname='NHt2m'}
-# if (ind == 9) {mainname='NEUt2m'}
-# if (ind == 19) {mainname='NEUpr'}
-# if (ind == 29) {mainname='NEUslp'}
-#  for (seas in c(1,2)) {
-#   if (seas == 1) {color='black'; color3='blue'; color2='cyan'}
-#   if (seas == 2) {color='black'; color3='red'; color2='orange'}
-#
-#     ymin=min(eind2$min[ind,seas,])
-#     ymax=max(eind2$max[ind,seas,])
-#
-#   plot(t,vind2$data[ind,seas,],ty='l',col=color,lty=1,ylim=c(ymin,ymax),main=mainname)
-#   lines(t,eind2$ensmean[ind,seas,],ty='l',col=color2,lwd=2,lty=2,main='')
-#   lines(t,eind2$min[ind,seas,],ty='l',col=color2,lty=2,lwd=1,main='')
-#   lines(t,eind2$max[ind,seas,],ty='l',col=color2,lty=2,lwd=1,main='')
-#   lines(t,aind2$ensmean[ind,seas,],ty='l',col=color3,lwd=2,lty=3,main='')
-#   lines(t,aind2$min[ind,seas,],ty='l',col=color3,lty=3,lwd=1,main='')
-#   lines(t,aind2$max[ind,seas,],ty='l',col=color3,lty=3,lwd=1,main='')
-#  }
-# }
-# dev.off()
-#
-#
 
-################################################################################
-# Fig. 8:  index correlation
-# new like in the paper
-#<<label=indices_corr, echo=FALSE, fig=TRUE, width=12, height=7, results=hide, eps=FALSE>>=
-
-inds <- c('NH.temp2', 'NEU.temp2', 'NEU.precip', 'NAM.temp2', 'AFR.temp2')
-indices <- c('ENH.temp2','NAM.temp2','SAM.temp2','AFR.temp2',
-             'ASI.temp2','AUS.temp2','ARC.temp2','ANT.temp2',
-             'NEU.temp2','MED.temp2',
-             'GLO.temp2','NAM.precip','SAM.precip','AFR.precip',
-             'ASI.precip','AUS.precip','ARC.precip','ANT.precip',
-             'NEU.precip','MED.precip',
-             'SH.temp2','NAM.slp','SAM.slp','AFR.slp',
-             'ASI.slp','AUS.slp','ARC.slp','ANT.slp',
-             'NEU.slp','MED.slp',
-             'NH.temp2', 'EU.temp2', 'EU.precip', 'EU.slp')
-if (pseudoproxy) {
   pdf(paste(figpath,'/vali_ind.pdf',sep='/'), width=9, height=6, paper='special')
   par(mfrow=c(4,2), cex.axis=1.4, cex.lab=1.4, mar=c(3,5,1,1), oma=c(0,0,0,0))
   
@@ -1690,11 +1634,12 @@ if (pseudoproxy) {
   aind2$min=array(apply(aind$data,1:2,min),c(dim(aind$ensmean)[1],2,dim(aind$ensmean)[2]/2))
   aind2$max=array(apply(aind$data,1:2,max),c(dim(aind$ensmean)[1],2,dim(aind$ensmean)[2]/2))
   
-  for (ind in c(1,4,5,6)) {
+  for (ind in c(1,2,3,4,6)) {
     if (ind == 1) {mainname='NHt2m'}
-    if (ind == 4) {mainname='NEUt2m'}
-    if (ind == 5) {mainname='NEUpr'}
-    if (ind == 6) {mainname='NEUslp'}
+    if (ind == 2) {mainname='NAM.temp2'}
+    if (ind == 3) {mainname='SAM.temp2'}
+    if (ind == 4) {mainname='AFR.temp2'}
+    if (ind == 6) {mainname='AUS.temp2'}
     for (seas in c(1,2)) {
       if (seas == 1) {color='darkblue'; color3='blue'; color2='cyan'}
       if (seas == 2) {color='darkred'; color3='red'; color2='orange'}
@@ -1709,19 +1654,30 @@ if (pseudoproxy) {
       lines(aind2$max[ind,seas,],ty='l',col=color3,lty=3,lwd=1,main='')
     }
   }
-}
   dev.off()
   
   
   
   
   ################################################################################
-  # Fig. 8: index correlation 
+  # Fig. 8:  index correlation
   # new like in the paper
   #<<label=indices_corr, echo=FALSE, fig=TRUE, width=12, height=7, results=hide, eps=FALSE>>=
   
-  inds <- c('NH.temp2', 'NEU.temp2', 'NEU.precip', 'HC', 'SJ', 'Z100', 'Z300', 'PWC') 
+  inds <- c('ENH.temp2', 'NAM.temp2', 'SAM.temp2', 'AFR.temp2')
+  indices <- c('ENH.temp2','NAM.temp2','SAM.temp2','AFR.temp2',
+               'ASI.temp2','AUS.temp2','ARC.temp2','ANT.temp2',
+               'NEU.temp2','MED.temp2',
+               'GLO.temp2','NAM.precip','SAM.precip','AFR.precip',
+               'ASI.precip','AUS.precip','ARC.precip','ANT.precip',
+               'NEU.precip','MED.precip',
+               'SH.temp2','NAM.slp','SAM.slp','AFR.slp',
+               'ASI.slp','AUS.slp','ARC.slp','ANT.slp',
+               'NEU.slp','MED.slp',
+               'NH.temp2', 'EU.temp2', 'EU.precip', 'EU.slp')
+  
   if (pseudoproxy) {
+    
     RE.mat <- array(NA, c(length(inds), 2, 30))
     corr.mat <- array(NA, c(length(inds)*2, 2, 30))
     ind.names <- list()
@@ -1731,12 +1687,12 @@ if (pseudoproxy) {
       #        }
       ind.names[[se]] <- inds
       for (k in seq(inds)){
-        RE.mat[k,se,1:29] <- RE.ind$data[RE.ind$name == inds[k],se,]
-        RE.mat[k,se,30] <- RE.ind$ensmean[RE.ind$name == inds[k],se]
-        corr.mat[k*2,se,1:29] <- acorr.ind$data[acorr.ind$name == inds[k],se,]
-        corr.mat[k*2,se,30] <- acorr.ind$ensmean[acorr.ind$name == inds[k],se]
-        corr.mat[k*2-1,se,1:29] <- ecorr.ind$data[ecorr.ind$name == inds[k],se,]
-        corr.mat[k*2-1,se,30] <- ecorr.ind$ensmean[ecorr.ind$name == inds[k],se]
+        RE.mat[k,se,1:29] <- RE.ind$data[RE.ind$names == inds[k],se,]
+        RE.mat[k,se,30] <- RE.ind$ensmean[RE.ind$names == inds[k],se]
+        corr.mat[k*2,se,1:29] <- acorr.ind$data[acorr.ind$names == inds[k],se,]
+        corr.mat[k*2,se,30] <- acorr.ind$ensmean[acorr.ind$names == inds[k],se]
+        corr.mat[k*2-1,se,1:29] <- ecorr.ind$data[ecorr.ind$names == inds[k],se,]
+        corr.mat[k*2-1,se,30] <- ecorr.ind$ensmean[ecorr.ind$names == inds[k],se]
       }
     }
   } else {
@@ -1749,57 +1705,36 @@ if (pseudoproxy) {
       #        }
       ind.names[[se]] <- inds
       for (k in seq(inds)){
-        RE.mat[k,se,1:30] <- RE.ind$data[RE.ind$name == inds[k],se,]
-        RE.mat[k,se,31] <- RE.ind$ensmean[RE.ind$name == inds[k],se]
-        corr.mat[k*2,se,1:30] <- acorr.ind$data[acorr.ind$name == inds[k],se,]
-        corr.mat[k*2,se,31] <- acorr.ind$ensmean[acorr.ind$name == inds[k],se]
-        corr.mat[k*2-1,se,1:30] <- ecorr.ind$data[ecorr.ind$name == inds[k],se,]
-        corr.mat[k*2-1,se,31] <- ecorr.ind$ensmean[ecorr.ind$name == inds[k],se]
+        RE.mat[k,se,1:30] <- RE.ind$data[RE.ind$names == inds[k],se,]
+        RE.mat[k,se,31] <- RE.ind$ensmean[RE.ind$names == inds[k],se]
+        corr.mat[k*2,se,1:30] <- acorr.ind$data[acorr.ind$names == inds[k],se,]
+        corr.mat[k*2,se,31] <- acorr.ind$ensmean[acorr.ind$names == inds[k],se]
+        corr.mat[k*2-1,se,1:30] <- ecorr.ind$data[ecorr.ind$names == inds[k],se,]
+        corr.mat[k*2-1,se,31] <- ecorr.ind$ensmean[ecorr.ind$names == inds[k],se]
       }
     }
-    #    indind <- c(1,2,4,5,7,8,10,11,13,14,16,17)
-    indind <- c(1,2,4,5,7,8,10,11,13,14)
-    for (se in 1:2){
-      plot(0, type='n', xaxt='n', ylim=c(-1.1,1.1), xlim=c(0,max(indind)+1), xlab='', ylab='', yaxt=if (se == 2) 'n' else 's')
-      polygon(c(-1,-1,max(indind)+c(2,2)), c(0,-2,-2,0), border=NA, col=grey(0.9))
-      #boxplot(t(corr.mat[,se,1:29]), at=indind, col=ind.col2[[se]],
-      #    add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, range=0, lty=1)
-      if (pseudoproxy){
-        boxplot(t(corr.mat[,se,1:29]), at=indind, col=hcl(rep(seq(indices)/length(indices)*360, each=2), c=c(30,60), l=c(95,50)),
-                add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, range=0, lty=1)
-        points(seq(1.5,max(indind),3) - 1.2, corr.mat[seq(1,nrow(corr.mat),2),se,30], pch='>', lwd=3, cex=1.4)
-        points(seq(1.5,max(indind),3) + 1.2, corr.mat[seq(2,nrow(corr.mat),2),se,30], pch='<', lwd=3, cex=1.4)
-      } else {
-        boxplot(t(corr.mat[,se,1:30]), at=indind, col=hcl(rep(seq(indices)/length(indices)*360, each=2), c=c(30,60), l=c(95,50)),
-                add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, range=0, lty=1)
-        points(seq(1.5,max(indind),3) - 1.2, corr.mat[seq(1,nrow(corr.mat),2),se,31], pch='>', lwd=3, cex=1.4)
-        points(seq(1.5,max(indind),3) + 1.2, corr.mat[seq(2,nrow(corr.mat),2),se,31], pch='<', lwd=3, cex=1.4)
-      }
-      text(seq(1.5,max(indind),3), rep(-0.9,3), ind.names[[se]], cex=1.2, adj=c(0.5,1))
-      text(0,1.1,paste(pnames[se + 2], ' Correlation in ', c('October to March', 'April to September')[se], sep=''), cex=1.4, adj=c(0,1))
-      
-      #   }
-      #   ind.col <- list()
-      #   ind.col2 <- list()
-      #   ind.col[[1]] <- hcl(c(0,0,120,240,270,300), c=40, l=50)
-      #   ind.col[[2]] <- hcl(c(0,0,120,240,270,200), c=40, l=50)
-      #   ind.col2[[1]] <- hcl(rep(c(0,0,120,240,270,300), each=2), c=40, l=c(90,50))
-      #   ind.col2[[2]] <- hcl(rep(c(0,0,120,240,270,200), each=2), c=40, l=c(90,50))
-      #
-      #   #pdf('figures/inst/indices.pdf', width=9, height=6, paper='special')
-      #   pdf(paste(figpath,'indices.pdf',sep='/'), width=9, height=6, paper='special')
-      #   par(mfrow=c(2,2), mar=c(1,1,0,0), oma=c(0,2,1,0), cex.axis=1.4, cex.lab=1.4)
-      #   for (se in 1:2){
-      #     plot(0, type='n', xaxt='n', ylim=c(-1.1,1.1), xlim=c(0.5,length(inds) + .5), xlab='', ylab='', yaxt=if (se == 2) 'n' else 's')
-      #     polygon(c(-1,-1,9,9), c(0,-2,-2,0), border=NA, col=grey(0.9))
-      #     #boxplot(t(RE.mat[,se,1:29]), at=seq(inds), col=ind.col[[se]],
-      #     #    add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5, range=0, lty=1)
-      #     if (pseudoproxy){
-      #       boxplot(t(RE.mat[,se,1:29]), at=seq(inds), col=hcl(rep(seq(indices)/length(indices)*360, each=1), c=45, l=75),add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5, range=0, lty=1)
-      #       points(seq(inds) - 0.35, RE.mat[,se,30], pch='>', lwd=3, cex=1.4)
-      #     } else {
-      #       boxplot(t(RE.mat[,se,1:30]), at=seq(inds), col=hcl(rep(seq(indices)/length(indices)*360, each=1), c=45, l=75),add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5, range=0, lty=1)
-      #       points(seq(inds) - 0.35, RE.mat[,se,31], pch='>', lwd=3, cex=1.4)
+  }
+  pdf(paste(figpath,'/index_correlation.pdf',sep='/'), width=9, height=6, paper='special')
+  par(mfrow=c(2,2), mar=c(1,1,0,0), oma=c(0,2,1,0), cex.axis=1.4, cex.lab=1.4)
+  
+  ind.col <- list()
+  ind.col2 <- list()
+  ind.col[[1]] <- hcl(c(0,0,120,240,270,300), c=40, l=50)
+  ind.col[[2]] <- hcl(c(0,0,120,240,270,200), c=40, l=50)
+  ind.col2[[1]] <- hcl(rep(c(0,0,120,240,270,300), each=2), c=40, l=c(90,50))
+  ind.col2[[2]] <- hcl(rep(c(0,0,120,240,270,200), each=2), c=40, l=c(90,50))
+  
+  for (se in 1:2){
+    plot(0, type='n', xaxt='n', ylim=c(-1.1,1.1), xlim=c(0.5,length(inds) + .5), xlab='', ylab='', yaxt=if (se == 2) 'n' else 's')
+    polygon(c(-1,-1,9,9), c(0,-2,-2,0), border=NA, col=grey(0.9))
+    #boxplot(t(RE.mat[,se,1:29]), at=seq(inds), col=ind.col[[se]],
+    #    add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5, range=0, lty=1)
+    if (pseudoproxy){
+      boxplot(t(RE.mat[,se,1:29]), at=seq(inds), col=hcl(rep(seq(indices)/length(indices)*360, each=1), c=45, l=75),add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5, range=0, lty=1)
+      points(seq(inds) - 0.35, RE.mat[,se,30], pch='>', lwd=3, cex=1.4)
+    } else {
+      boxplot(t(RE.mat[,se,1:30]), at=seq(inds), col=hcl(rep(seq(indices)/length(indices)*360, each=1), c=45, l=75),add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5, range=0, lty=1)
+      points(seq(inds) - 0.35, RE.mat[,se,31], pch='>', lwd=3, cex=1.4)
       
     }
     text(seq(inds), rep(-0.9,3), ind.names[[se]], cex=1.2, adj=c(0.5,1))
@@ -1807,7 +1742,7 @@ if (pseudoproxy) {
   }
   
   #    indind <- c(1,2,4,5,7,8,10,11,13,14,16,17)
-  indind <- c(1,2,4,5,7,8,10,11,13,14,16,17,19,20,22,23)
+  indind <- c(1,2,4,5,7,8,10,11)
   for (se in 1:2){
     plot(0, type='n', xaxt='n', ylim=c(-1.1,1.1), xlim=c(0,max(indind)+1), xlab='', ylab='', yaxt=if (se == 2) 'n' else 's')
     polygon(c(-1,-1,max(indind)+c(2,2)), c(0,-2,-2,0), border=NA, col=grey(0.9))
@@ -1823,58 +1758,57 @@ if (pseudoproxy) {
               add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, range=0, lty=1)
       points(seq(1.5,max(indind),3) - 1.2, corr.mat[seq(1,nrow(corr.mat),2),se,31], pch='>', lwd=3, cex=1.4)
       points(seq(1.5,max(indind),3) + 1.2, corr.mat[seq(2,nrow(corr.mat),2),se,31], pch='<', lwd=3, cex=1.4)
-    }        
+    }
     text(seq(1.5,max(indind),3), rep(-0.9,3), ind.names[[se]], cex=1.2, adj=c(0.5,1))
     text(0,1.1,paste(pnames[se + 2], ' Correlation in ', c('October to March', 'April to September')[se], sep=''), cex=1.4, adj=c(0,1))
   }
   dev.off()
-  
-  # old version
-  
-  # ind <- nrow(corr[[4]]$data) - rev(seq(indices)) + 1
-  # ind.arr <- array(NA, c(length(indices)*2, 2, dim(echam$data)[3]))
-  # ind.arr[seq(1,dim(ind.arr)[1],2),,] <- corr.ech$data[ind,,]  
-  # ind.arr[seq(2,dim(ind.arr)[1],2),,] <- corr[[4]]$data[ind,,]  
-  # xind <- sort(c(seq(1, length(indices)*3, 3), seq(2, length(indices)*3, 3)))
-  # 
-  # par(mfrow=c(2,1), oma=c(6,0,1,0), mar=c(1,3,1,2), cex.axis=1.4, cex.lab=1.4, cex.main=1.4)
-  # for (i in 1:2) {
-  #   plot(0, type='n', xlim=range(xind), ylim=c(-1,1), xaxt='n')
-  #   polygon(c(-1,rep(max(xind)+2, 2), -1), c(0,0,-2,-2), border=NA, col=grey(0.8))
-  #   box()
-  #   boxplot(t(ind.arr[,i,]), at=xind, add=T, xaxt='n', col=hcl(rep(seq(indices)/length(indices)*360, each=2), c=c(30,60), l=c(95,50)))
-  #   text(1,1,c('Winter', 'Summer')[i], adj=c(0,1), font=1, cex=1.4)
-  # #  points(seq(2.8, length(indices)*3, 3), corr.analogue[[2]]$data[ind,i], pch='<', cex=1.4) 
-  # }
-  # axis(1, at=seq(1.5, length(indices)*3, 3), labels=indices, las=2, tick=F)
-  
-  #    \caption{Correlation of the indices in the ECHAM ensemble (light boxes) and the localized pseudo proxy analysis (dark boxes) with the respective validation time series.}
-  
-  
-  # 
-  # ################################################################################
-  # Tab x: RE for indices
-
-  #<<label=tabREwinter, echo=FALSE, results=tex>>=
-  require(xtable)
-  RE.ind <- RE.tot$data[nrow(RE.tot$data) - length(indices):1 + 1,1,seq(1,8,2)]
-
-  rownames(RE.ind) <- indices
-  colnames(RE.ind) <- pnames[seq(along=analysis)]
-
-  print(xtable(RE.ind, caption=paste('RE for different indices in winter (October to March), the columns contain the results for', paste(pnames[seq(along=analysis)], names(analysis), collapse=', '), collapse=' '), label="tab:REwinter", digits=3, table.placement='htbp', caption.placement='top'))
-
-  #<<label=tabREsummer, echo=FALSE, results=tex>>=
-  require(xtable)
-  RE.ind <- RE.tot$data[nrow(RE.tot$data) - length(indices):1 + 1,1,seq(2,8,2)]
-
-  rownames(RE.ind) <- indices
-  colnames(RE.ind) <- pnames[seq(along=analysis)]
-
-  print(xtable(RE.ind, caption=paste('RE for different indices in winter (April to September), the columns contain the results for', paste(pnames[seq(along=analysis)], names(analysis), collapse=', '), collapse=' '), label="tab:REsummer", digits=3, table.placement='htbp', caption.placement='top'))
-  
-} # end if(echam_ind)
-
+    
+    # old version
+    
+    # ind <- nrow(corr[[4]]$data) - rev(seq(indices)) + 1
+    # ind.arr <- array(NA, c(length(indices)*2, 2, dim(echam$data)[3]))
+    # ind.arr[seq(1,dim(ind.arr)[1],2),,] <- corr.ech$data[ind,,]
+    # ind.arr[seq(2,dim(ind.arr)[1],2),,] <- corr[[4]]$data[ind,,]
+    # xind <- sort(c(seq(1, length(indices)*3, 3), seq(2, length(indices)*3, 3)))
+    #
+    # par(mfrow=c(2,1), oma=c(6,0,1,0), mar=c(1,3,1,2), cex.axis=1.4, cex.lab=1.4, cex.main=1.4)
+    # for (i in 1:2) {
+    #   plot(0, type='n', xlim=range(xind), ylim=c(-1,1), xaxt='n')
+    #   polygon(c(-1,rep(max(xind)+2, 2), -1), c(0,0,-2,-2), border=NA, col=grey(0.8))
+    #   box()
+    #   boxplot(t(ind.arr[,i,]), at=xind, add=T, xaxt='n', col=hcl(rep(seq(indices)/length(indices)*360, each=2), c=c(30,60), l=c(95,50)))
+    #   text(1,1,c('Winter', 'Summer')[i], adj=c(0,1), font=1, cex=1.4)
+    # #  points(seq(2.8, length(indices)*3, 3), corr.analogue[[2]]$data[ind,i], pch='<', cex=1.4)
+    # }
+    # axis(1, at=seq(1.5, length(indices)*3, 3), labels=indices, las=2, tick=F)
+    
+    #    \caption{Correlation of the indices in the ECHAM ensemble (light boxes) and the localized pseudo proxy analysis (dark boxes) with the respective validation time series.}
+    
+    
+    
+    ################################################################################
+    # Tab x: RE for indices
+    
+    #<<label=tabREwinter, echo=FALSE, results=tex>>=
+    # require(xtable)
+    # RE.ind <- RE.tot$data[nrow(RE.tot$data) - length(indices):1 + 1,1,seq(1,8,2)]
+    # 
+    # rownames(RE.ind) <- indices
+    # colnames(RE.ind) <- pnames[seq(along=analysis)]
+    # 
+    # print(xtable(RE.ind, caption=paste('RE for different indices in winter (October to March), the columns contain the results for', paste(pnames[seq(along=analysis)], names(analysis), collapse=', '), collapse=' '), label="tab:REwinter", digits=3, table.placement='htbp', caption.placement='top'))
+    # 
+    # #<<label=tabREsummer, echo=FALSE, results=tex>>=
+    # require(xtable)
+    # RE.ind <- RE.tot$data[nrow(RE.tot$data) - length(indices):1 + 1,1,seq(2,8,2)]
+    # 
+    # rownames(RE.ind) <- indices
+    # colnames(RE.ind) <- pnames[seq(along=analysis)]
+    # 
+    # print(xtable(RE.ind, caption=paste('RE for different indices in winter (April to September), the columns contain the results for', paste(pnames[seq(along=analysis)], names(analysis), collapse=', '), collapse=' '), label="tab:REsummer", digits=3, table.placement='htbp', caption.placement='top'))
+    
+  } # end if(echam_ind)
 ################################################################################
 # # Fig. 9a: temperature reconstruction skill 
 # if (!monthly_out){

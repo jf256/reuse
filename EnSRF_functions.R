@@ -1,6 +1,6 @@
 # set direcotries
-#echmaskpath <- paste0(dataextdir,'echam/')
-echmaskpath <- paste0(dataintdir,'echam/')
+echmaskpath <- paste0(dataextdir,'echam/')
+#echmaskpath <- paste0(dataintdir,'echam/')
 echpath <- paste0(dataextdir,'echam/1600-2005/')
 echallvarpath <- paste0(dataextdir,'echam_nc_allvar7/')
 echanompath <- paste0(dataextdir,'echam_anom/')
@@ -21,6 +21,8 @@ ntrendpath = '/scratch3/veronika/reuse/'
 schweingrpath <- paste0(dataextdir,'assimil_data/proxies/schweingr/')
 nceppath <- paste0(dataintdir,'reanalysis/ncep/')
 twentycrpath <- paste0(workdir,'../comparison_data/20cr/')
+indicespath <- paste0(dataextdir,'vali_data/indices/')
+
 
 
 # install.packages("akima")
@@ -62,6 +64,8 @@ suppressMessages(library(reshape2))
 suppressMessages(library(ggplot2))
 suppressMessages(library(grid))
 suppressMessages(library(cowplot))
+suppressMessages(library(lubridate)) # decinmal year to date conversion
+suppressMessages(library(birk)) # which.closest function
 suppressMessages(library(geosphere))
 
 #library(pspline)
@@ -1107,27 +1111,45 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
       k=which(abs(lonlist-p_tree$lon[i]+0.001)==min(abs(lonlist-p_tree$lon[i]+0.001)))
       l=which(abs(latlist-p_tree$lat[i])==min(abs(latlist-p_tree$lat[i])))
       t3 <- t2[k,l,]
-      if (all(is.na(t3))) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
+      if (all(is.na(t3))|length(which(is.na(p_tree_1901_1970$data[,i])))>=50) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
         if (p_tree$lat[i] > 0){
           if (!exists("mrNH")) {
             mrNH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) #nr of coeff + intercept
             var_residuNH <- NA
+            NHlat <- p_tree$lat[i]
+            NHlon <- p_tree$lon[i]
+            NHelev <- p_tree$elevation[i]
+            NHdata <- p_tree$data[,i]
           } else {
             mrNH <- rbind(mrNH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))#nr of coeff + intercept
-            var_residuNH <- c(var_residuNH,rep(NA,1)) }
-        }else if (!exists("mrSH")){
+            var_residuNH <- c(var_residuNH,rep(NA,1))
+            NHlat <- c(NHlat,p_tree$lat[i])
+            NHlon <- c(NHlon,p_tree$lon[i])
+            NHelev <- c(NHelev,p_tree$elevation[i])
+            NHdata <- cbind(NHdata,p_tree$data[,i])}
+        }else  {
+          if (!exists("mrSH")){
             mrSH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # nr of coeff + intercept
             var_residuSH <- NA
-        }else{
+            SHlat <- p_tree$lat[i]
+            SHlon <- p_tree$lon[i]
+            SHelev <- p_tree$elevation[i]
+            SHdata <- p_tree$data[,i]
+          }else{
             mrSH <- rbind(mrSH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))
             var_residuSH <- c(var_residuSH,rep(NA,1)) 
+            SHlat <- c(SHlat,p_tree$lat[i])
+            SHlon <- c(SHlon,p_tree$lon[i])
+            SHelev <- c(SHelev,p_tree$elevation[i])
+            SHdata <- cbind(SHdata,p_tree$data[,i])
           }
+        }
       }else{ # we can calculate the regression
         # make variable for each month
-        t5 = t3[c(4:(length(t3)-3))]
+        t5 = t3[c(4:(length(t3)-9))]
         t4 = t(array(t5,c(6,length(t5)/6))) #makes half year bunches
         tSH = t4[seq(2,nrow(t4),2),] #takes the months from Oct to March
-        tNH = t4[seq(1,nrow(t4),2),][-c(1),] #takes the months from April to September
+        tNH = t4[seq(1,nrow(t4),2),] #takes the months from April to September, shortened because easier later
         # t4 = t(array(t5,c(12,length(t5)/12))) # 70 years from Apr-March, cuts the last half year without warning
         
         if (p_tree$lat[i] > 0) { # which half a year we want to use for calculating the regression
@@ -1144,20 +1166,36 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
         corr = cor.test(fitted.values(results),p_tree_1901_1970$data[,i]) 
         # print(corr[4]) # maybe under a certain corr value we could just set it to NA?
         if (p_tree$lat[i] > 0){ 
-        if (!exists("mrNH")) { 
-          mrNH <- results$coefficients
-          var_residuNH <- var(results$residuals)
-        } else { 
-          mrNH <- rbind(mrNH,results$coefficients)
-          var_residuNH <- c(var_residuNH,var(results$residuals))
-        }
+          if (!exists("mrNH")) { 
+            mrNH <- results$coefficients
+            var_residuNH <- var(results$residuals)
+            NHlat <- p_tree$lat[i]
+            NHlon <- p_tree$lon[i]
+            NHelev <- p_tree$elevation[i]
+            NHdata <- p_tree$data[,i]
+          } else { 
+            mrNH <- rbind(mrNH,results$coefficients)
+            var_residuNH <- c(var_residuNH,var(results$residuals))
+            NHlat <- c(NHlat,p_tree$lat[i])
+            NHlon <- c(NHlon,p_tree$lon[i])
+            NHelev <- c(NHelev,p_tree$elevation[i])
+            NHdata <- cbind(NHdata,p_tree$data[,i])
+          }
         }else{
           if (!exists("mrSH")) { 
             mrSH <- results$coefficients
             var_residuSH <- var(results$residuals)
+            SHlat <- p_tree$lat[i]
+            SHlon <- p_tree$lon[i]
+            SHelev <- p_tree$elevation[i]
+            SHdata <- p_tree$data[,i]
           } else { 
             mrSH <- rbind(mrSH,results$coefficients)
             var_residuSH <- c(var_residuSH,var(results$residuals))
+            SHlat <- c(SHlat,p_tree$lat[i])
+            SHlon <- c(SHlon,p_tree$lon[i])
+            SHelev <- c(SHelev,p_tree$elevation[i])
+            SHdata <- cbind(SHdata,p_tree$data[,i])
           }
         }
       }
@@ -1167,9 +1205,17 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
     colnames(mrtmp) <- c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabp.first","unabp.second","unabp.third","unabp.fourth","unabp.fifth","unabp.sixth")
     mrtmp[1:nrow(mrNH),match(colnames(mrNH),colnames(mrtmp))]<-mrNH 
     mrtmp[(nrow(mrNH)+1):nrow(mrtmp),match(colnames(mrSH),colnames(mrtmp))]<-mrSH
+    datatmp <- matrix(NA, 403, ncol(NHdata)+ncol(SHdata))
+    datatmp[,1:ncol(NHdata)] <- NHdata
+    datatmp[,(ncol(NHdata)+1):ncol(datatmp)] <- SHdata
+    
     
     p_tree$mr <- mrtmp 
     p_tree$var_residu <- c(var_residuNH,var_residuSH)
+    p_tree$lat <- c(NHlat,SHlat)
+    p_tree$lon <- c(NHlon,SHlon)
+    p_tree$elevation <- c(NHelev,SHelev)
+    p_tree$data <- datatmp
     invisible(p_tree)
     
     
@@ -1209,91 +1255,118 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
     latlist=ncvar_get(nc, "lat") 
     nc_close(nc)
     
-    # start calculation the regression for each tree data  
+    # start calculation the regression for each coral data  
     for (i in 1:length(p_coral$lon)) {
-      if (all(is.na(p_coral_1901_1970$data[,i]))) {
+      k=which(abs(lonlist-p_coral$lon[i]+0.001)==min(abs(lonlist-p_coral$lon[i]+0.001)))
+      l=which(abs(latlist-p_coral$lat[i])==min(abs(latlist-p_coral$lat[i])))
+      t3 <- t2[k,l,]
+      if (all(is.na(t3))|length(which(is.na(p_coral_1901_1970$data[,i])))>=50) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
         if (p_coral$lat[i] > 0){
           if (!exists("mrNH")) {
             mrNH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) #nr of coeff + intercept
             var_residuNH <- NA
+            NHlat <- p_coral$lat[i]
+            NHlon <- p_coral$lon[i]
+            NHelev <- p_coral$elevation[i]
+            NHdata <- p_coral$data[,i]
           } else {
             mrNH <- rbind(mrNH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))#nr of coeff + intercept
-            var_residuNH <- c(var_residuNH,rep(NA,1)) }
-        }else if (!exists("mrSH")){
-          mrSH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # nr of coeff + intercept
-          var_residuSH <- NA
+            var_residuNH <- c(var_residuNH,rep(NA,1)) 
+            NHlat <- c(NHlat,p_coral$lat[i])
+            NHlon <- c(NHlon,p_coral$lon[i])
+            NHelev <- c(NHelev,p_coral$elevation[i])
+            NHdata <- cbind(NHdata,p_coral$data[,i])
+            }
+          
         }else{
-          mrSH <- rbind(mrSH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))
-          var_residuSH <- c(var_residuSH,rep(NA,1)) 
-        }
-      } else {
-        k=which(abs(lonlist-p_coral$lon[i]+0.001)==min(abs(lonlist-p_coral$lon[i]+0.001)))
-        l=which(abs(latlist-p_coral$lat[i])==min(abs(latlist-p_coral$lat[i])))
-        t3 <- t2[k,l,]
-        if (all(is.na(t3))) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
-          if (p_coral$lat[i] > 0){
-            if (!exists("mrNH")) {
-              mrNH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) #nr of coeff + intercept
-              var_residuNH <- NA
-            } else {
-              mrNH <- rbind(mrNH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))#nr of coeff + intercept
-              var_residuNH <- c(var_residuNH,rep(NA,1)) }
-          }else if (!exists("mrSH")){
+          if (!exists("mrSH")){
             mrSH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # nr of coeff + intercept
             var_residuSH <- NA
+            SHlat <- p_coral$lat[i]
+            SHlon <- p_coral$lon[i]
+            SHelev <- p_coral$elevation[i]
+            SHdata <- p_coral$data[,i]
           }else{
             mrSH <- rbind(mrSH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))
-            var_residuSH <- c(var_residuSH,rep(NA,1)) 
+            var_residuSH <- c(var_residuSH,rep(NA,1))
+            SHlat <- c(SHlat,p_coral$lat[i])
+            SHlon <- c(SHlon,p_coral$lon[i])
+            SHelev <- c(SHelev,p_coral$elevation[i])
+            SHdata <- cbind(SHdata,p_coral$data[,i])
           }
-        } else { # we can calculate the regression
-          # make variable for each month
-          t5 = t3[c(4:(length(t3)-3))]
-          t4 = t(array(t5,c(6,length(t5)/6))) #makes half year bunches
-          tSH = t4[seq(2,nrow(t4),2),] #takes the months from Oct to March
-          tNH = t4[seq(1,nrow(t4),2),][-c(1),] #takes the months from April to September
-          # t4 = t(array(t5,c(12,length(t5)/12))) # 70 years from Apr-March
-          
-          if (p_coral$lat[i] > 0) { # which half a year we want to use for calculating the regression
-            unab <- tNH
-          } else {
-            unab <- tSH
-          }                  
-          colnames(unab) <- c('t.first','t.second','t.third','t.fourth','t.fifth','t.sixth')
-          onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
-          unab <- unab[,match(onlytemp,colnames(unab))]
-          
-          # multiple linear regression
-          results <- lm(p_coral_1901_1970$data[,i]~unab,  na.action=na.exclude)
-          corr = cor.test(fitted.values(results),p_coral_1901_1970$data[,i]) 
-          # print(corr[4]) # correlations are very small
-          if (p_coral$lat[i] > 0){ 
-            if (!exists("mrNH")) { 
-              mrNH <- results$coefficients
-              var_residuNH <- var(results$residuals)
-            } else { 
-              mrNH <- rbind(mrNH,results$coefficients)
-              var_residuNH <- c(var_residuNH,var(results$residuals))
-            }
-          }else{
-            if (!exists("mrSH")) { 
-              mrSH <- results$coefficients
-              var_residuSH <- var(results$residuals)
-            } else { 
-              mrSH <- rbind(mrSH,results$coefficients)
-              var_residuSH <- c(var_residuSH,var(results$residuals))
-            }
+        }
+      } else { # we can calculate the regression
+        # make variable for each month
+        t5 = t3[c(4:(length(t3)-9))]
+        t4 = t(array(t5,c(6,length(t5)/6))) #makes half year bunches
+        tSH = t4[seq(2,nrow(t4),2),] #takes the months from Oct to March
+        tNH = t4[seq(1,nrow(t4),2),] #takes the months from April to September
+        # t4 = t(array(t5,c(12,length(t5)/12))) # 70 years from Apr-March
+        
+        if (p_coral$lat[i] > 0) { # which half a year we want to use for calculating the regression
+          unab <- tNH
+        } else {
+          unab <- tSH
+        }                  
+        colnames(unab) <- c('t.first','t.second','t.third','t.fourth','t.fifth','t.sixth')
+        onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
+        unab <- unab[,match(onlytemp,colnames(unab))]
+        
+        # multiple linear regression
+        results <- lm(p_coral_1901_1970$data[,i]~unab,  na.action=na.exclude)
+        corr = cor.test(fitted.values(results),p_coral_1901_1970$data[,i]) 
+        # print(corr[4]) # correlations are very small
+        if (p_coral$lat[i] > 0){ 
+          if (!exists("mrNH")) { 
+            mrNH <- results$coefficients
+            var_residuNH <- var(results$residuals)
+            NHlat <- p_coral$lat[i]
+            NHlon <- p_coral$lon[i]
+            NHelev <- p_coral$elevation[i]
+            NHdata <- p_coral$data[,i]
+          } else { 
+            mrNH <- rbind(mrNH,results$coefficients)
+            var_residuNH <- c(var_residuNH,var(results$residuals))
+            NHlat <- c(NHlat,p_coral$lat[i])
+            NHlon <- c(NHlon,p_coral$lon[i])
+            NHelev <- c(NHelev,p_coral$elevation[i])
+            NHdata <- cbind(NHdata,p_coral$data[,i])
+          }
+        }else{
+          if (!exists("mrSH")) { 
+            mrSH <- results$coefficients
+            var_residuSH <- var(results$residuals)
+            SHlat <- p_coral$lat[i]
+            SHlon <- p_coral$lon[i]
+            SHelev <- p_coral$elevation[i]
+            SHdata <- p_coral$data[,i]
+          } else { 
+            mrSH <- rbind(mrSH,results$coefficients)
+            var_residuSH <- c(var_residuSH,var(results$residuals))
+            SHlat <- c(SHlat,p_coral$lat[i])
+            SHlon <- c(SHlon,p_coral$lon[i])
+            SHelev <- c(SHelev,p_coral$elevation[i])
+            SHdata <- cbind(SHdata,p_coral$data[,i])
           }
         }
       }
     }
     
+    
     mrtmp<-matrix(NA, nrow(mrNH)+nrow(mrSH),13)
     colnames(mrtmp) <- c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabp.first","unabp.second","unabp.third","unabp.fourth","unabp.fifth","unabp.sixth")
     mrtmp[1:nrow(mrNH),match(colnames(mrNH),colnames(mrtmp))]<-mrNH 
     mrtmp[(nrow(mrNH)+1):nrow(mrtmp),match(colnames(mrSH),colnames(mrtmp))]<-mrSH
+    datatmp <- matrix(NA, 403, ncol(NHdata)+ncol(SHdata))
+    datatmp[,1:ncol(NHdata)] <- NHdata
+    datatmp[,(ncol(NHdata)+1):ncol(datatmp)] <- SHdata
     
     p_coral$mr <- mrtmp
     p_coral$var_residu <- c(var_residuNH,var_residuSH)
+    p_coral$lat <- c(NHlat,SHlat)
+    p_coral$lon <- c(NHlon,SHlon)
+    p_coral$elevation <- c(NHelev,SHelev)
+    p_coral$data <- datatmp
     invisible(p_coral)
   } else if (archivetype == "documents") {
     mylist.names = c("data","time","lon","lat","archivetype","elevation")
@@ -1365,7 +1438,7 @@ read_ntrend = function(fsyr,feyr, validate) {
     k=which(abs(lonlist-ntrend$lon[i]+0.001)==min(abs(lonlist-ntrend$lon[i]+0.001)))
     l=which(abs(latlist-ntrend$lat[i])==min(abs(latlist-ntrend$lat[i])))
     t3 <- t2[k,l,]
-    if (all(is.na(t3))) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
+    if (all(is.na(t3))|length(which(is.na(ntrend_1901_1970$data[,i])))>=50) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
       if (i==1) {
         mr <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # coeff +intercept
         var_residu <- NA
@@ -1407,6 +1480,203 @@ read_ntrend = function(fsyr,feyr, validate) {
 }
 
 
+
+read_trw_petra<-function(fsyr, feyr, validate){
+  load(paste0('/scratch3/nevin/reuse/trw_petra.RData'))
+  na_tree<-rep(NA,2761)
+  tree_petra<-list(data=matrix(rep(NA,(feyr-fsyr+1)*2761),(feyr-fsyr+1),2761),time=rep(NA,(feyr-fsyr+1)),lon=na_tree,lat=na_tree,elevation=na_tree, mr=matrix(rep(NA,2761*13),2761,13))
+  ti<-which((trw_petra[,,1]$time.n.chronos[,1] >= fsyr) & (trw_petra[,,1]$time.n.chronos[,1] <= feyr))
+  index=0
+  for(i in 1:22){
+    n_tree<-dim(trw_petra[,,i]$lonlat)[2]
+    tree_petra$data[,(index+1):(index+n_tree)]<-trw_petra[,,i]$time.n.chronos[ti,2:(n_tree+1)]
+    tree_petra$lon[(index+1):(index+n_tree)]<-trw_petra[,,i]$lonlat[1,]
+    tree_petra$lat[(index+1):(index+n_tree)]<-trw_petra[,,i]$lonlat[2,]
+    tree_petra$elevation[(index+1):(index+n_tree)]<-trw_petra[,,i]$elevation[,1]
+    index<-index+n_tree
+  }
+  tree_petra$time<-trw_petra[,,1]$time.n.chronos[ti,1]
+  tree_petra$data[which(is.nan(tree_petra$data),arr.ind = T)]<-NA
+  
+  start_yr = which(tree_petra$time == "1901")
+  end_yr = which(tree_petra$time == "1970")
+  tree_petra_1901_1970<-list(data=matrix(rep(NA,70*2761),70,2761),time=rep(NA,70))
+  tree_petra_1901_1970$data<-tree_petra$data[start_yr:end_yr,]
+  tree_petra_1901_1970$time<-tree_petra$time[start_yr:end_yr]
+  
+  
+  
+  if (validate == "CRU") {
+    nc=nc_open(paste(crupath,'/cru_allvar_abs_1901-2004.nc',sep=''), write=F)
+    t1=ncvar_get(nc, "temp2") # for CRU temp
+    t2 <- t1[,,1:852] # from year 1901 till 1971
+  } else if (validate == "GISS") {
+    nc=nc_open(paste(gisspath,'/air.2x2.250_anom_echamgrid.nc',sep=''), write=F)
+    t1=ncvar_get(nc, "air") # for GISS air temp and SST
+    t2 <- t1[,,253:1104]
+  }
+  lonlist=ncvar_get(nc, "lon")
+  lonlist[lonlist > 180] <- lonlist[lonlist > 180] - 360
+  latlist=ncvar_get(nc, "lat")
+  nc_close(nc)
+  
+  for (i in 1:length(tree_petra$lon)){
+    k=which(abs(lonlist-tree_petra$lon[i]+0.001)==min(abs(lonlist-tree_petra$lon[i]+0.001)))
+    l=which(abs(latlist-tree_petra$lat[i])==min(abs(latlist-tree_petra$lat[i])))
+    t3 <- t2[k,l,]
+    if (all(is.na(t3))| length(which(is.na(tree_petra_1901_1970$data[,i])))>=50) { # There is no observation data in the CRU or GISS or to many NA (>=50/70) in the treering data-> the regression cannot/shouldnot be calculated
+      if (tree_petra$lat[i] > 0){
+        if (!exists("mrNH")) {
+          mrNH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) #nr of coeff + intercept
+          var_residuNH <- NA
+          NHlat <- tree_petra$lat[i]
+          NHlon <- tree_petra$lon[i]
+          NHelev <- tree_petra$elevation[i]
+          NHdata <- tree_petra$data[,i]
+        } else {
+          mrNH <- rbind(mrNH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))#nr of coeff + intercept
+          var_residuNH <- c(var_residuNH,rep(NA,1))
+          NHlat <- c(NHlat,tree_petra$lat[i])
+          NHlon <- c(NHlon,tree_petra$lon[i])
+          NHelev <- c(NHelev,tree_petra$elevation[i])
+          NHdata <- cbind(NHdata,tree_petra$data[,i])}
+      }else  {
+        if (!exists("mrSH")){
+          mrSH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # nr of coeff + intercept
+          var_residuSH <- NA
+          SHlat <- tree_petra$lat[i]
+          SHlon <- tree_petra$lon[i]
+          SHelev <- tree_petra$elevation[i]
+          SHdata <- tree_petra$data[,i]
+        }else{
+          mrSH <- rbind(mrSH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))
+          var_residuSH <- c(var_residuSH,rep(NA,1))
+          SHlat <- c(SHlat,tree_petra$lat[i])
+          SHlon <- c(SHlon,tree_petra$lon[i])
+          SHelev <- c(SHelev,tree_petra$elevation[i])
+          SHdata <- cbind(SHdata,tree_petra$data[,i])
+        }
+      }
+    }else{ # we can calculate the regression
+      # make variable for each month
+      t5 = t3[c(4:(length(t3)-9))]
+      t4 = t(array(t5,c(6,length(t5)/6))) #makes half year bunches
+      tSH = t4[seq(2,nrow(t4),2),] #takes the months from Oct to March
+      tNH = t4[seq(1,nrow(t4),2),] #takes the months from April to September, shortened because easier later
+      # t4 = t(array(t5,c(12,length(t5)/12))) # 70 years from Apr-March, cuts the last half year without warning
+      
+      if (tree_petra$lat[i] > 0) { # which half a year we want to use for calculating the regression
+        unab <- tNH
+      } else {
+        unab <- tSH
+      }
+      colnames(unab) <- c('t.first','t.second','t.third','t.fourth','t.fifth','t.sixth')
+      onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
+      unab <- unab[,match(onlytemp,colnames(unab))]
+      
+      # multiple linear regression
+      results <- lm(tree_petra_1901_1970$data[,i]~unab,  na.action=na.exclude)
+      corr = cor.test(fitted.values(results),tree_petra_1901_1970$data[,i])
+      # print(corr[4]) # maybe under a certain corr value we could just set it to NA?
+      
+      if (tree_petra$lat[i] > 0){
+        if (!exists("mrNH")) {
+          mrNH <- results$coefficients
+          var_residuNH <- var(results$residuals)
+          NHlat <- tree_petra$lat[i]
+          NHlon <- tree_petra$lon[i]
+          NHelev <- tree_petra$elevation[i]
+          NHdata <- tree_petra$data[,i]
+        } else {
+          mrNH <- rbind(mrNH,results$coefficients)
+          var_residuNH <- c(var_residuNH,var(results$residuals))
+          NHlat <- c(NHlat,tree_petra$lat[i])
+          NHlon <- c(NHlon,tree_petra$lon[i])
+          NHelev <- c(NHelev,tree_petra$elevation[i])
+          NHdata <- cbind(NHdata,tree_petra$data[,i])
+        }
+      }else{
+        if (!exists("mrSH")) {
+          mrSH <- results$coefficients
+          var_residuSH <- var(results$residuals)
+          SHlat <- tree_petra$lat[i]
+          SHlon <- tree_petra$lon[i]
+          SHelev <- tree_petra$elevation[i]
+          SHdata <- tree_petra$data[,i]
+        } else {
+          mrSH <- rbind(mrSH,results$coefficients)
+          var_residuSH <- c(var_residuSH,var(results$residuals))
+          SHlat <- c(SHlat,tree_petra$lat[i])
+          SHlon <- c(SHlon,tree_petra$lon[i])
+          SHelev <- c(SHelev,tree_petra$elevation[i])
+          SHdata <- cbind(SHdata,tree_petra$data[,i])
+        }
+      }
+    }
+  }
+  
+  mrtmp<-matrix(NA, nrow(mrNH)+nrow(mrSH),13)
+  colnames(mrtmp) <- c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabp.first","unabp.second","unabp.third","unabp.fourth","unabp.fifth","unabp.sixth")
+  mrtmp[1:nrow(mrNH),match(colnames(mrNH),colnames(mrtmp))]<-mrNH
+  mrtmp[(nrow(mrNH)+1):nrow(mrtmp),match(colnames(mrSH),colnames(mrtmp))]<-mrSH
+  datatmp <- matrix(NA, 403, ncol(NHdata)+ncol(SHdata))
+  datatmp[,1:ncol(NHdata)] <- NHdata
+  datatmp[,(ncol(NHdata)+1):ncol(datatmp)] <- SHdata
+  
+  
+  tree_petra$mr <- mrtmp
+  tree_petra$var_residu <- c(var_residuNH,var_residuSH)
+  tree_petra$lat <- c(NHlat,SHlat)
+  tree_petra$lon <- c(NHlon,SHlon)
+  tree_petra$elevation <- c(NHelev,SHelev)
+  tree_petra$data <- datatmp
+  invisible(tree_petra)
+}
+
+read_pseudo<-function(){
+  pseudodata<-as.matrix(read.table('../pseudoproxy_no_gaps.txt'))
+  lonlat<-as.matrix(read.table('../lonlat_no_gaps.txt',header=T))
+  colnames(lonlat)<-NULL
+  rownames(lonlat)<-NULL
+  colnames(pseudodata)<-NULL
+  pseudolist<-list(data=matrix(rep(NA,117*76),117,76),time=rep(NA,117), lon=rep(NA,76),lat=rep(NA,76))
+  pseudotime<-pseudodata[,1]
+  pseudodata<-pseudodata[,2:77]
+  pseudolist$data<-pseudodata
+  pseudolist$time<-pseudotime
+  pseudolist$lat<-lonlat[,2]
+  pseudolist$lon<-lonlat[,1]
+
+  nc=nc_open(paste(crupath,'/cru_allvar_abs_1901-2004.nc',sep=''), write=F)
+  t1=ncvar_get(nc, "temp2") # for CRU temp
+  t2 <- t1[,,1:1248] # from year 1901 till 1971
+  lonlist=ncvar_get(nc, "lon")
+  lonlist[lonlist > 180] <- lonlist[lonlist > 180] - 360
+  latlist=ncvar_get(nc, "lat")
+  nc_close(nc)
+  
+  nlat_nh<-length(which(pseudolist$lat>0))
+  nhpos<-which(pseudolist$lat>0)
+  ti=which(pseudolist$time<=2004&pseudolist$time>=1901)
+
+  pseudoprox<-list(data=matrix(rep(NA,104*nlat_nh),104,nlat_nh),time=rep(NA,104), lon=rep(NA,nlat_nh),lat=rep(NA,nlat_nh),mr=matrix(rep(NA,13*nlat_nh),nlat_nh,13),var_residu=rep(NA,nlat_nh))
+  pseudoprox$data<-pseudolist$data[ti,nhpos]
+  pseudoprox$time<-pseudolist$time[ti]
+  pseudoprox$lat<-pseudolist$lat[nhpos]
+  pseudoprox$lon<-pseudolist$lon[nhpos]
+  pseudoprox$mr<-cbind(rep(0,nlat_nh),matrix(rep(1/12,12*nlat_nh),nlat_nh,12))
+  residus<-rep(NA,104)
+  for(i in 1:length(pseudoprox$lon)){
+    k=which(abs(lonlist-pseudoprox$lon[i]+0.001)==min(abs(lonlist-pseudoprox$lon[i]+0.001)))
+    l=which(abs(latlist-pseudoprox$lat[i])==min(abs(latlist-pseudoprox$lat[i])))
+    t3 <- t2[k,l,]
+    for(j in 1:104){
+      residus[j]<-1/12*sum(t3[(12*(j-1)+1):(j*12)])-pseudoprox$data[j,i]
+    }
+    pseudoprox$var_residu[i]<-var(residus)
+  }
+  invisible(pseudoprox)
+}
 
 
 
@@ -2696,6 +2966,8 @@ plot_echam <- function(x, levs, varname='temp2', type='data',  ti=1,
       if (nmod == 1) dd <- lcm(2.8)
       layout(matrix(c(1:nmod, rep(nmod+2, nn-nmod), rep(nmod+1, nrow)),
                     ncol, nrow, byrow=T), height=c(rep(5, ncol-1),dd))
+
+      
       oma <- rep(0, 4)
       if (!is.null(rownames)) oma[3] <- 3
       if (!is.null(colnames)) oma[2] <- 3
@@ -5475,7 +5747,7 @@ read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,
     ti <- which(tim >= timlim[1] & tim < (timlim[2]+1))
     outdata <- NULL
     names <- NULL
-    for (varname in c('temp2', 'precip', 'slp','air','prate','hgt','omega','geopoth')){
+    for (varname in c('temp2', 'precip', 'slp','gph500','gph100','u850','u200','v850','v200','omega500','t500')){
       if (varname %in% names(nc$var)){
         if (length(nc$var[[varname]]$dim) == 3){
           if (length(ti)==1) {
@@ -5514,10 +5786,10 @@ read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,
           if (varname == 'slp'){
             data <- data / 100
             print(paste("unit conversion for ",varname," done"))}
-          if (varname == 'temp2'){
+          if (varname == 'temp2'| varname =="t500"){
             data <- data - 273.15
-            print(paste("unit conversion for ",varname," done"))}
-          if (varname == 'omega'){
+            print(paste("unit conversion for Kelvin to Celsius done"))}
+          if (varname == 'omega500'){
             data <- data/100
             print(paste("unit conversion for ",varname," done"))}
         }
@@ -5772,7 +6044,7 @@ echam_covar <- function(syr=1603,eyr=2004){
 }
 
 
-read_PAGES <- function(type){
+setup_read_pages<- function(type){
   get("fsyr")
   get("feyr")
   
@@ -6021,7 +6293,611 @@ convert_to_2_seasons <- function(x,source){
     return(x)
   }
 }
+convert_to_monthly <- function(dataset) {
+  # converts dataset from sixmonstatevector back to twelve months (oktober-september) (e.g. from l,1:2,1:30 to l/6,1:12,1:30)
+  # code's already existed, I (nevin) only changed it into a fct to shorten prepplot
+  syr<-get("syr")
+  eyr<-get("eyr")
+  s<-12 # set back to 12 months for plotting
+  tmptime <-  get("tmptime")
+  season<-get("season")
+  
+  #reshape dataset
+  if (length(dim(dataset$data))==3){ 
+    dataset$data <- array(dataset$data, c((dim(dataset$data)[1]/6), dim(dataset$data)[2]*6, dim(dataset$data)[3]))
+  }
+  else{ #validate and calibrate do not have multiple ensemble members (one dim less)
+    dataset$data <- array(dataset$data, c((dim(dataset$data)[1]/6), dim(dataset$data)[2]*6))  
+  }
+  if ("ensmean" %in% names(dataset)){  #some datasets do not have ensmean
+    dataset$ensmean <- array(dataset$ensmean, c((dim(dataset$ensmean)[1]/6), dim(dataset$ensmean)[2]*6))
+  }
+  dataset$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
+  dataset$names <- dataset$names[1:dim(dataset$data)[1]]
+  dataset$lon <- rep(dataset$lon,length(unique(dataset$names)))
+  dataset$lat <- rep(dataset$lat,length(unique(dataset$names)))
+  dataset$lon <- dataset$lon[1:(dim(dataset$data)[1])] #/length(unique(dataset$names)))]
+  dataset$lat <- dataset$lat[1:(dim(dataset$data)[1])] #/length(unique(dataset$names)))]
+  return(dataset)
+}
 
+convert_to_tps_only<-function(dataset){
+  
+  if ("ENH.temp2" %in% dataset$names){
+    tpspos<-1:34
+  }else{
+    tpspos <- sort(c(which(dataset$names=='temp2'), which(dataset$names=='precip'), which(dataset$names=='slp'), which(dataset$names=='bias')))
+  }
+  if(length(dim(dataset$data))==3){
+    dataset$data <- dataset$data[tpspos,,]
+  }else{
+    dataset$data <- dataset$data[tpspos,]
+  }
+  if("ensmean" %in% names(dataset)){
+    dataset$ensmean <- dataset$ensmean[tpspos,]
+  }
+  if("lat" %in% names(dataset)){
+    dataset$lon <- dataset$lon[tpspos]
+    dataset$lat <- dataset$lat[tpspos]
+  }
+  dataset$names <- dataset$names[tpspos]
+  
+  return(dataset)
+}
+
+calc_indices<-function(dataset, setname){
+  #takes either echam2, analysis2 or validate2 for both anom and abs and gives back a matrix with the indices (monthly or seasonal)
+  #the 2 in the variablenames is because the datasets could be adapted for indicescalc (e.g. landonly) but have to be as before for further code in prepplot
+  #look at giorgi.names for the index names
+  #when calling the fct set setname to either "echam2", "analysis2", "cru2" or "twentycr2" corresponding to the dataset
+  #(code was given, I (nevin) only changed it into a fct to shorten the indices calculation in prepplot)
+  giorgi<-get("giorgi")
+  H.giorgi <- compute_giorgi_H_v2(giorgi, dataset)
+  if(setname=="echam2" | setname=="analysis2" | setname=="twentycr_vali"){
+    indices_tmp <- c('ENH.temp2','NAM.temp2','SAM.temp2','AFR.temp2',
+                     'ASI.temp2','AUS.temp2','ARC.temp2','ANT.temp2',
+                     'NEU.temp2','MED.temp2',
+                     'GLO.temp2','NAM.precip','SAM.precip','AFR.precip',
+                     'ASI.precip','AUS.precip','ARC.precip','ANT.precip',
+                     'NEU.precip','MED.precip',
+                     'SH.temp2','NAM.slp','SAM.slp','AFR.slp',
+                     'ASI.slp','AUS.slp','ARC.slp','ANT.slp',
+                     'NEU.slp','MED.slp',
+                     'NH.temp2', 'EU.temp2', 'EU.precip', 'EU.slp',
+                     'PV1.calc', 'PV2.calc', 'PWC1.calc', 'PWC2.calc',
+                     'DIMI1.calc', 'DIMI2.calc', 'NAO1.calc', 'NAO2.calc', 
+                     'PNA1.calc', 'PNA2.calc', 'PNA3.calc', 'PNA4.calc')
+    indices <- c('ENH.temp2','NAM.temp2','SAM.temp2','AFR.temp2',
+                 'ASI.temp2','AUS.temp2','ARC.temp2','ANT.temp2',
+                 'NEU.temp2','MED.temp2',
+                 'GLO.temp2','NAM.precip','SAM.precip','AFR.precip',
+                 'ASI.precip','AUS.precip','ARC.precip','ANT.precip',
+                 'NEU.precip','MED.precip',
+                 'SH.temp2','NAM.slp','SAM.slp','AFR.slp',
+                 'ASI.slp','AUS.slp','ARC.slp','ANT.slp',
+                 'NEU.slp','MED.slp',
+                 'NH.temp2', 'EU.temp2', 'EU.precip', 'EU.slp',
+                 'HC.calc', 'ITCZ.calc', 'SJ_u200.calc', 'SJ_slp.calc', 'PV.calc',
+                 'PWC.calc', 'DIMI.calc', 'NAO.calc', 'PNA.calc') #,
+    #                   'DIMI', 'HC', 'SJ', 'Z100', 'Z300', 'PWC')
+    # "MC" kein z300 in output! 'HCL.calc',
+    # SO WIRD INDEX NUR MITTELWERT ¨UBER REGION UND ZEIT!
+    # Deshalb Indicies die min max etc basiert sind extra rechnen
+    if(!tps_only){
+      Hind <- matrix(0,nrow=length(indices_tmp),ncol=nrow(dataset$data))
+    }else{
+      Hind <- matrix(0,nrow=length(indices_tmp),ncol=nrow(dataset$data))
+      Hind<-Hind[1:34,]
+    }
+    
+    
+    Hind[1,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'ENH'),which(dataset$names=="temp2")]
+    Hind[2,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'NAM'),which(dataset$names=="temp2")]
+    Hind[3,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'SAM'),which(dataset$names=="temp2")]
+    Hind[4,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'AFR'),which(dataset$names=="temp2")]
+    Hind[5,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'ASI'),which(dataset$names=="temp2")]
+    Hind[6,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'AUS'),which(dataset$names=="temp2")]
+    Hind[7,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'ARC'),which(dataset$names=="temp2")]
+    Hind[8,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'ANT'),which(dataset$names=="temp2")]
+    Hind[9,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'NEU'),which(dataset$names=="temp2")]
+    Hind[10,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'MED'),which(dataset$names=="temp2")]
+    Hind[11,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'GLO'),which(dataset$names=="temp2")]
+    Hind[12,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'NAM'),which(dataset$names=="precip")]
+    Hind[13,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'SAM'), which(dataset$names=="precip")]
+    Hind[14,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'AFR'),which(dataset$names=="precip")]
+    Hind[15,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'ASI'),which(dataset$names=="precip")]
+    Hind[16,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'AUS'),which(dataset$names=="precip")]
+    Hind[17,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'ARC'),which(dataset$names=="precip")]
+    Hind[18,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'ANT'),which(dataset$names=="precip")]
+    Hind[19,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'NEU'),which(dataset$names=="precip")]
+    Hind[20,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'MED'),which(dataset$names=="precip")]
+    Hind[21,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'SH'),which(dataset$names=="temp2")]
+    Hind[22,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'NAM'),which(dataset$names=="slp")]
+    Hind[23,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'SAM'),which(dataset$names=="slp")]
+    Hind[24,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'AFR'),which(dataset$names=="slp")]
+    Hind[25,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'ASI'),which(dataset$names=="slp")]
+    Hind[26,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'AUS'),which(dataset$names=="slp")]
+    Hind[27,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'ARC'),which(dataset$names=="slp")]
+    Hind[28,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'ANT'),which(dataset$names=="slp")]
+    Hind[29,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'NEU'),which(dataset$names=="slp")]
+    Hind[30,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'MED'),which(dataset$names=="slp")] 
+    Hind[31,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'NH'),which(dataset$names=="temp2")]
+    Hind[32,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'EU'),which(dataset$names=="temp2")]
+    Hind[33,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'EU'),which(dataset$names=="precip")]
+    Hind[34,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'EU'),which(dataset$names=="slp")]
+    if (tps_only){
+      ind <- list(ensmean=Hind%*%dataset$ensmean, names=indices_tmp[1:34])
+    }
+    
+    if(!tps_only){
+      # stratospheric polar vortex
+      Hind[35,which(dataset$names=="gph100")] <- H.giorgi[which(giorgi.short == 'PV1'),which(dataset$names=="gph100")]
+      Hind[36,which(dataset$names=="gph100")] <- H.giorgi[which(giorgi.short == 'PV2'),which(dataset$names=="gph100")]
+      
+      # Pacific walker circulation
+      Hind[37,which(dataset$names=="omega500")] <- H.giorgi[which(giorgi.short == 'PWC1'),which(dataset$names=="omega500")]
+      
+      # Pacific walker circulation
+      Hind[38,which(dataset$names=="omega500")] <- H.giorgi[which(giorgi.short == 'PWC2'),which(dataset$names=="omega500")]
+      
+      # Dynamic Indian Monsoon index
+      Hind[39,which(dataset$names=="u850")] <- H.giorgi[which(giorgi.short == 'DIMI1'),which(dataset$names=="u850")]
+      
+      # Dynamic Indian Monsoon index
+      Hind[40,which(dataset$names=="u850")] <- H.giorgi[which(giorgi.short == 'DIMI2'),which(dataset$names=="u850")]
+      
+      # NAO index
+      Hind[41,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'NAO1'),which(dataset$names=="slp")]
+      Hind[42,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'NAO2'),which(dataset$names=="slp")]
+      Hind[43,which(dataset$names=="gph500")] <- H.giorgi[which(giorgi.short == 'PNA1'),which(dataset$names=="gph500")]
+      Hind[44,which(dataset$names=="gph500")] <- H.giorgi[which(giorgi.short == 'PNA2'),which(dataset$names=="gph500")]
+      Hind[45,which(dataset$names=="gph500")] <- H.giorgi[which(giorgi.short == 'PNA3'),which(dataset$names=="gph500")]
+      Hind[46,which(dataset$names=="gph500")] <- H.giorgi[which(giorgi.short == 'PNA4'),which(dataset$names=="gph500")]
+      ind_tmp <- list(ensmean=Hind%*%dataset$ensmean, names=indices_tmp)
+      
+      
+      c=1
+      zmean <- matrix(0,nrow=length(unique(dataset$lat)),ncol=nseas)
+      for (l in unique(dataset$lat)) {
+        pos1 <- which(trunc(dataset$lat,digits=8)==trunc(l,digits=8))
+        pos2 <- which(dataset$names=='omega500')
+        pos <- intersect(pos1,pos2)
+        if (length(dataset$ensmean[pos,])==2 | (monthly_out & length(dataset$ensmean[pos,])==12)) { zmean[c,] <- dataset$ensmean[pos,] }
+        else if (length(dataset$ensmean[pos,])>2 | (monthly_out & length(dataset$ensmean[pos,])>12)) { zmean[c,] <- apply(dataset$ensmean[pos,],2,mean) }
+        c=c+1
+      }
+      latlist <- unique(dataset$lat)[which(which(unique(dataset$lat) > -30) %in% which(unique(dataset$lat) < 30))]
+      pos3 <- match(round(latlist,digits=8),round(unique(dataset$lat),digits=8))
+      zmean <- zmean[pos3,]
+      hc <- apply(zmean,2,min) # max upward wind is neg. omega value -> min function
+      
+      c=1
+      zmean <- matrix(0,nrow=length(unique(dataset$lat)),ncol=nseas)
+      for (l in unique(dataset$lat)) {
+        pos1 <- which(trunc(dataset$lat,digits=8)==trunc(l,digits=8))
+        pos2 <- which(dataset$names=='omega500')
+        pos <- intersect(pos1,pos2)
+        if (length(dataset$ensmean[pos,])==2 | (monthly_out & length(dataset$ensmean[pos,])==12)) { zmean[c,] <- dataset$ensmean[pos,] }
+        else if (length(dataset$ensmean[pos,])>2 | (monthly_out & length(dataset$ensmean[pos,])>12)) { zmean[c,] <- apply(dataset$ensmean[pos,],2,mean) }
+        c=c+1
+      }
+      latlist <- unique(dataset$lat)[which(which(unique(dataset$lat) > -30) %in%which(unique(dataset$lat) < 30))]
+      pos3 <- match(round(latlist,digits=8),round(unique(dataset$lat),digits=8))
+      zmean <- zmean[pos3,]
+      itcz <- apply(zmean[2:(nrow(zmean)-1),],2,min)
+      dlat <-  mean(latlist[1:(length(latlist)-1)]-latlist[2:(length(latlist))])
+      gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(itcz,digits=8)),each =length(pos3)), nrow=length(pos3))),2,which)
+      gridmin <- latlist[gridminpos-seq(0,(nseas-1)*length(pos3),by=length(pos3))]
+      
+      itcz <- gridmin - dlat * (((zmean[(gridminpos-1)])-(zmean[(gridminpos+1)]))/(2*(abs(zmean[gridminpos]-apply(cbind(zmean[(gridminpos-1)],zmean[(gridminpos+1)]),1,max)))))
+      
+      
+      # subtropical jet from subtrop. jet (u200) max
+      
+      c=1
+      # zonal means:
+      zmean <- matrix(0,nrow=length(unique(dataset$lat)),ncol=nseas)
+      for (l in unique(dataset$lat)) {
+        pos1 <- which(trunc(dataset$lat,digits=8)==trunc(l,digits=8))
+        pos2 <- which(dataset$names=='u200')
+        pos <- intersect(pos1,pos2)
+        if (length(dataset$ensmean[pos,])==2 | (monthly_out & length(dataset$ensmean[pos,])==12)) { zmean[c,] <- dataset$ensmean[pos,] }
+        else if (length(dataset$ensmean[pos,])>2 | (monthly_out & length(dataset$ensmean[pos,])>12)) { zmean[c,] <- apply(dataset$ensmean[pos,],2,mean) }
+        c=c+1
+      }
+      latlist <- unique(dataset$lat)[which(which(unique(dataset$lat) > 0) %in% which(unique(dataset$lat) < 57))]
+      pos3 <- match(round(latlist,digits=8),round(unique(dataset$lat),digits=8))
+      zmean <- zmean[pos3,]
+      sj <- apply(zmean[2:(nrow(zmean)-1),],2,max) # max uwind
+      dlat <-  mean(latlist[1:(length(latlist)-1)]-latlist[2:(length(latlist))])   
+      gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(sj,digits=8)),each =length(pos3)), nrow=length(pos3))),2,which)
+      gridmin <- latlist[gridminpos-seq(0,(nseas-1)*length(pos3),by=length(pos3))]
+      zmean <- zmean * -1 # because next equation is to find minimum and here we search for max
+      sj <- sj * -1
+      sj_u200 <- gridmin - dlat * (((zmean[(gridminpos-1)])-(zmean[(gridminpos+1)]))/(2*(abs(zmean[gridminpos]-apply(cbind(zmean[(gridminpos-1)],zmean[(gridminpos+1)]),1,max)))))
+      
+      # subtropical jet from zonal SLP max
+      c=1
+      zmean <- matrix(0,nrow=length(unique(dataset$lat)),ncol=nseas)
+      for (l in unique(dataset$lat)) {
+        pos1 <- which(trunc(dataset$lat,digits=8)==trunc(l,digits=8))
+        pos2 <- which(dataset$names=='slp')
+        pos <- intersect(pos1,pos2)
+        if (length(dataset$ensmean[pos,])==2 | (monthly_out & length(dataset$ensmean[pos,])==12)) { zmean[c,] <- dataset$ensmean[pos,] }
+        else if (length(dataset$ensmean[pos,])>2 | (monthly_out & length(dataset$ensmean[pos,])>12)) { zmean[c,] <- apply(dataset$ensmean[pos,],2,mean) }
+        c=c+1
+      }
+      latlist <- unique(dataset$lat)[which(which(unique(dataset$lat) > 0) %in%
+                                             which(unique(dataset$lat) < 57))]
+      pos3 <- match(round(latlist,digits=8),round(unique(dataset$lat),digits=8))
+      zmean <- zmean[pos3,]
+      sj <- apply(zmean[2:(nrow(zmean)-1),],2,max) # max slp
+      dlat <-  mean(latlist[1:(length(latlist)-1)]-latlist[2:(length(latlist))])   
+      gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(sj,digits=8)),each =length(pos3)), nrow=length(pos3))),2,which)
+      gridmin <- latlist[gridminpos-seq(0,(nseas-1)*length(pos3),by=length(pos3))]
+      zmean <- zmean * -1 # because next equation is to find minimum and here we search for max
+      sj <- sj * -1
+      
+      sj_slp <- gridmin - dlat * (((zmean[(gridminpos-1)])-(zmean[(gridminpos+1)]))/(2*(abs(zmean[gridminpos]-apply(cbind(zmean[(gridminpos-1)],zmean[(gridminpos+1)]),1,max)))))
+      
+      
+      # stratospheric polar vortex
+      pv_reg1 <- ind_tmp$ensmean[which(ind_tmp$names=="PV1.calc"),]
+      pv_reg2 <- ind_tmp$ensmean[which(ind_tmp$names=="PV2.calc"),]
+      pv <- pv_reg1 - pv_reg2
+      
+      # Pacific walker circulation
+      
+      pwc_reg1 <- ind_tmp$ensmean[which(ind_tmp$names=="PWC1.calc"),]
+      pwc_reg2 <- ind_tmp$ensmean[which(ind_tmp$names=="PWC2.calc"),]
+      pwc <- pwc_reg1 - pwc_reg2
+      
+      # Dynamic Indian Monsoon index
+      dimi_reg1 <- ind_tmp$ensmean[which(ind_tmp$names=="DIMI1.calc"),]
+      dimi_reg2 <- ind_tmp$ensmean[which(ind_tmp$names=="DIMI2.calc"),]
+      dimi <- dimi_reg1 - dimi_reg2
+      
+      
+      # NAO based on anomalies
+      nao_reg1 <- ind_tmp$ensmean[which(ind_tmp$names=="NAO1.calc"),]
+      nao_reg2 <- ind_tmp$ensmean[which(ind_tmp$names=="NAO2.calc"),]
+      nao <- nao_reg1 - nao_reg2
+      
+      # PNA based on anomalies
+      pna_reg1 <- ind_tmp$ensmean[which(ind_tmp$names=="PNA1.calc"),]
+      pna_reg2 <- ind_tmp$ensmean[which(ind_tmp$names=="PNA2.calc"),]
+      pna_reg3 <- ind_tmp$ensmean[which(ind_tmp$names=="PNA3.calc"),]
+      pna_reg4 <- ind_tmp$ensmean[which(ind_tmp$names=="PNA4.calc"),]
+      pna <- 0.25*(pna_reg1 - pna_reg2 + pna_reg3 -pna_reg4)
+      # PNA = 0.25*(Z[20◦ N,160◦ W] – Z[45◦ N,165◦ W] + Z[55◦ N,115◦ W] – Z[30◦ N,85◦ W])
+      
+      ind <- list(ensmean=matrix(0,nrow=length(indices),ncol=nseas), names=indices)
+      
+      ind$ensmean[which(indices=='ENH.temp2'),] <- ind_tmp$ensmean[which(ind$names=='ENH.temp2'),]
+      ind$ensmean[which(indices=='NAM.temp2'),] <- ind_tmp$ensmean[which(ind$names=='NAM.temp2'),]
+      ind$ensmean[which(indices=='SAM.temp2'),] <- ind_tmp$ensmean[which(ind$names=='SAM.temp2'),]
+      ind$ensmean[which(indices=='AFR.temp2'),] <- ind_tmp$ensmean[which(ind$names=='AFR.temp2'),]
+      ind$ensmean[which(indices=='ASI.temp2'),] <- ind_tmp$ensmean[which(ind$names=='ASI.temp2'),]
+      ind$ensmean[which(indices=='AUS.temp2'),] <- ind_tmp$ensmean[which(ind$names=='AUS.temp2'),]
+      ind$ensmean[which(indices=='ARC.temp2'),] <- ind_tmp$ensmean[which(ind$names=='ARC.temp2'),]
+      ind$ensmean[which(indices=='ANT.temp2'),] <- ind_tmp$ensmean[which(ind$names=='ANT.temp2'),]
+      ind$ensmean[which(indices=='NEU.temp2'),] <- ind_tmp$ensmean[which(ind$names=='NEU.temp2'),]
+      ind$ensmean[which(indices=='MED.temp2'),] <- ind_tmp$ensmean[which(ind$names=='MED.temp2'),]
+      ind$ensmean[which(indices=='GLO.temp2'),] <- ind_tmp$ensmean[which(ind$names=='GLO.temp2'),]
+      ind$ensmean[which(indices=='NAM.precip'),] <- ind_tmp$ensmean[which(ind$names=='NAM.precip'),]
+      ind$ensmean[which(indices=='SAM.precip'),] <- ind_tmp$ensmean[which(ind$names=='SAM.precip'),]
+      ind$ensmean[which(indices=='AFR.precip'),] <- ind_tmp$ensmean[which(ind$names=='AFR.precip'),]
+      ind$ensmean[which(indices=='ASI.precip'),] <- ind_tmp$ensmean[which(ind$names=='ASI.precip'),]
+      ind$ensmean[which(indices=='AUS.precip'),] <- ind_tmp$ensmean[which(ind$names=='AUS.precip'),]
+      ind$ensmean[which(indices=='ARC.precip'),] <- ind_tmp$ensmean[which(ind$names=='ARC.precip'),]
+      ind$ensmean[which(indices=='ANT.precip'),] <- ind_tmp$ensmean[which(ind$names=='ANT.precip'),]
+      ind$ensmean[which(indices=='NEU.precip'),] <- ind_tmp$ensmean[which(ind$names=='NEU.precip'),]
+      ind$ensmean[which(indices=='MED.precip'),] <- ind_tmp$ensmean[which(ind$names=='MED.precip'),]
+      ind$ensmean[which(indices=='SH.temp2'),] <- ind_tmp$ensmean[which(ind$names=='SH.temp2'),]
+      ind$ensmean[which(indices=='NAM.slp'),] <- ind_tmp$ensmean[which(ind$names=='NAM.slp'),]
+      ind$ensmean[which(indices=='SAM.slp'),] <- ind_tmp$ensmean[which(ind$names=='SAM.slp'),]
+      ind$ensmean[which(indices=='AFR.slp'),] <- ind_tmp$ensmean[which(ind$names=='AFR.slp'),]
+      ind$ensmean[which(indices=='ASI.slp'),] <- ind_tmp$ensmean[which(ind$names=='ASI.slp'),]
+      ind$ensmean[which(indices=='AUS.slp'),] <- ind_tmp$ensmean[which(ind$names=='AUS.slp'),]
+      ind$ensmean[which(indices=='ARC.slp'),] <- ind_tmp$ensmean[which(ind$names=='ARC.slp'),]
+      ind$ensmean[which(indices=='ANT.slp'),] <- ind_tmp$ensmean[which(ind$names=='ANT.slp'),]
+      ind$ensmean[which(indices=='NEU.slp'),] <- ind_tmp$ensmean[which(ind$names=='NEU.slp'),]
+      ind$ensmean[which(indices=='MED.slp'),] <- ind_tmp$ensmean[which(ind$names=='MED.slp'),]
+      ind$ensmean[which(indices=='NH.temp2'),] <- ind_tmp$ensmean[which(ind$names=='NH.temp2'),]
+      ind$ensmean[which(indices=='EU.temp2'),] <- ind_tmp$ensmean[which(ind$names=='EU.temp2'),]
+      ind$ensmean[which(indices=='EU.precip'),] <- ind_tmp$ensmean[which(ind$names=='EU.precip'),]
+      ind$ensmean[which(indices=='EU.slp'),] <- ind_tmp$ensmean[which(ind$names=='EU.slp'),]
+      ind$ensmean[which(indices=='HC.calc'),] <- hc 
+      ind$ensmean[which(indices=='ITCZ.calc'),] <- itcz 
+      ind$ensmean[which(indices=='SJ_u200.calc'),] <- sj_u200 
+      ind$ensmean[which(indices=='SJ_slp.calc'),] <- sj_slp
+      ind$ensmean[which(indices=='PV.calc'),] <- pv 
+      ind$ensmean[which(indices=='PWC.calc'),] <- pwc 
+      ind$ensmean[which(indices=='DIMI.calc'),] <- dimi 
+      ind$ensmean[which(indices=='NAO.calc'),] <- nao 
+      ind$ensmean[which(indices=='PNA.calc'),] <- pna
+    }
+    
+    
+    if(setname=="twentycr_vali"){
+      ind$data<-ind$ensmean
+    }else if(setname=="echam2"|setname=="analysis2"){
+      if(tps_only){
+        ind$data<-array(Hind %*% array(dataset$data, c(nrow(dataset$data),length(dataset$data)/nrow(dataset$data))), c(nrow(Hind),dim(dataset$data)[2:3]))
+      }else{
+        ind_tmp <- list(data=array(Hind %*% array(dataset$data, c(nrow(dataset$data),length(dataset$data)/nrow(dataset$data))), c(nrow(Hind),dim(dataset$data)[2:3])), names=indices_tmp)
+        # Hadley cell strength
+        hc <- matrix(0,nrow=nmem,ncol=nseas)
+        for (m in 1:nmem) {
+          c=1
+          zmean <- matrix(0,nrow=length(unique(dataset$lat)),ncol=nseas)
+          for (l in unique(dataset$lat)) {
+            pos1 <- which(trunc(dataset$lat,digits=8)==trunc(l,digits=8))
+            pos2 <- which(dataset$names=='omega500')
+            pos <- intersect(pos1,pos2)
+            if (length(dataset$data[pos,,m])==2 | (monthly_out & length(dataset$data[pos,,m])==12)) { zmean[c,] <- dataset$data[pos,,m] }
+            else if (length(dataset$data[pos,,m])>2| (monthly_out & length(dataset$data[pos,,m])>12)) { zmean[c,] <- apply(dataset$data[pos,,m],2,mean) }
+            c=c+1
+          }
+          latlist <- unique(dataset$lat)[which(which(unique(dataset$lat) > -30) %in%
+                                                 which(unique(dataset$lat) < 30))]
+          pos3 <- match(round(latlist,digits=8),round(unique(dataset$lat),digits=8))
+          zmean <- zmean[pos3,]
+          hc[m,] <- apply(zmean,2,min) # max upward wind is neg. omega value -> min function
+        }
+        
+        # ITCZ location
+        itcz <- matrix(0,nrow=nmem,ncol=nseas)
+        for (m in 1:nmem) {
+          c=1
+          zmean <- matrix(0,nrow=length(unique(dataset$lat)),ncol=nseas)
+          for (l in unique(dataset$lat)) {
+            pos1 <- which(trunc(dataset$lat,digits=8)==trunc(l,digits=8))
+            pos2 <- which(dataset$names=='omega500')
+            pos <- intersect(pos1,pos2)
+            if (length(dataset$data[pos,,m])==2 | (monthly_out & length(dataset$data[pos,,m])==12)) { zmean[c,] <- dataset$data[pos,,m] }
+            else if (length(dataset$data[pos,,m])>2| (monthly_out & length(dataset$data[pos,,m])>12)) { zmean[c,] <- apply(dataset$data[pos,,m],2,mean) }
+            c=c+1
+          }
+          latlist <- unique(dataset$lat)[which(which(unique(dataset$lat) > -30) %in%
+                                                 which(unique(dataset$lat) < 30))]
+          pos3 <- match(round(latlist,digits=8),round(unique(dataset$lat),digits=8))
+          zmean <- zmean[pos3,]
+          itcz_tmp <- apply(zmean[2:(nrow(zmean)-1),],2,min)
+          dlat <-  mean(latlist[1:(length(latlist)-1)]-latlist[2:(length(latlist))])   
+          
+          gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(itcz_tmp,digits=8)),each =length(pos3)), nrow=length(pos3))),2,which)
+          gridmin <- latlist[gridminpos-seq(0,(nseas-1)*length(pos3),by=length(pos3))]
+          
+          itcz[m,] <- gridmin - dlat * (((zmean[(gridminpos-1)])-(zmean[(gridminpos+1)]))/(2*(abs(zmean[gridminpos]-apply(cbind(zmean[(gridminpos-1)],zmean[(gridminpos+1)]),1,max)))))
+        }
+        
+        # subtropical jet (u200)
+        sj_u200 <- matrix(0,nrow=nmem,ncol=nseas)
+        for (m in 1:nmem) {
+          c=1
+          zmean <- matrix(0,nrow=length(unique(dataset$lat)),ncol=nseas)
+          for (l in unique(dataset$lat)) {
+            pos1 <- which(trunc(dataset$lat,digits=8)==trunc(l,digits=8))
+            pos2 <- which(dataset$names=='u200')
+            pos <- intersect(pos1,pos2)
+            if (length(dataset$data[pos,,m])==2 | (monthly_out & length(dataset$data[pos,,m])==12)) { zmean[c,] <- dataset$data[pos,,m] }
+            else if (length(dataset$data[pos,,m])>2| (monthly_out & length(dataset$data[pos,,m])>12)) { zmean[c,] <- apply(dataset$data[pos,,m],2,mean) }
+            c=c+1
+          }
+          latlist <- unique(dataset$lat)[which(which(unique(dataset$lat) > 0) %in%
+                                                 which(unique(dataset$lat) < 57))]
+          pos3 <- match(round(latlist,digits=8),round(unique(dataset$lat),digits=8))
+          zmean <- zmean[pos3,]
+          sj_tmp <- apply(zmean[2:(nrow(zmean)-1),],2,max) # max uwind
+          dlat <-  mean(latlist[1:(length(latlist)-1)]-latlist[2:(length(latlist))])   
+          gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(sj_tmp,digits=8)),each =length(pos3)), nrow=length(pos3))),2,which)
+          gridmin <- latlist[gridminpos-seq(0,(nseas-1)*length(pos3),by=length(pos3))]
+          zmean <- zmean * -1 # because next equation is to find minimum and here we search for max
+          sj_tmp <- sj_tmp * -1
+          sj_u200[m,] <- gridmin - dlat * (((zmean[(gridminpos-1)])-(zmean[(gridminpos+1)]))/(2*(abs(zmean[gridminpos]-apply(cbind(zmean[(gridminpos-1)],zmean[(gridminpos+1)]),1,max)))))
+          
+        }
+        
+        # subtropical jet (slp)
+        sj_slp <- matrix(0,nrow=nmem,ncol=nseas)
+        for (m in 1:nmem) {
+          c=1
+          zmean <- matrix(0,nrow=length(unique(dataset$lat)),ncol=nseas)
+          for (l in unique(dataset$lat)) {
+            pos1 <- which(trunc(dataset$lat,digits=8)==trunc(l,digits=8))
+            pos2 <- which(dataset$names=='slp')
+            pos <- intersect(pos1,pos2)
+            if (length(dataset$data[pos,,m])==2 | (monthly_out & length(dataset$data[pos,,m])==12)) { zmean[c,] <- dataset$data[pos,,m] }
+            else if (length(dataset$data[pos,,m])>2| (monthly_out & length(dataset$data[pos,,m])>12)) { zmean[c,] <- apply(dataset$data[pos,,m],2,mean) }
+            c=c+1
+          }
+          latlist <- unique(dataset$lat)[which(which(unique(dataset$lat) > 0) %in% which(unique(dataset$lat) < 57))]
+          pos3 <- match(round(latlist,digits=8),round(unique(dataset$lat),digits=8))
+          zmean <- zmean[pos3,]
+          sj_tmp <- apply(zmean[2:(nrow(zmean)-1),],2,max) # max slp
+          dlat <-  mean(latlist[1:(length(latlist)-1)]-latlist[2:(length(latlist))])   
+          
+          gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(sj_tmp,digits=8)),each =length(pos3)), nrow=length(pos3))),2,which)
+          gridmin <- latlist[gridminpos-seq(0,(nseas-1)*length(pos3),by=length(pos3))]
+          
+          zmean <- zmean * -1 # because next equation is to find minimum and here we search for max
+          sj_tmp <- sj_tmp * -1
+          sj_slp[m,] <- gridmin - dlat * (((zmean[(gridminpos-1)])-(zmean[(gridminpos+1)]))/(2*(abs(zmean[gridminpos]-apply(cbind(zmean[(gridminpos-1)],zmean[(gridminpos+1)]),1,max)))))
+        }   
+        
+        # stratospheric polar vortex
+        pv <- matrix(0,nrow=nmem,ncol=nseas)
+        for (m in 1:nmem) {
+          pv_reg1 <- ind_tmp$data[which(ind_tmp$names=="PV1.calc"),,m]
+          pv_reg2 <- ind_tmp$data[which(ind_tmp$names=="PV2.calc"),,m]
+          pv[m,] <- pv_reg1 - pv_reg2
+        }
+        
+        # Pacific walker circulation
+        pwc <- matrix(0,nrow=nmem,ncol=nseas)
+        for (m in 1:nmem) {
+          pwc_reg1 <- ind_tmp$data[which(ind_tmp$names=="PWC1.calc"),,m]
+          pwc_reg2 <- ind_tmp$data[which(ind_tmp$names=="PWC2.calc"),,m]
+          pwc[m,] <- pwc_reg1 - pwc_reg2
+        }
+        
+        # Dynamic Indian Monsoon index
+        dimi <- matrix(0,nrow=nmem,ncol=nseas)
+        for (m in 1:nmem) {
+          dimi_reg1 <- ind_tmp$data[which(ind_tmp$names=="DIMI1.calc"),,m]
+          dimi_reg2 <- ind_tmp$data[which(ind_tmp$names=="DIMI2.calc"),,m]
+          dimi[m,] <- dimi_reg1 - dimi_reg2
+        }
+        
+        # NAO based on anomalies
+        nao <- matrix(0,nrow=nmem,ncol=nseas)
+        for (m in 1:nmem) {
+          nao_reg1 <- ind_tmp$data[which(ind_tmp$names=="NAO1.calc"),,m]
+          nao_reg2 <- ind_tmp$data[which(ind_tmp$names=="NAO2.calc"),,m]
+          nao[m,] <- nao_reg1 - nao_reg2
+        }
+        
+        # PNA based on anomalies
+        pna <- matrix(0,nrow=nmem,ncol=nseas)
+        for (m in 1:nmem) {
+          pna_reg1 <- ind_tmp$data[which(ind_tmp$names=="PNA1.calc"),,m]
+          pna_reg2 <- ind_tmp$data[which(ind_tmp$names=="PNA2.calc"),,m]
+          pna_reg3 <- ind_tmp$data[which(ind_tmp$names=="PNA3.calc"),,m]
+          pna_reg4 <- ind_tmp$data[which(ind_tmp$names=="PNA4.calc"),,m]
+          pna[m,] <- 0.25*(pna_reg1 - pna_reg2 + pna_reg3 -pna_reg4)
+        }
+        
+        ind$data <- array(0,c(length(indices),nseas,nmem))
+        for (m in 1:nmem) {
+          ind$data[which(indices=='ENH.temp2'),,m] <- ind_tmp$data[which(ind$names=='ENH.temp2'),,m]
+          ind$data[which(indices=='NAM.temp2'),,m] <- ind_tmp$data[which(ind$names=='NAM.temp2'),,m]
+          ind$data[which(indices=='SAM.temp2'),,m] <- ind_tmp$data[which(ind$names=='SAM.temp2'),,m]
+          ind$data[which(indices=='AFR.temp2'),,m] <- ind_tmp$data[which(ind$names=='AFR.temp2'),,m]
+          ind$data[which(indices=='ASI.temp2'),,m] <- ind_tmp$data[which(ind$names=='ASI.temp2'),,m]
+          ind$data[which(indices=='AUS.temp2'),,m] <- ind_tmp$data[which(ind$names=='AUS.temp2'),,m]
+          ind$data[which(indices=='ARC.temp2'),,m] <- ind_tmp$data[which(ind$names=='ARC.temp2'),,m]
+          ind$data[which(indices=='ANT.temp2'),,m] <- ind_tmp$data[which(ind$names=='ANT.temp2'),,m]
+          ind$data[which(indices=='NEU.temp2'),,m] <- ind_tmp$data[which(ind$names=='NEU.temp2'),,m]
+          ind$data[which(indices=='MED.temp2'),,m] <- ind_tmp$data[which(ind$names=='MED.temp2'),,m]
+          ind$data[which(indices=='GLO.temp2'),,m] <- ind_tmp$data[which(ind$names=='GLO.temp2'),,m]
+          ind$data[which(indices=='NAM.precip'),,m] <- ind_tmp$data[which(ind$names=='NAM.precip'),,m]
+          ind$data[which(indices=='SAM.precip'),,m] <- ind_tmp$data[which(ind$names=='SAM.precip'),,m]
+          ind$data[which(indices=='AFR.precip'),,m] <- ind_tmp$data[which(ind$names=='AFR.precip'),,m]
+          ind$data[which(indices=='ASI.precip'),,m] <- ind_tmp$data[which(ind$names=='ASI.precip'),,m]
+          ind$data[which(indices=='AUS.precip'),,m] <- ind_tmp$data[which(ind$names=='AUS.precip'),,m]
+          ind$data[which(indices=='ARC.precip'),,m] <- ind_tmp$data[which(ind$names=='ARC.precip'),,m]
+          ind$data[which(indices=='ANT.precip'),,m] <- ind_tmp$data[which(ind$names=='ANT.precip'),,m]
+          ind$data[which(indices=='NEU.precip'),,m] <- ind_tmp$data[which(ind$names=='NEU.precip'),,m]
+          ind$data[which(indices=='MED.precip'),,m] <- ind_tmp$data[which(ind$names=='MED.precip'),,m]
+          ind$data[which(indices=='SH.temp2'),,m] <- ind_tmp$data[which(ind$names=='SH.temp2'),,m]
+          ind$data[which(indices=='NAM.slp'),,m] <- ind_tmp$data[which(ind$names=='NAM.slp'),,m]
+          ind$data[which(indices=='SAM.slp'),,m] <- ind_tmp$data[which(ind$names=='SAM.slp'),,m]
+          ind$data[which(indices=='AFR.slp'),,m] <- ind_tmp$data[which(ind$names=='AFR.slp'),,m]
+          ind$data[which(indices=='ASI.slp'),,m] <- ind_tmp$data[which(ind$names=='ASI.slp'),,m]
+          ind$data[which(indices=='AUS.slp'),,m] <- ind_tmp$data[which(ind$names=='AUS.slp'),,m]
+          ind$data[which(indices=='ARC.slp'),,m] <- ind_tmp$data[which(ind$names=='ARC.slp'),,m]
+          ind$data[which(indices=='ANT.slp'),,m] <- ind_tmp$data[which(ind$names=='ANT.slp'),,m]
+          ind$data[which(indices=='NEU.slp'),,m] <- ind_tmp$data[which(ind$names=='NEU.slp'),,m]
+          ind$data[which(indices=='MED.slp'),,m] <- ind_tmp$data[which(ind$names=='MED.slp'),,m]
+          ind$data[which(indices=='NH.temp2'),,m] <- ind_tmp$data[which(ind$names=='NH.temp2'),,m]
+          ind$data[which(indices=='EU.temp2'),,m] <- ind_tmp$data[which(ind$names=='EU.temp2'),,m]
+          ind$data[which(indices=='EU.precip'),,m] <- ind_tmp$data[which(ind$names=='EU.precip'),,m]
+          ind$data[which(indices=='EU.slp'),,m] <- ind_tmp$data[which(ind$names=='EU.slp'),,m]
+          ind$data[which(indices=='HC.calc'),,m] <- hc[m,] 
+          ind$data[which(indices=='ITCZ.calc'),,m] <- itcz[m,] 
+          ind$data[which(indices=='SJ_u200.calc'),,m] <- sj_u200[m,]
+          ind$data[which(indices=='SJ_slp.calc'),,m] <- sj_slp[m,]
+          ind$data[which(indices=='PV.calc'),,m] <- pv[m,]
+          ind$data[which(indices=='PWC.calc'),,m] <- pwc[m,] 
+          ind$data[which(indices=='DIMI.calc'),,m] <- dimi[m,] 
+          ind$data[which(indices=='NAO.calc'),,m] <- nao[m,]
+          ind$data[which(indices=='PNA.calc'),,m] <- pna[m,]
+        }
+      }
+    }
+  }else if (setname=="cru_vali"){
+    monthly_out<-get("monthly_out")
+    #load validation indices
+    if(monthly_out & !tps_only){
+      load(file=paste('../data/indices/indices_recon_1900-2000_monthly.Rdata'))
+      
+    }else if (!tps_only){
+      load(file=paste('../data/indices/indices_recon_1900-2000_monthly.Rdata'))
+      indseasonal<-matrix(0,6,200)
+      for(i in 1:200){indseasonal[,i]<-apply(indall[,((i-1)*6+10):((i-1)*6+15)],1,mean, na.rm = T)}
+      indall<-indseasonal
+    }
+    
+    indices <- c('ENH.temp2','NAM.temp2','SAM.temp2','AFR.temp2',
+                 'ASI.temp2','AUS.temp2','ARC.temp2','ANT.temp2',
+                 'NEU.temp2','MED.temp2',
+                 'GLO.temp','NAM.precip','SAM.precip','AFR.precip',
+                 'ASI.precip','AUS.precip','ARC.precip','ANT.precip',
+                 'NEU.precip','MED.precip',
+                 'SH.temp2','NAM.slp','SAM.slp','AFR.slp',
+                 'ASI.slp','AUS.slp','ARC.slp','ANT.slp',
+                 'NEU.slp','MED.slp',
+                 'NH.temp2', 'EU.temp2', 'EU.precip', 'EU.slp') #,
+    #                   'HC.calc', 'ITCZ.calc', 'SJ.calc', 'PV.calc',
+    #                   'PWC.calc', 'DIMI.calc', 'NAO.calc', 'PNA.calc',
+    #                     'HC', 'SJ', 'Z100', 'Z300', 'PWC')
+
+    Hind <- matrix(0,nrow=length(indices),ncol=nrow(dataset$data))
+    Hind[1,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'ENH'),which(dataset$names=="temp2")]
+    Hind[2,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'NAM'),which(dataset$names=="temp2")]
+    Hind[3,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'SAM'),which(dataset$names=="temp2")]
+    Hind[4,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'AFR'),which(dataset$names=="temp2")]
+    Hind[5,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'ASI'),which(dataset$names=="temp2")]
+    Hind[6,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'AUS'),which(dataset$names=="temp2")]
+    Hind[7,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'ARC'),which(dataset$names=="temp2")]
+    Hind[8,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'ANT'),which(dataset$names=="temp2")]
+    Hind[9,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'NEU'),which(dataset$names=="temp2")]
+    Hind[10,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'MED'),which(dataset$names=="temp2")]
+    Hind[11,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'GLO'),which(dataset$names=="temp2")]
+    Hind[12,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'NAM'),which(dataset$names=="precip")]
+    Hind[13,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'SAM'),which(dataset$names=="precip")]
+    Hind[14,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'AFR'),which(dataset$names=="precip")]
+    Hind[15,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'ASI'),which(dataset$names=="precip")]
+    Hind[16,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'AUS'),which(dataset$names=="precip")]
+    Hind[17,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'ARC'),which(dataset$names=="precip")]
+    Hind[18,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'ANT'),which(dataset$names=="precip")]
+    Hind[19,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'NEU'),which(dataset$names=="precip")]
+    Hind[20,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'MED'),which(dataset$names=="precip")]
+    Hind[21,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'SH'),which(dataset$names=="temp2")]
+    Hind[22,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'NAM'),which(dataset$names=="slp")]
+    Hind[23,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'SAM'),which(dataset$names=="slp")]
+    Hind[24,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'AFR'),which(dataset$names=="slp")]
+    Hind[25,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'ASI'),which(dataset$names=="slp")]
+    Hind[26,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'AUS'),which(dataset$names=="slp")]
+    Hind[27,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'ARC'),which(dataset$names=="slp")]
+    Hind[28,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'ANT'),which(dataset$names=="slp")]
+    Hind[29,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'NEU'),which(dataset$names=="slp")]
+    Hind[30,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'MED'),which(dataset$names=="slp")]      
+    Hind[31,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'NH'),which(dataset$names=="temp2")]
+    Hind[32,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'EU'),which(dataset$names=="temp2")]
+    Hind[33,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'EU'),which(dataset$names=="precip")]
+    Hind[34,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'EU'),which(dataset$names=="slp")]
+    #      # land sea mask to take care of missing validata in the ocean
+    
+    vpos <- which(!is.na(dataset$data[,1]))
+    Hind2 <- Hind[,vpos]
+    validatanona <- dataset$data[vpos,]
+    if(!tps_only){
+      ind <- list(data=Hind2 %*% validatanona, names=indices)
+      if (monthly_out){
+        ind$data<- rbind(ind$data,indall[, ((cyr-1900)*12-2):((cyr-1900)*12+9)])
+      }else{
+        ind$data<- rbind(ind$data,indall[,((cyr-1901)*2+1):((cyr-1901)*2+2)])
+      }
+      ind$names<-c(ind$names,"ind_recon_dimi","ind_recon_z100","ind_recon_z300","ind_recon_pwc","ind_recon_hc","ind_recon_sj")
+    }else{
+      ind <- list(data=Hind2 %*% validatanona, names=indices[1:34])
+    }
+    ind$ensmean<-ind$data
+  }
+  return(ind)
+}
 
 # Using more members either for the whole assimilation or for calculating the background cov matrix
 # The B can be static or recalculated for every year
@@ -6066,4 +6942,5 @@ background_matrix = function (state,n_covar, ech) {
   }
   return(dat)
 }
+
 

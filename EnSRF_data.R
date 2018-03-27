@@ -20,6 +20,7 @@ syr=1903
 eyr=1960
 
 
+
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
 args <- commandArgs(TRUE)
@@ -39,9 +40,10 @@ if (user=="veronika") {
 } else if (user=="joerg") {
   workdir='/scratch3/joerg/projects/reuse/reuse_git/'
 } else if (user == "nevin"){
-  workdir = '/scratch3/nevin/reuse_climcal/reuse_git/'
-} else {
+  workdir = '/scratch3/nevin/reuse/reuse_git/'
+} else{
   stop("Unknown user!")
+  
 }
 dataextdir='/mnt/climstor/giub/EKF400/'
 dataintdir=paste0(workdir,'../data/')
@@ -76,6 +78,7 @@ source('EnSRF_generate.R')
 ##########################################################################################
 if (sixmonstatevector) {syr2=syr+1} else {syr2=syr}
 for (cyr in syr2:eyr) {
+  print(expname)
   print(cyr)
   write(cyr,file=paste0('../log/',logfn),append=T)
   if (cyr > 1659) {
@@ -100,29 +103,30 @@ for (cyr in syr2:eyr) {
     real_proxies=T
   }
   # next line not included yet: 
-  if (cyr < 1902) {        # if we don't use reconvali, the eyr here should be changed (Error in valiall : object 'valiall' not found) -> but then instead of the eyr we should use cyr
-    vali=F                 # switch off prepplot if no vali data selected
+  if (cyr > min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)]) & cyr<=max(c(eyr_cru,eyr_twentycr,eyr_recon)[c(vali_cru, vali_twentycr, vali_recon)])) {        # if we don't use reconvali, the eyr here should be changed (Error in valiall : object 'valiall' not found) -> but then instead of the eyr we should use cyr
+    vali=T                 # switch off prepplot if no vali data selected
   } else {
-    vali=T
+    vali=F
   }
-  if ((cyr > 1901) & (eyr < 2006)) {
+  if ((cyr > syr_cru) & (cyr <=eyr_cru) & vali_cru) {
     cru_vali=T             # monthly CRU TS3 temp, precip and HADSLP2 gridded instrumentals (1901-2004)
-    #  ind_recon=T            # Stefan's reconstructed indices until 1948 and NCAR reanalysis later added to CRU and NCEP
+    #  ind_recon=T            # Stefan's reconstructed indices until 1948 and NCAR reanalysis later added to CRU
   } else {
     cru_vali=F 
     #  ind_recon=F
   }
-  if ((cyr > 1901) & (eyr < 2004)) {
+  if ((cyr > syr_twentycr) & (cyr <=eyr_twentycr) & vali_twentycr) {
     twentycr_vali=T             
   } else {
     twentycr_vali=F 
   }
   
-  #if ((syr < 1901) & (eyr > 1749)) {
-  #  recon_vali=T           # seasonal luterbacher, pauling, kuettel recons (1750-1999)
-  #} else {
-  recon_vali=F
-  #}
+  if ((cyr > syr_recon) & (cyr <=eyr_recon) & vali_recon) {
+   recon_vali=T           # seasonal luterbacher, pauling, kuettel recons (1750-1999)
+  } else {
+   recon_vali=F
+  }
+  
   print(paste0("instr:",instrumental, "; proxies:",real_proxies, "; documentary:",docum, 
               "; validation data:",vali,"; CRU:",cru_vali,"; 20cr:",twentycr_vali,"; Recon:",recon_vali))
   write(paste("instr:",instrumental, "; proxies:",real_proxies, "; documentary:",docum, 
@@ -562,20 +566,16 @@ for (cyr in syr2:eyr) {
     l=0
     ## this part enables experiments with multiple vali data sets. valiname is a variable with all the vali data sets  
     ## set to true. The for loop adds the validata set to a list. 
-    valiname = c("cru_vali","ncep_vali","recon_vali","twentycr_vali")[c(cru_vali,ncep_vali,recon_vali,twentycr_vali)] 
+    valiname = c("cru_vali","recon_vali","twentycr_vali")[c(cru_vali,recon_vali,twentycr_vali)] 
     for (v in valiname) {
       l=l+1
       print(v)
       cru_vali=F
-      ncep_vali=F
       recon_vali=F
       twentycr_vali=F
       if (v=="cru_vali"){
         cru_vali=T
         print("cru is true")
-      } else if (v=="ncep_vali"){
-        ncep_vali=T
-        print("ncep is true")
       } else if (v=="recon_vali"){
         recon_vali=T
         print("recon is true")
@@ -585,13 +585,11 @@ for (cyr in syr2:eyr) {
       }
     
       if (every2grid) {
-        if (ncep_vali) {load(paste(dataextdir,"vali_data/ncep/ncep_allvar_",syr_ncep,"-",eyr_ncep,"_2ndgrid.Rdata",sep=""))
-        } else if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,"_2ndgrid.Rdata",sep=""))
+        if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,"_2ndgrid.Rdata",sep=""))
         } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid.Rdata",sep=""))
-        } else if (twentycr_vali){load(paste0(twentycrpath,"twentycr_allvar_1901-2004_2ndgrid.Rdata"))}
+        } else if (twentycr_vali){load(paste0(twentycrpath,"twentycr_allvar_",syr_twentycr,"-",eyr_twentycr,"_2ndgrid.Rdata"))}
       } else {
-        if (ncep_vali) {load(paste(dataextdir,"vali_data/ncep/ncep_allvar_",syr_ncep,"-",eyr_ncep,".Rdata",sep=""))
-        } else if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,".Rdata",sep=""))
+        if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,".Rdata",sep=""))
         } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,".Rdata",sep=""))} 
       }
       # if (ind_recon) {
@@ -600,8 +598,6 @@ for (cyr in syr2:eyr) {
       if (cru_vali) {
         valiall <- cruall
         valiall$data <- valiall$data[,,1]
-      } else if (ncep_vali) {
-        valiall <- ncepall
       } else if (recon_vali) {
         valiall <- reconall
         valiall$data <- valiall$data[,,1]
@@ -612,11 +608,12 @@ for (cyr in syr2:eyr) {
     
     # 2.2 Choose which variables want to use from the data set
     if (tps_only) {
+
       tpspos2 <- c(which(valiall$names=='temp2'), which(valiall$names=='precip'), 
                    which(valiall$names=='slp'))
       valiall$data <- valiall$data[tpspos2,]
       valiall$names <- valiall$names[tpspos2]
-    }
+    } 
     if (fasttest) {
       mulc <- 4 # choose every 4th grid box
       loi <- seq(1:length(valiall$lon))
@@ -664,12 +661,12 @@ for (cyr in syr2:eyr) {
     }
     
       # 2.5 Warning message
-      # if (sum(c(ncep_vali,cru_vali,recon_vali))>1) {
+      # if (sum(c(cru_vali,recon_vali))>1) {
       #   print("WARNING: more than 1 validation data set selected!")
       #   write("WARNING: more than 1 validation data set selected!",
       #         file=paste0('../log/',logfn),append=T)
       # } else {
-      #   write(paste("ncep_vali:",ncep_vali,"; cru_vali:",cru_vali,"; recon_vali:",recon_vali),
+      #   write(paste("cru_vali:",cru_vali,"; recon_vali:",recon_vali),
       #         file=paste0('../log/',logfn),append=T)
       # }
       # 
@@ -678,7 +675,6 @@ for (cyr in syr2:eyr) {
       validate[[paste(v)]]$ensmean <- validate[[paste(v)]]$data
     }
     if ("cru_vali"%in%valiname) cru_vali=T
-    if ("ncep_vali"%in%valiname) ncep_vali=T
     if ("recon_vali"%in%valiname) recon_vali=T
     if ("twentycr_vali"%in%valiname) twentycr_vali=T
   }
@@ -1469,7 +1465,7 @@ for (cyr in syr2:eyr) {
       if ((real_proxies) & ((instrumental) | (docum))) { 
         Rcal <- c(temp2=0.9, precip=50, slp=10)[calibrate$names]
         #        if (avg_prox_per_grid) {Rcal <- Rcal*(1/calibrate$numavg)}
-        Rcal[calibrate$names=="prox"] <- realprox$var_residu 
+        Rcal[calibrate$names=="prox"] <- realprox$var_residu
         # previously used residuals/2 for 1. paper version to give proxies more weight
         # better delete "/2"
         # probably should have given instrumentals more error instead!

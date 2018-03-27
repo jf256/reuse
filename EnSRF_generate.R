@@ -178,7 +178,7 @@ if (generate_PROXIESnew){
  
   
   print("generate_PROXIESnew")
-  read.these <- c("trw","mxd","schweingr","pages","ntrend")[c(TRW,MXD,SCHWEINGR,PAGES,NTREND)]
+  read.these <- c("trw","mxd","schweingr","pages","ntrend","trw_petra")[c(TRW,MXD,SCHWEINGR,PAGES,NTREND,TRW_PETRA)]
   if(exists("realprox")){rm(realprox)}
   for (varname in read.these){
     if (varname=="trw") {
@@ -253,6 +253,21 @@ if (generate_PROXIESnew){
         realprox$var_residu <- c(realprox$var_residu, ntrend$var_residu)
         
       } else { realprox<-ntrend}
+    }
+    
+    if (varname=="trw_petra") {
+      print("reading trw_petra")
+      trw_petra <- read_trw_petra(fsyr,feyr, validate=pages_lm_fit) 
+      
+      if (exists("realprox")){
+        
+        realprox$data <- cbind(realprox$data, trw_petra$data)
+        realprox$lon <- c(realprox$lon, trw_petra$lon)
+        realprox$lat <- c(realprox$lat, trw_petra$lat)
+        realprox$mr <- rbind(realprox$mr, trw_petra$mr)
+        realprox$var_residu <- c(realprox$var_residu, trw_petra$var_residu)
+        
+      } else { realprox<-trw_petra}
     }
     
   }
@@ -358,6 +373,12 @@ if (generate_NTREND) {
   ntrend = read_ntrend(fsyr,feyr, validate=pages_lm_fit)
   realprox = ntrend
   save(realprox, file=paste0(workdir,"../n-trend_",fsyr,"-",feyr,"_",pages_lm_fit,".Rdata"))
+}
+
+if (generate_PSEUDO){
+  print("generate_PSEUDO")
+  pseudoprox<-read_pseudo()
+  save(pseudoprox, file=paste0(workdir,"../pseudo_prox_",fsyr,"-",feyr,"_",pages_lm_fit,".Rdata"))
 }
 
 

@@ -1064,7 +1064,7 @@ read_proxy2 <- function(syr,eyr){
 read_pages = function(fsyr,feyr,archivetype, validate) {
   # load(paste0(paste0(workdir,'/../pages_proxies.RData', sep='')))
   load("/scratch3/veronika/reuse/pages_proxies.RData")
-
+  
   if(archivetype == "tree") {
     if(exists("mrNH")){rm(mrNH)}
     if(exists("mrSH")){rm(mrSH)}
@@ -1102,12 +1102,12 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
     nc_close(nc)
     
     # start calculation the regression for each tree data  
-
+    
     for (i in 1:length(p_tree$lon)) {
       k=which(abs(lonlist-p_tree$lon[i]+0.001)==min(abs(lonlist-p_tree$lon[i]+0.001)))
       l=which(abs(latlist-p_tree$lat[i])==min(abs(latlist-p_tree$lat[i])))
       t3 <- t2[k,l,]
-      if (all(is.na(t3))) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
+      if (all(is.na(t3))|length(which(is.na(p_tree_1901_1970$data[,i])))>=50) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
         if (p_tree$lat[i] > 0){
           if (!exists("mrNH")) {
             mrNH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) #nr of coeff + intercept
@@ -1153,9 +1153,9 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
         } else {
           unab <- tSH
         }                  
-          colnames(unab) <- c('t.first','t.second','t.third','t.fourth','t.fifth','t.sixth')
-          onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
-          unab <- unab[,match(onlytemp,colnames(unab))]
+        colnames(unab) <- c('t.first','t.second','t.third','t.fourth','t.fifth','t.sixth')
+        onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
+        unab <- unab[,match(onlytemp,colnames(unab))]
         
         # multiple linear regression
         results <- lm(p_tree_1901_1970$data[,i]~unab,  na.action=na.exclude)
@@ -1251,9 +1251,12 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
     latlist=ncvar_get(nc, "lat") 
     nc_close(nc)
     
-    # start calculation the regression for each tree data  
+    # start calculation the regression for each coral data  
     for (i in 1:length(p_coral$lon)) {
-      if (all(is.na(p_coral_1901_1970$data[,i]))) {
+      k=which(abs(lonlist-p_coral$lon[i]+0.001)==min(abs(lonlist-p_coral$lon[i]+0.001)))
+      l=which(abs(latlist-p_coral$lat[i])==min(abs(latlist-p_coral$lat[i])))
+      t3 <- t2[k,l,]
+      if (all(is.na(t3))|length(which(is.na(p_coral_1901_1970$data[,i])))>=50) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
         if (p_coral$lat[i] > 0){
           if (!exists("mrNH")) {
             mrNH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) #nr of coeff + intercept
@@ -1264,12 +1267,14 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
             NHdata <- p_coral$data[,i]
           } else {
             mrNH <- rbind(mrNH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))#nr of coeff + intercept
-            var_residuNH <- c(var_residuNH,rep(NA,1))
+            var_residuNH <- c(var_residuNH,rep(NA,1)) 
             NHlat <- c(NHlat,p_coral$lat[i])
             NHlon <- c(NHlon,p_coral$lon[i])
             NHelev <- c(NHelev,p_coral$elevation[i])
-            NHdata <- cbind(NHdata,p_coral$data[,i])}
-        }else{ 
+            NHdata <- cbind(NHdata,p_coral$data[,i])
+          }
+          
+        }else{
           if (!exists("mrSH")){
             mrSH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # nr of coeff + intercept
             var_residuSH <- NA
@@ -1282,94 +1287,62 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
             var_residuSH <- c(var_residuSH,rep(NA,1))
             SHlat <- c(SHlat,p_coral$lat[i])
             SHlon <- c(SHlon,p_coral$lon[i])
-            SHelev <- c(SHelev,coral$elevation[i])
-            SHdata <- cbind(SHdata,coral$data[,i])
+            SHelev <- c(SHelev,p_coral$elevation[i])
+            SHdata <- cbind(SHdata,p_coral$data[,i])
           }
         }
-      } else {
-        k=which(abs(lonlist-p_coral$lon[i]+0.001)==min(abs(lonlist-p_coral$lon[i]+0.001)))
-        l=which(abs(latlist-p_coral$lat[i])==min(abs(latlist-p_coral$lat[i])))
-        t3 <- t2[k,l,]
-        if (all(is.na(t3))) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
-          if (p_coral$lat[i] > 0){
-            if (!exists("mrNH")) {
-              mrNH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) #nr of coeff + intercept
-              var_residuNH <- NA
-              NHlat <- p_coral$lat[i]
-              NHlon <- p_coral$lon[i]
-              NHelev <- p_coral$elevation[i]
-              NHdata <- p_coral$data[,i]
-            } else {
-              mrNH <- rbind(mrNH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))#nr of coeff + intercept
-              var_residuNH <- c(var_residuNH,rep(NA,1)) 
-              NHlat <- c(NHlat,p_coral$lat[i])
-              NHlon <- c(NHlon,p_coral$lon[i])
-              NHelev <- c(NHelev,p_coral$elevation[i])
-              NHdata <- cbind(NHdata,p_coral$data[,i])
-              }
-            
-          }else{
-            if (!exists("mrSH")){
-              mrSH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # nr of coeff + intercept
-              var_residuSH <- NA
-              SHlat <- p_coral$lat[i]
-              SHlon <- p_coral$lon[i]
-              SHelev <- p_coral$elevation[i]
-              SHdata <- p_coral$data[,i]
-            }else{
-              mrSH <- rbind(mrSH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))
-              var_residuSH <- c(var_residuSH,rep(NA,1))
-              SHlat <- c(SHlat,p_coral$lat[i])
-              SHlon <- c(SHlon,p_coral$lon[i])
-              SHelev <- c(SHelev,p_coral$elevation[i])
-              SHdata <- cbind(SHdata,p_coral$data[,i])
-            }
+      } else { # we can calculate the regression
+        # make variable for each month
+        t5 = t3[c(4:(length(t3)-9))]
+        t4 = t(array(t5,c(6,length(t5)/6))) #makes half year bunches
+        tSH = t4[seq(2,nrow(t4),2),] #takes the months from Oct to March
+        tNH = t4[seq(1,nrow(t4),2),] #takes the months from April to September
+        # t4 = t(array(t5,c(12,length(t5)/12))) # 70 years from Apr-March
+        
+        if (p_coral$lat[i] > 0) { # which half a year we want to use for calculating the regression
+          unab <- tNH
+        } else {
+          unab <- tSH
+        }                  
+        colnames(unab) <- c('t.first','t.second','t.third','t.fourth','t.fifth','t.sixth')
+        onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
+        unab <- unab[,match(onlytemp,colnames(unab))]
+        
+        # multiple linear regression
+        results <- lm(p_coral_1901_1970$data[,i]~unab,  na.action=na.exclude)
+        corr = cor.test(fitted.values(results),p_coral_1901_1970$data[,i]) 
+        # print(corr[4]) # correlations are very small
+        if (p_coral$lat[i] > 0){ 
+          if (!exists("mrNH")) { 
+            mrNH <- results$coefficients
+            var_residuNH <- var(results$residuals)
+            NHlat <- p_coral$lat[i]
+            NHlon <- p_coral$lon[i]
+            NHelev <- p_coral$elevation[i]
+            NHdata <- p_coral$data[,i]
+          } else { 
+            mrNH <- rbind(mrNH,results$coefficients)
+            var_residuNH <- c(var_residuNH,var(results$residuals))
+            NHlat <- c(NHlat,p_coral$lat[i])
+            NHlon <- c(NHlon,p_coral$lon[i])
+            NHelev <- c(NHelev,p_coral$elevation[i])
+            NHdata <- cbind(NHdata,p_coral$data[,i])
           }
-        } else { # we can calculate the regression
-          # make variable for each month
-          t5 = t3[c(4:(length(t3)-9))]
-          t4 = t(array(t5,c(6,length(t5)/6))) #makes half year bunches
-          tSH = t4[seq(2,nrow(t4),2),] #takes the months from Oct to March
-          tNH = t4[seq(1,nrow(t4),2),] #takes the months from April to September
-          # t4 = t(array(t5,c(12,length(t5)/12))) # 70 years from Apr-March
-          
-          if (p_coral$lat[i] > 0) { # which half a year we want to use for calculating the regression
-            unab <- tNH
-          } else {
-            unab <- tSH
-          }                  
-          colnames(unab) <- c('t.first','t.second','t.third','t.fourth','t.fifth','t.sixth')
-          onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
-          unab <- unab[,match(onlytemp,colnames(unab))]
-          
-          # multiple linear regression
-          results <- lm(p_coral_1901_1970$data[,i]~unab,  na.action=na.exclude)
-          corr = cor.test(fitted.values(results),p_coral_1901_1970$data[,i]) 
-          # print(corr[4]) # correlations are very small
-          if (p_coral$lat[i] > 0){ 
-            if (!exists("mrNH")) { 
-              mrNH <- results$coefficients
-              var_residuNH <- var(results$residuals)
-              NHlat <- p_coral$lat[i]
-              NHlon <- p_coral$lon[i]
-            } else { 
-              mrNH <- rbind(mrNH,results$coefficients)
-              var_residuNH <- c(var_residuNH,var(results$residuals))
-              NHlat <- c(NHlat,p_coral$lat[i])
-              NHlon <- c(NHlon,p_coral$lon[i])
-            }
-          }else{
-            if (!exists("mrSH")) { 
-              mrSH <- results$coefficients
-              var_residuSH <- var(results$residuals)
-              SHlat <- p_coral$lat[i]
-              SHlon <- p_coral$lon[i]
-            } else { 
-              mrSH <- rbind(mrSH,results$coefficients)
-              var_residuSH <- c(var_residuSH,var(results$residuals))
-              SHlat <- c(SHlat,p_coral$lat[i])
-              SHlon <- c(SHlon,p_coral$lon[i])
-            }
+        }else{
+          if (!exists("mrSH")) { 
+            mrSH <- results$coefficients
+            var_residuSH <- var(results$residuals)
+            SHlat <- p_coral$lat[i]
+            SHlon <- p_coral$lon[i]
+            SHelev <- p_coral$elevation[i]
+            SHdata <- p_coral$data[,i]
+          } else { 
+            mrSH <- rbind(mrSH,results$coefficients)
+            var_residuSH <- c(var_residuSH,var(results$residuals))
+            SHlat <- c(SHlat,p_coral$lat[i])
+            SHlon <- c(SHlon,p_coral$lon[i])
+            SHelev <- c(SHelev,p_coral$elevation[i])
+            SHdata <- cbind(SHdata,p_coral$data[,i])
           }
         }
       }
@@ -1380,11 +1353,16 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
     colnames(mrtmp) <- c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabp.first","unabp.second","unabp.third","unabp.fourth","unabp.fifth","unabp.sixth")
     mrtmp[1:nrow(mrNH),match(colnames(mrNH),colnames(mrtmp))]<-mrNH 
     mrtmp[(nrow(mrNH)+1):nrow(mrtmp),match(colnames(mrSH),colnames(mrtmp))]<-mrSH
+    datatmp <- matrix(NA, 403, ncol(NHdata)+ncol(SHdata))
+    datatmp[,1:ncol(NHdata)] <- NHdata
+    datatmp[,(ncol(NHdata)+1):ncol(datatmp)] <- SHdata
     
     p_coral$mr <- mrtmp
     p_coral$var_residu <- c(var_residuNH,var_residuSH)
     p_coral$lat <- c(NHlat,SHlat)
     p_coral$lon <- c(NHlon,SHlon)
+    p_coral$elevation <- c(NHelev,SHelev)
+    p_coral$data <- datatmp
     invisible(p_coral)
   } else if (archivetype == "documents") {
     mylist.names = c("data","time","lon","lat","archivetype","elevation")
@@ -1456,7 +1434,7 @@ read_ntrend = function(fsyr,feyr, validate) {
     k=which(abs(lonlist-ntrend$lon[i]+0.001)==min(abs(lonlist-ntrend$lon[i]+0.001)))
     l=which(abs(latlist-ntrend$lat[i])==min(abs(latlist-ntrend$lat[i])))
     t3 <- t2[k,l,]
-    if (all(is.na(t3))) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
+    if (all(is.na(t3))|length(which(is.na(ntrend_1901_1970$data[,i])))>=50) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
       if (i==1) {
         mr <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # coeff +intercept
         var_residu <- NA
@@ -1498,8 +1476,182 @@ read_ntrend = function(fsyr,feyr, validate) {
 }
 
 
+read_trw_petra<-function(fsyr, feyr, validate){
+  load(paste0('/scratch3/nevin/reuse/trw_petra.RData'))
+  na_tree<-rep(NA,2761)
+  tree_petra<-list(data=matrix(rep(NA,(feyr-fsyr+1)*2761),(feyr-fsyr+1),2761),time=rep(NA,(feyr-fsyr+1)),lon=na_tree,lat=na_tree,elevation=na_tree, mr=matrix(rep(NA,2761*13),2761,13))
+  ti<-which((trw_petra[,,1]$time.n.chronos[,1] >= fsyr) & (trw_petra[,,1]$time.n.chronos[,1] <= feyr))
+  index=0
+  for(i in 1:22){
+    n_tree<-dim(trw_petra[,,i]$lonlat)[2]
+    tree_petra$data[,(index+1):(index+n_tree)]<-trw_petra[,,i]$time.n.chronos[ti,2:(n_tree+1)]
+    tree_petra$lon[(index+1):(index+n_tree)]<-trw_petra[,,i]$lonlat[1,]
+    tree_petra$lat[(index+1):(index+n_tree)]<-trw_petra[,,i]$lonlat[2,]
+    tree_petra$elevation[(index+1):(index+n_tree)]<-trw_petra[,,i]$elevation[,1]
+    index<-index+n_tree
+  }
+  tree_petra$time<-trw_petra[,,1]$time.n.chronos[ti,1]
+  tree_petra$data[which(is.nan(tree_petra$data),arr.ind = T)]<-NA
+  
+  start_yr = which(tree_petra$time == "1901")
+  end_yr = which(tree_petra$time == "1970")
+  tree_petra_1901_1970<-list(data=matrix(rep(NA,70*2761),70,2761),time=rep(NA,70))
+  tree_petra_1901_1970$data<-tree_petra$data[start_yr:end_yr,]
+  tree_petra_1901_1970$time<-tree_petra$time[start_yr:end_yr]
+  
+  
+  
+  if (validate == "CRU") {
+    nc=nc_open(paste(crupath,'/cru_allvar_abs_1901-2004.nc',sep=''), write=F)
+    t1=ncvar_get(nc, "temp2") # for CRU temp
+    t2 <- t1[,,1:852] # from year 1901 till 1971
+  } else if (validate == "GISS") {
+    nc=nc_open(paste(gisspath,'/air.2x2.250_anom_echamgrid.nc',sep=''), write=F)
+    t1=ncvar_get(nc, "air") # for GISS air temp and SST
+    t2 <- t1[,,253:1104]
+  }
+  lonlist=ncvar_get(nc, "lon")
+  lonlist[lonlist > 180] <- lonlist[lonlist > 180] - 360
+  latlist=ncvar_get(nc, "lat")
+  nc_close(nc)
+  
+  for (i in 1:length(tree_petra$lon)){
+    k=which(abs(lonlist-tree_petra$lon[i]+0.001)==min(abs(lonlist-tree_petra$lon[i]+0.001)))
+    l=which(abs(latlist-tree_petra$lat[i])==min(abs(latlist-tree_petra$lat[i])))
+    t3 <- t2[k,l,]
+    if (all(is.na(t3))| length(which(is.na(tree_petra_1901_1970$data[,i])))>=50) { # There is no observation data in the CRU or GISS or to many NA (>=50/70) in the treering data-> the regression cannot/shouldnot be calculated
+      if (tree_petra$lat[i] > 0){
+        if (!exists("mrNH")) {
+          mrNH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) #nr of coeff + intercept
+          var_residuNH <- NA
+          NHlat <- tree_petra$lat[i]
+          NHlon <- tree_petra$lon[i]
+          NHelev <- tree_petra$elevation[i]
+          NHdata <- tree_petra$data[,i]
+        } else {
+          mrNH <- rbind(mrNH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))#nr of coeff + intercept
+          var_residuNH <- c(var_residuNH,rep(NA,1))
+          NHlat <- c(NHlat,tree_petra$lat[i])
+          NHlon <- c(NHlon,tree_petra$lon[i])
+          NHelev <- c(NHelev,tree_petra$elevation[i])
+          NHdata <- cbind(NHdata,tree_petra$data[,i])}
+      }else  {
+        if (!exists("mrSH")){
+          mrSH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # nr of coeff + intercept
+          var_residuSH <- NA
+          SHlat <- tree_petra$lat[i]
+          SHlon <- tree_petra$lon[i]
+          SHelev <- tree_petra$elevation[i]
+          SHdata <- tree_petra$data[,i]
+        }else{
+          mrSH <- rbind(mrSH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))
+          var_residuSH <- c(var_residuSH,rep(NA,1))
+          SHlat <- c(SHlat,tree_petra$lat[i])
+          SHlon <- c(SHlon,tree_petra$lon[i])
+          SHelev <- c(SHelev,tree_petra$elevation[i])
+          SHdata <- cbind(SHdata,tree_petra$data[,i])
+        }
+      }
+    }else{ # we can calculate the regression
+      # make variable for each month
+      t5 = t3[c(4:(length(t3)-9))]
+      t4 = t(array(t5,c(6,length(t5)/6))) #makes half year bunches
+      tSH = t4[seq(2,nrow(t4),2),] #takes the months from Oct to March
+      tNH = t4[seq(1,nrow(t4),2),] #takes the months from April to September, shortened because easier later
+      # t4 = t(array(t5,c(12,length(t5)/12))) # 70 years from Apr-March, cuts the last half year without warning
+      
+      if (tree_petra$lat[i] > 0) { # which half a year we want to use for calculating the regression
+        unab <- tNH
+      } else {
+        unab <- tSH
+      }
+      colnames(unab) <- c('t.first','t.second','t.third','t.fourth','t.fifth','t.sixth')
+      onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
+      unab <- unab[,match(onlytemp,colnames(unab))]
+      
+      # multiple linear regression
+      results <- lm(tree_petra_1901_1970$data[,i]~unab,  na.action=na.exclude)
+      corr = cor.test(fitted.values(results),tree_petra_1901_1970$data[,i])
+      # print(corr[4]) # maybe under a certain corr value we could just set it to NA?
+      
+      if (tree_petra$lat[i] > 0){
+        if (!exists("mrNH")) {
+          mrNH <- results$coefficients
+          var_residuNH <- var(results$residuals)
+          NHlat <- tree_petra$lat[i]
+          NHlon <- tree_petra$lon[i]
+          NHelev <- tree_petra$elevation[i]
+          NHdata <- tree_petra$data[,i]
+        } else {
+          mrNH <- rbind(mrNH,results$coefficients)
+          var_residuNH <- c(var_residuNH,var(results$residuals))
+          NHlat <- c(NHlat,tree_petra$lat[i])
+          NHlon <- c(NHlon,tree_petra$lon[i])
+          NHelev <- c(NHelev,tree_petra$elevation[i])
+          NHdata <- cbind(NHdata,tree_petra$data[,i])
+        }
+      }else{
+        if (!exists("mrSH")) {
+          mrSH <- results$coefficients
+          var_residuSH <- var(results$residuals)
+          SHlat <- tree_petra$lat[i]
+          SHlon <- tree_petra$lon[i]
+          SHelev <- tree_petra$elevation[i]
+          SHdata <- tree_petra$data[,i]
+        } else {
+          mrSH <- rbind(mrSH,results$coefficients)
+          var_residuSH <- c(var_residuSH,var(results$residuals))
+          SHlat <- c(SHlat,tree_petra$lat[i])
+          SHlon <- c(SHlon,tree_petra$lon[i])
+          SHelev <- c(SHelev,tree_petra$elevation[i])
+          SHdata <- cbind(SHdata,tree_petra$data[,i])
+        }
+      }
+    }
+  }
+  
+  mrtmp<-matrix(NA, nrow(mrNH)+nrow(mrSH),13)
+  colnames(mrtmp) <- c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabp.first","unabp.second","unabp.third","unabp.fourth","unabp.fifth","unabp.sixth")
+  mrtmp[1:nrow(mrNH),match(colnames(mrNH),colnames(mrtmp))]<-mrNH
+  mrtmp[(nrow(mrNH)+1):nrow(mrtmp),match(colnames(mrSH),colnames(mrtmp))]<-mrSH
+  datatmp <- matrix(NA, 403, ncol(NHdata)+ncol(SHdata))
+  datatmp[,1:ncol(NHdata)] <- NHdata
+  datatmp[,(ncol(NHdata)+1):ncol(datatmp)] <- SHdata
+  
+  
+  tree_petra$mr <- mrtmp
+  tree_petra$var_residu <- c(var_residuNH,var_residuSH)
+  tree_petra$lat <- c(NHlat,SHlat)
+  tree_petra$lon <- c(NHlon,SHlon)
+  tree_petra$elevation <- c(NHelev,SHelev)
+  tree_petra$data <- datatmp
+  invisible(tree_petra)
+}
 
-
+read_pseudo<-function(){
+  pseudodata<-as.matrix(read.table('/home/nevin/Downloads/pseudoproxy_no_gaps.txt'))
+  lonlat<-as.matrix(read.table('/home/nevin/Downloads/lonlat_no_gaps.txt',header=T))
+  colnames(lonlat)<-NULL
+  rownames(lonlat)<-NULL
+  colnames(pseudodata)<-NULL
+  pseudolist<-list(data=matrix(rep(NA,117*76),117,76),time=rep(NA,117), lon=rep(NA,76),lat=rep(NA,76))
+  pseudotime<-pseudodata[,1]
+  pseudodata<-pseudodata[,2:77]
+  pseudolist$data<-pseudodata
+  pseudolist$time<-pseudotime
+  pseudolist$lat<-lonlat[,2]
+  pseudolist$lon<-lonlat[,1]
+  nlat_nh<-length(which(pseudolist$lat>0))
+  nhpos<-which(pseudolist$lat>0)
+  pseudoprox<-list(data=matrix(rep(NA,117*nlat_nh),117,nlat_nh),time=rep(NA,117), lon=rep(NA,nlat_nh),lat=rep(NA,nlat_nh),mr=matrix(rep(NA,13*nlat_nh),nlat_nh,13))
+  pseudoprox$data<-pseudolist$data[,nhpos]
+  pseudoprox$time<-pseudolist$time
+  pseudoprox$lat<-pseudolist$lat[nhpos]
+  pseudoprox$lon<-pseudolist$lon[nhpos]
+  pseudoprox$mr<-cbind(rep(0,nlat_nh),matrix(rep(1/12,12*nlat_nh),nlat_nh,12))
+  
+  invisible(pseudoprox)
+}
 
 
 
@@ -6292,7 +6444,7 @@ calc_indices<-function(dataset, setname){
       ind$data<-ind$ensmean
     }else if(setname=="echam2"|setname=="analysis2"){
       if(tps_only){
-        ind<-list(data=array(Hind %*% array(dataset$data, c(nrow(dataset$data),length(dataset$data)/nrow(dataset$data))), c(nrow(Hind),dim(dataset$data)[2:3])), names=indices_tmp[1:34])
+        ind$data<-array(Hind %*% array(dataset$data, c(nrow(dataset$data),length(dataset$data)/nrow(dataset$data))), c(nrow(Hind),dim(dataset$data)[2:3]))
       }else{
         ind_tmp <- list(data=array(Hind %*% array(dataset$data, c(nrow(dataset$data),length(dataset$data)/nrow(dataset$data))), c(nrow(Hind),dim(dataset$data)[2:3])), names=indices_tmp)
         # Hadley cell strength
@@ -6563,7 +6715,7 @@ calc_indices<-function(dataset, setname){
     }else{
       ind <- list(data=Hind2 %*% validatanona, names=indices[1:34])
     }
-    
+    ind$ensmean<-ind$data
     
     
   }

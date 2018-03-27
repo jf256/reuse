@@ -43,6 +43,7 @@ indicespath <- paste0(dataextdir,'vali_data/indices/')
 # install.packages("ggplot2")
 # install.packages("grid")
 # install.packages("cowplot")
+# install.packages("geosphere")
       
 suppressMessages(library(akima))         # for interpolation
 suppressMessages(library(maps))
@@ -65,6 +66,7 @@ suppressMessages(library(grid))
 suppressMessages(library(cowplot))
 suppressMessages(library(lubridate)) # decinmal year to date conversion
 suppressMessages(library(birk)) # which.closest function
+suppressMessages(library(geosphere))
 
 #library(pspline)
 # first install ncdfUtils of Jonas with all his functions 
@@ -1753,9 +1755,9 @@ compute_Hi_Hredux_proxy <- function(stations, echam, regcoef=NULL, threshold=700
          regcoef[i,5] else 0
        H[i, which.min(dist)+(one_var_dim)] <- if (min(dist) < threshold) 
          regcoef[i,6] else 0     
-       H[i, which.min(dist)+(dim(echam$data)[1]/6)+one_var_dim] <- if 
+       H[i, which.min(dist)+(dim(echam$data)[1]/6)+(one_var_dim)] <- if 
          (min(dist) < threshold) regcoef[i,7] else 0     
-       H[i, which.min(dist)+(2*(dim(echam$data)[1]/6))+one_var_dim] <- if 
+       H[i, which.min(dist)+(2*(dim(echam$data)[1]/6))+(one_var_dim)] <- if 
          (min(dist) < threshold) regcoef[i,8] else 0     
      }
    }   
@@ -3744,18 +3746,127 @@ compute_H_bias_correct <- function(stations, echam, echamatprox, seas=1, thresho
 # H has to have dim 380x30 (# of stations x ensemble size)
 }
 
-compute_dist_2d <- function(lon, lat, lon0, lat0){
+# Compute distance on a sphere
+# Modified by Roni (2018.02) -> added region that the distances could be calculated over different areas -> to test decorr length
+# However, this function is also used in the computation of the weights, therefore region should be = "global"
+compute_dist_2d <- function(lon, lat, lon0, lat0, region="global"){
+  if (region == "global") {
+    lon = lon
+    lon0 = lon0
+    lat = lat
+    lat0 = lat0
+  } else if (region == "ENH") {
+    lon = lon[which(lat>20 & lat<=90)]
+    lon0 = lon0[which(lat0>20 & lat0<=90)]
+    lat = lat[which(lat>20 & lat<=90)]
+    lat0 = lat0[which(lat0>20 & lat0<=90)]
+  } else if (region == "ESH") {
+    lon = lon[which(lat<(-20) & lat >= (-90))]
+    lon0 = lon0[which(lat0<(-20) & lat0 >= (-90))]
+    lat = lat[which(lat<(-20) & lat >= (-90))]
+    lat0 = lat0[which(lat0<(-20) & lat0 >= (-90))]
+  } else  if (region == "tropics") {
+    lon = lon[which(lat<=20 & lat >= (-20))]
+    lon0 = lon0[which(lat0<=20 & lat0 >= (-20))]
+    lat = lat[which(lat<=20 & lat >= (-20))]
+    lat0 = lat0[which(lat0<=20 & lat0 >= (-20))]
+  } else if (region == "lat_band") {
+    for (k in unique(lat)) {
+      lat1 = rep(k,length(unique(lon)))
+      lat0 = rep(k,length(unique(lon0)))
+      lon = unique(lon)
+      lon0 = unique(lon0)
+      lo <- lon/180*pi
+      la <- lat1/180*pi
+      lo0 <- lon0/180*pi
+      la0 <- lat0/180*pi
+      tmp <- outer(sin(la), sin(la0), '*') + outer(cos(la), cos(la0), '*') * outer(lo, lo0, function(x,y) cos(x - y))
+      # deal with rounding errors
+      tmp[abs(tmp) >= 1] <- round(tmp[abs(tmp) >= 1])
+      if (unique(lat)[1] == k) {
+        out1 <- 6375*acos(tmp)
+        out1 = array(out1, c(dim(out1),1))
+        out = out1
+      } else {
+        out1 <- 6375*acos(tmp)
+        out1 = array(out1, c(dim(out1),1))
+        out = abind(out, out1,along=3)
+      }
+    }
+    return(out)
+  } else if (region == "lon_band") {
+    for (k in unique(lon)) {
+      lon1 = rep(k,length(unique(lat)))
+      lon0 = rep(k,length(unique(lat0)))
+      lat = unique(lat)
+      lat0 = unique(lat0)
+      lo <- lon1/180*pi
+      la <- lat/180*pi
+      lo0 <- lon0/180*pi
+      la0 <- lat0/180*pi
+      tmp <- outer(sin(la), sin(la0), '*') + outer(cos(la), cos(la0), '*') * outer(lo, lo0, function(x,y) cos(x - y))
+      # deal with rounding errors
+      tmp[abs(tmp) >= 1] <- round(tmp[abs(tmp) >= 1])
+      if (unique(lon)[1] == k) {
+        out1 <- 6375*acos(tmp)
+        out1 = array(out1, c(dim(out1),1))
+        out = out1
+      } else {
+        out1 <- 6375*acos(tmp)
+        out1 = array(out1, c(dim(out1),1))
+        out = abind(out, out1,along=2+1)
+      }
+    }
+    return(out)
+  }
+  if (region != "lat_band" & region != "lon_band") {
   lo <- lon/180*pi
   la <- lat/180*pi
   lo0 <- lon0/180*pi
   la0 <- lat0/180*pi
   tmp <- outer(sin(la), sin(la0), '*') + outer(cos(la), cos(la0), '*') * outer(lo, lo0, function(x,y) cos(x - y))
-  ##tmp <- sin(la)*sin(la0) + cos(la) * cos(la0) * cos(lo - lo0)
   # deal with rounding errors
   tmp[abs(tmp) >= 1] <- round(tmp[abs(tmp) >= 1])
   out <- 6375*acos(tmp)
-  out
+  return(out)
+  }
 }
+
+# Calculate decorrelation length over a certain region and period (annual, summer, winter)
+# Added by Roni (2018.02)
+corr_over_region = function(xdata,lat1=NA, lat2=NA, region, cor_length_period) {
+  if (region == "global" | region=="ENH" | region == "ESH" | region == "tropics" | region == "lat_band") {
+    xdata$data = xdata$data[which(xdata$lat>lat1 & xdata$lat <= lat2),,] # selecting the region
+    xdata$names = xdata$names[which(xdata$lat>lat1 & xdata$lat <= lat2)] 
+  } else if (region == "lon_band") {
+    xdata$data = xdata$data[which(xdata$lon>lat1 & xdata$lon <= lat2),,] # selecting the region
+    xdata$names = xdata$names[which(xdata$lon>lat1 & xdata$lon <= lat2)] 
+  }
+  if (dim(xdata$data)[2] == 2) { # because echanomallts is already in sixmonstatevector format
+    xdata$names <-xdata$names[1:(length(xdata$names)/6)]
+    tmp_data =  array(xdata$data,c((dim(xdata$data)[1]/6),dim(xdata$data)[2]*6, dim(xdata$data)[3])) # transforming back to 12 month format
+    xdata$data =  array(tmp_data,c(dim(tmp_data)[1],dim(tmp_data)[2]* dim(tmp_data)[3])) # making one dimension from the months and years
+  }
+  if (cor_length_period == "annual") {
+    tmp <- xdata$data[xdata$names == i,] 
+  } else if (dim(xdata$data)[2] > 24) {
+    # selecting winter half years
+    period_start = seq(1,n_covar*12,12)
+    period_end = seq(6,n_covar*12,12)
+    period = matrix(NA, nrow =n_covar, 6) # 6=halfyear
+    for (k in 1:n_covar){
+      period[k,] = seq(period_start[k], period_end[k])
+    }
+    period = array(t(period))
+    if (cor_length_period == "winter") {
+      tmp <- xdata$data[xdata$names == i,(period)] 
+    } else if (cor_length_period == "summer") {
+      tmp <- xdata$data[xdata$names == i,(period+6)] 
+    }  
+  }
+}
+  
+  
 
 compute_dist <- function(lon, lat, lon0, lat0){
   lo <- lon/180*pi
@@ -3767,6 +3878,51 @@ compute_dist <- function(lon, lat, lon0, lat0){
   tmp[abs(tmp) >= 1] <- round(tmp[abs(tmp) >= 1])
   out <- 6375*acos(tmp)
   out
+}
+
+
+ 
+# Function to use ellipse localization
+# Added by Roni (2018.02)
+# Uses the distm function from the geosphere library (default is fun=distGeo -> using an ellipsoidal Earth not a spherical)
+compute_dist_2d_ellipse <- function(lon, lat, lon0, lat0, xnames, set_length, ysour){
+  if (ysour == "inst") {
+    lon0_lat = cbind(lon0,unique(lat)) # combination of all the coordinates along the same longitude (lon0)
+    lat0_lon = cbind(unique(lon),lat0)
+    lon_dist = distm(lon0_lat,c(lon0,lat0)) # distances along the same longitude
+    lat_dist = distm(lat0_lon,c(lon0,lat0)) # distances along a certain latitude from (lon0,lat0)
+  } else if (ysour == "prox") {
+    # Take only the first one from lon0 and lat0 since they are the same
+    lon0_lat = cbind(lon0[1],unique(lat)) # combination of all the coordinates along the same longitude (lon0)
+    lat0_lon = cbind(unique(lon),lat0[1])
+    lon_dist = distm(lon0_lat,c(lon0[1],lat0[1])) # distances along the same longitude
+    lat_dist = distm(lat0_lon,c(lon0[1],lat0[1])) # distances along a certain latitude from (lon0,lat0)
+  }
+  # define L-s
+  lvec2 = set_length* 1000 *2 # 1000: since my distances are in m here #2:ratio of the x:y axis is 2:1 -> this way keep the meridional wgt as it was for the circle
+  name_minL  = outer(lvec2[xnames], lvec2[xnames[h.i]], pmin) 
+  sigm1 = name_minL[unique(rownames(name_minL)),] # select only the unique cases. horizontal
+  sigm2 = sigm1 / 2 # meridional
+  wgt_ellipse = array(NA, c(length(lat_dist),length(lon_dist),length(sigm1)))
+  # wgt_elp = matrix(NA,nrow=one_var_dim*length(sigm1), ncol=1)
+  for (k in 1:length(sigm1)) {
+    for (i in 1:length(lat_dist)) {
+      for (j in 1:length(lon_dist)) {
+        wgt_ellipse[i,j,k] = exp(-0.5* ( ((lat_dist[i,1])**2/(sigm1[k]**2)) + ((lon_dist[j,1])**2/(sigm2[k]**2)) ) )
+      }
+    }
+  }
+  if (ysour == "inst") {
+    # making it to 6monstatevctor length 
+    wgt_elp = array(wgt_ellipse,c(dim(wgt_ellipse)[1]*dim(wgt_ellipse)[2]*dim(wgt_ellipse)[3],1))
+    wgt_elp = rep(wgt_elp,6) # 6 month
+    wgt = array(wgt_elp,c(length(wgt_elp),1))
+  } else if (ysour == "prox") {
+    wgt_elp =  array(wgt_ellipse,c(dim(wgt_ellipse)[1]*dim(wgt_ellipse)[2]*length(unique(echam$names)),dim(wgt_ellipse)[3]/length(unique(echam$names))))
+    b<-t(wgt_elp)
+    r<-rep(b,6) # can insert anything for 6 = six month
+    wgt = matrix(r,ncol=dim(wgt_elp)[2],byrow=T) 
+  }
 }
 
 compute_giorgi_H_sixmon <- function(giorgi, echam) { #}, numvar){
@@ -5953,18 +6109,16 @@ calculate_climatology <- function(x,cyr,subtracted,added,source){
       if (cyr < 1636) {
         y_start = agrep(paste0(1600,'.792'),as.character(x.clim$time))
       } else {
-        y_start =
-          agrep(paste0(cyr-subtracted,'.792'),as.character(x.clim$time))
+        y_start = agrep(paste0(cyr-subtracted,'.792'),as.character(x.clim$time))
       }
       if (cyr > 1970) {
-        y_end = grep(paste0(2005,'.708'),as.character(x.clim$time)) #
-        # 2012 should be changed to 2005, everywhere
+        y_end =  grep(paste0(2005,'.708'),as.character(x.clim$time)) # 2012 should be changed to 2005, everywhere
+
       } else {
         y_end = grep(paste0(cyr+added,'.708'),as.character(x.clim$time))
       }
     } else {
-      y_start =
-        agrep(paste0(cyr-subtracted,'.792'),as.character(x.clim$time))
+      y_start = agrep(paste0(cyr-subtracted,'.792'),as.character(x.clim$time))
       y_end = grep(paste0(cyr+added,'.708'),as.character(x.clim$time))
     }
     x.clim$data = x.clim$data[,y_start:y_end]
@@ -6744,3 +6898,49 @@ calc_indices<-function(dataset, setname){
   }
   return(ind)
 }
+
+# Using more members either for the whole assimilation or for calculating the background cov matrix
+# The B can be static or recalculated for every year
+# Modified by Roni (2018.02)
+background_matrix = function (state,n_covar, ech) {
+  if (state == "static") { # loading only once the members, selecting them and using the same ones over the whole assimilation period
+    if (cyr == syr2){
+      load(paste0(file=dataextdir,"/echam/echallts_for_covar.Rdata"))
+      dat = echanomallts 
+      # random_ncovar = floor(runif(n_covar,1,dim(dat$data)[3]))
+      # write.table(random_ncovar,file=paste0("../data/analysis/",expname,"/sample_ncovar.txt"),row.names = FALSE)
+      sample_ncovar = read.table(file=paste0("../data/analysis/",expname,"/sample_ncovar.txt"), skip = 1) # Roni: first I separately created this file
+      sample_ncovar = array(t(sample_ncovar))
+      dat$data = echanomallts$data[,,sample_ncovar]
+      # dat$data = echanomallts$data[,,sample(seq(1,dim(echanomallts$data)[3]),n_covar)]
+      dat$ensmean <- apply(dat$data,1:2,mean) 
+    } else {
+      dat = ech
+    }
+  } 
+  if (state == "changing") { # for each assimilation year a new random ensemble is created -> maybe they should be saved to be able to reproduce the results
+    yrs <- floor(runif(n_covar,1602,2004))
+    m <- floor(runif(n_covar,1,30))
+    for (n in 1:n_covar) {
+      yr1 <- yrs[n]
+      yr2 <- yr1+1
+      if (every2grid) {
+        load(paste0(echanompath,'echam_anom_',yr1,'-',yr2,'_2ndgrid.Rdata'))
+        dat = echam_anom
+      } else {
+        load(paste0(echanompath,'echam_anom_',yr1,'-',yr2,'.Rdata'))
+        dat = echam_anom
+      }
+      if (n==1){
+        echam_anom_data <- echam_anom$data[,,m[n]]
+      } else {
+        echam_anom_data <- abind(echam_anom_data,echam_anom$data[,,m[n]],along=3)
+      }
+    }
+    dat$data <- echam_anom_data
+    dat$ensmean <- apply(echam_anom_data,1:2,mean)
+  }
+  return(dat)
+}
+
+

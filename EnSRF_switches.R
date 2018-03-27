@@ -1,4 +1,4 @@
-expname="proxies_only_NTREND_PAGES_tree_coral" # "EKF400_v1.3_full_res" #
+expname="proxies_only_trw_petra" # "EKF400_v1.3_full_res" #
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -118,8 +118,8 @@ syr_cru=1901
 eyr_cru=2004
 syr_recon=1750
 eyr_recon=1900
-syr_ncep=1948
-eyr_ncep=2009
+syr_twentycr=1901 # currently statistics only work for same periods of CRU and 20CR (20CR data actually start from 1850)
+eyr_twentycr=2004
 #syr_ind=1901
 #eyr_ind=2004
 
@@ -158,7 +158,7 @@ generate_HadCRU4=F     # HadCRU ens. SD for instr. uncertainty and error-spread 
 #} else {               # Kuettel's temp. precip. and SLP 
 generate_LUTPAULKUT=F # gridded seasonal recons (1750-1999)
 #} 
-#generate_ind_recon=F   # read Stefan's indices 1900-2000 from .txt to .RData
+generate_ind_recon=F   # read Stefan's indices 1900-2000 from .txt to .RData
 # use scripts in data_yuri to generate .Rdata files 
 generate_t_yuri=F      # if TRUE -> yuri's temp. data collection including HISTALP is read
 generate_slp_yuri=F    # if TRUE -> yuri's slp data collection is read
@@ -191,18 +191,21 @@ regression_months = c('t.first','t.second','t.third','t.fourth','t.fifth','t.six
   TRW=F
   MXD=F
   SCHWEINGR=F
-  PAGES=T
+  PAGES=F
+  NTREND=F
+  TRW_PETRA=T
 pages_lm_fit = "CRU"   # can be CRU or GISS to calculate the reg coeff-s
-type = c("tree","coral") 
+type = c("tree") 
 #          ^ it only works with tree and coral (and both indiviually as well)
-NTREND=T
+
 } 
 
 generate_PAGES = F      # using the screened PAGES proxy dataset
 generate_NTREND = F
 
 
-
+generate_PSEUDO=F
+pseudo_prox=F
 
 
 yuri_temp=F          # yuri's data compilation, SLP always loaded
@@ -278,7 +281,7 @@ avg_prox_per_grid=T    # average more than one proxy per echam grid box
 instmaskprox=F         # remove proxy data from grid boxes that have instr. data
 reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
-land_only=F            # calc on land only
+land_only=T            # calc on land only
 fasttest=F             # use even less data
 tps_only=T             # only use temp, precip and slp in state vector, remove other vars
 no_stream=F            # all echam vars but stream function as there is problem with 
@@ -301,6 +304,7 @@ if (no_stream & tps_only) {
   print('ACHTUNG: tps_only was set to FALSE')
 }else if(!tps_only &!no_stream){
   no_stream=T
+  print('ACHTUNG: no_stream was set to TRUE')
 }
 
 
@@ -313,29 +317,12 @@ check_dist=F           # test for ideal cut-off distance of spatial correlations
 ana.enssize=F
 NCEP_SOCOL=F
 
-# choose validation data set
-# ONLY one can be TRUE
-# # next line not included yet: 
-# if (eyr < 1750) {
-#   vali=F                 # switch off prepplot if no vali data selected
-# } else {
-#   vali=T
-# }
-twcr_vali=F            # 20CR reanalysis data for validation
-ncep_vali=F            # NCEP/NCAR reanalysis data for validation
-# if ((syr > 1900) & (eyr < 2006)) {
-#   cru_vali=T             # monthly CRU TS3 temp, precip and HADSLP2 gridded instrumentals (1901-2004)
-# #  ind_recon=T            # Stefan's reconstructed indices until 1948 and NCAR reanalysis later added to CRU and NCEP
-# } else {
-#   cru_vali=F 
-# #  ind_recon=F
-# }
-# #ind_recon=F
-# if ((syr < 1901) & (eyr > 1749)) {
-#   recon_vali=T           # seasonal luterbacher, pauling, kuettel recons (1750-1999)
-# } else {
-#   recon_vali=F
-# }
+# choose validation data set:
+# (all three can be selected simultaneously)
+vali_cru=T
+vali_twentycr=F
+vali_recon=F
+
 
 #####################################################################################
 # prepare plot switches
@@ -359,6 +346,7 @@ if (!monthly_out & write_netcdf) {
 load_prepplot=T  # ATTENTION check if folder prepplot on scratch contains monthly or seasonal data!
                  # saves image and only needs to be run once, afterward set "load_image=T" 
 statyr=1905    # 1941 1850/69 year, when station network is kept constant
+load_indices=T   # if TRUE: indices are combined to allts variables for whole period (e.g. also for 1604-2004) and saved into image folder for TS-plots
 load_image=T     # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
 calc_vali_stat=T # calculate validation statistics after preparation (set "load_image=T")
 CRPS = F      # calculate Continuous Ranked Probability Score

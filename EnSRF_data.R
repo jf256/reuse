@@ -16,8 +16,8 @@ rm(list=ls())
 # enter syr ane eyr manually
 
 
-syr=1900
-eyr=1910
+syr=1930
+eyr=1950
 
 
 # read syr and eyr from Rscript parameters entered in bash and 
@@ -199,8 +199,6 @@ for (cyr in syr2:eyr) {
   # 1.2 Choose which variables want to use from the model
   # just leave temp precip slp in state vector
   if (tps_only) {
-    no_stream = F
-    print('no_stream was set to FALSE')
     tpspos <- c(which(echam$names=='temp2'), which(echam$names=='precip'),
                 which(echam$names=='slp'), which(echam$names=='bias'))
     echam$data <- echam$data[tpspos,,]
@@ -216,9 +214,6 @@ for (cyr in syr2:eyr) {
       echam_clim$ensmean <- echam_clim$ensmean[tpspos,]
       echam_clim$names <- echam_clim$names[tpspos]
     }
-  } else{
-    no_stream = T
-    print('no_stream was set to TRUE')
   }
   if (no_stream) {
     # ACHTUNG stream var has ERROR because the 5/9 levels before/after 1880 have a lat dimension

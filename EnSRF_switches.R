@@ -1,4 +1,4 @@
-expname="pages_ntrend_coral_tree_instr_cru_twentycr_before_vali" # "EKF400_v1.3_full_res" #
+expname="proxies_only_PAGES_bugfix_only_coral" # "EKF400_v1.3_full_res" #
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -192,18 +192,19 @@ regression_months = c('t.first','t.second','t.third','t.fourth','t.fifth','t.six
   MXD=F
   SCHWEINGR=F
   PAGES=T
+  NTREND=F
+  TRW_PETRA=F
 pages_lm_fit = "CRU"   # can be CRU or GISS to calculate the reg coeff-s
-type = c("tree","coral") 
+type = c("coral") 
 #          ^ it only works with tree and coral (and both indiviually as well)
-NTREND=F
 } 
 
 generate_PAGES = F      # using the screened PAGES proxy dataset
 generate_NTREND = F
 
 
-
-
+generate_PSEUDO=F
+pseudo_prox=T
 
 yuri_temp=F          # yuri's data compilation, SLP always loaded
 yuri_slp=F
@@ -301,6 +302,7 @@ if (no_stream & tps_only) {
   print('ACHTUNG: tps_only was set to FALSE')
 }else if(!tps_only &!no_stream){
   no_stream=T
+  print('ACHTUNG: no_stream was set to TRUE')
 }
 
 
@@ -345,7 +347,7 @@ statyr=1905    # 1941 1850/69 year, when station network is kept constant
 load_indices=T   # if TRUE: indices are combined to allts variables for whole period (e.g. also for 1604-2004) and saved into image folder for TS-plots
 load_image=T     # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
 calc_vali_stat=T # calculate validation statistics after preparation (set "load_image=T")
-CRPS = T      # calculate Continuous Ranked Probability Score
+CRPS = F      # calculate Continuous Ranked Probability Score
 vali_plots=F     # source EnSRF_plots.R script 
 ind_ECHAM=T      # delete/comment code in prepplot script and then delete switches here
 ind_recon=F      # delete/comment code in prepplot script and then delete switches here

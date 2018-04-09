@@ -1,4 +1,4 @@
-expname="proxies_only_trw_petra" # "EKF400_v1.3_full_res" #
+expname="proxies_only_petra_allvar" # "EKF400_v1.3_full_res" #
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -283,8 +283,8 @@ reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=T            # calc on land only
 fasttest=F             # use even less data
-tps_only=T             # only use temp, precip and slp in state vector, remove other vars
-no_stream=F            # all echam vars but stream function as there is problem with 
+tps_only=F           # only use temp, precip and slp in state vector, remove other vars
+no_stream=T    # all echam vars but stream function as there is problem with 
 #                       # 5/9 levels, which are in lat dimension before and after 1880
 loo=F                  # leave-one-out validation 
 if (loo) {tps_only=T;no_stream=F}  # reduce state vector for faster validation
@@ -349,7 +349,7 @@ statyr=1905    # 1941 1850/69 year, when station network is kept constant
 load_indices=T   # if TRUE: indices are combined to allts variables for whole period (e.g. also for 1604-2004) and saved into image folder for TS-plots
 load_image=T     # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
 calc_vali_stat=T # calculate validation statistics after preparation (set "load_image=T")
-CRPS = F      # calculate Continuous Ranked Probability Score
+CRPS = T      # calculate Continuous Ranked Probability Score
 vali_plots=F     # source EnSRF_plots.R script 
 ind_ECHAM=F      # delete/comment code in prepplot script and then delete switches here
 ind_recon=F      # delete/comment code in prepplot script and then delete switches here
@@ -361,13 +361,14 @@ ind_anom=F       # calculate indices from anomaly data
 #####################################################################################
 validation_set=c("cru_vali")
 monthly=F
+yearly_out=F
 pseudoproxy=F
 plot_dweights=F
 write_nc=F
 recalc <- F
 reload <- F
 plstat <- NULL #calibrate # NULL or calibrate
-countseries <- F
+countseries <- T
 #PAGES <- F          # write output for PAGES paper
 
 

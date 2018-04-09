@@ -41,7 +41,7 @@ indicespath <- paste0(dataextdir,'vali_data/indices/')
 # install.packages("ggplot2")
 # install.packages("grid")
 # install.packages("cowplot")
-      
+# install.packages("RColorBrewer")
 suppressMessages(library(akima))         # for interpolation
 suppressMessages(library(maps))
 suppressMessages(library(mapdata))
@@ -63,7 +63,7 @@ suppressMessages(library(grid))
 suppressMessages(library(cowplot))
 suppressMessages(library(lubridate)) # decinmal year to date conversion
 suppressMessages(library(birk)) # which.closest function
-
+# suppressMessages(library(RColorBrewer))
 #library(pspline)
 # first install ncdfUtils of Jonas with all his functions 
 # install.packages('.../jonas/ncdfUtils_0.4-12.tar.gz', repos=NULL)
@@ -2984,7 +2984,7 @@ plot_echam <- function(x, levs, varname='temp2', type='data',  ti=1,
         cols <- rbfun(length(levs) - 1)
       }
     } else {
-      cols <- rep(cols, length.out=length(levs) - 1)
+      cols <- two.colors(n=length(levs)-1,start=cols[1],middle=cols[2],end=cols[3], alpha=1.0)
     }
     for (i in 1:nmod){
       plot(0, type='n', xlim=lonlim, ylim=latlim,
@@ -3026,7 +3026,7 @@ plot_echam <- function(x, levs, varname='temp2', type='data',  ti=1,
                      pch=4, col=rgb(0,0,10,8,maxColorValue=10), cex=st.cex))
           try(points(stations$lon[stations$names=='prox' & !is.na(stations$data[,i])], 
                      stations$lat[stations$names=='prox' & !is.na(stations$data[,i])], 
-                     pch=3, col=rgb(0,10,0,8,maxColorValue=10), cex=st.cex))
+                     pch=3, col=rgb(0,4,2,8,maxColorValue=10), cex=st.cex))
         } else {
           points(statlon, statlat, pch=1, col=st.col, cex=st.cex)
         }
@@ -3188,7 +3188,7 @@ plot_echam3 <- function(x, levs, varname='temp2', type='data',  ti=1,
         cols <- rbfun(length(levs) - 1)
       }
     } else {
-      cols <- rep(cols, length.out=length(levs) - 1)
+      cols <- two.colors(n=length(levs)-1,c(cols[1],cols[2],cols[3]), alpha=1.0)
     }
     #    if (!is.null(centercol)) {
     #      if (is.even(length(cols)/2)) {
@@ -3315,22 +3315,22 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$en
                         contlev=levs, addvectors=F, vecnames=NULL, #vectortype='data',
                         veccol='black', veclen=0.03, vecscale=0.3, vecwd=0.75, every_x_vec=4,
                         wcol='black', zonalmean=F, zmvarname='gph500', colorbar=T,NHseason,plotname,paper){
-
-   oldpar <- par(no.readonly=TRUE)
+  
+  oldpar <- par(no.readonly=TRUE)
   if (monthly_out & s.plot==12 & length(ti)==24){
     if (NHseason=="winter") {
-    ti=c(seq(1,ncol(x$ensmean)/4),seq((ncol(x$ensmean)/2)+1,ncol(x$ensmean)/4*3))
+      ti=c(seq(1,ncol(x$ensmean)/4),seq((ncol(x$ensmean)/2)+1,ncol(x$ensmean)/4*3))
     }else if(NHseason=="summer"){
-    ti=c(seq((ncol(x$ensmean)/4)+1,ncol(x$ensmean)/2),seq((ncol(x$ensmean)/4*3)+1,ncol(x$ensmean)))
+      ti=c(seq((ncol(x$ensmean)/4)+1,ncol(x$ensmean)/2),seq((ncol(x$ensmean)/4*3)+1,ncol(x$ensmean)))
     }
   } else if (monthly_out & s.plot==12 & length(ti)==12){
     if (NHseason=="winter") {
-    ti=seq(1,ncol(x$ensmean)/2)
+      ti=seq(1,ncol(x$ensmean)/2)
     } else if (NHseason=="summer"){
       ti=seq((ncol(x$ensmean)/2)+1,ncol(x$ensmean))
     }
   } else if (monthly_out & (length(ti)!=12 | length(ti)!=24)) {
-      ti=c(ti,(ti+12))
+    ti=c(ti,(ti+12))
   }
   # plot specific lat range  
   # latpos <- match(which(x$lat>latlim[1]),which(x$lat<latlim[2]))
@@ -3389,7 +3389,7 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$en
   } else {
     stop("Only 'data' and 'ensmean' are implemented as type")
   }
-
+  
   
   
   if (length(dat.i) == 1){
@@ -3411,7 +3411,7 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$en
       if (!add) plot(0, type='n', xlim=range(x$time), ylim=range(plotdata[tis]),
                      xlab=xlab, ylab=if (is.null(ylab)) varname else ylab)
       for (se in 1:2) lines(x$time[seq(se,length(plotdata),2)], 
-                     plotdata[seq(se,length(plotdata),2)], col=se.col[se], lwd=lwd, lty=lty)
+                            plotdata[seq(se,length(plotdata),2)], col=se.col[se], lwd=lwd, lty=lty)
     } else {
       d.range <- apply(plotdata, 1, range)
       if (!add) plot(0, type='n', xlim=range(x$time), ylim=range(d.range[,tis]),
@@ -3473,9 +3473,9 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$en
     
     if (missing(levs)) {
       if (symmetric){
-        levs <- pretty(c(plotdata, -plotdata), 15)
+        levs <- c(-Inf,pretty(c(plotdata, -plotdata), 10),Inf)
       } else {
-        levs <- pretty(plotdata, 15)
+        levs <- c(pretty(plotdata, 11),Inf)
       }
     }
     if (is.null(cols)){
@@ -3485,7 +3485,8 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$en
         cols <- rbfun(length(levs) - 1)
       }
     } else {
-      cols <- rep(cols, length.out=length(levs) - 1)
+      cols <- two.colors(n=length(levs)-1,start=cols[1],middle=cols[2],end=cols[3], alpha=1.0)
+      # cols <- brewer.pal(n = length(levs) - 1, name = "OrRd")
     }
     #    if (!is.null(centercol)) {
     #      if (is.even(length(cols)/2)) {
@@ -3575,7 +3576,7 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$en
         zm=aggregate(x$data[which(x$names==zmvarname),1,i],
                      by=list(x$lat[which(x$names==zmvarname)]),mean)
         li <- max(abs(range(zm[,2])))
-#        print(li)
+        #        print(li)
         if (is.na(li)) {
           plot(1,1,ty='n',axes=F,xlab="",ylab="")
         } else {
@@ -3600,7 +3601,6 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$en
     dev.off()
   }
 }
-
 
 
 
@@ -6675,7 +6675,7 @@ calc_indices<-function(dataset, setname){
     indices <- c('ENH.temp2','NAM.temp2','SAM.temp2','AFR.temp2',
                  'ASI.temp2','AUS.temp2','ARC.temp2','ANT.temp2',
                  'NEU.temp2','MED.temp2',
-                 'GLO.temp','NAM.precip','SAM.precip','AFR.precip',
+                 'GLO.temp2','NAM.precip','SAM.precip','AFR.precip',
                  'ASI.precip','AUS.precip','ARC.precip','ANT.precip',
                  'NEU.precip','MED.precip',
                  'SH.temp2','NAM.slp','SAM.slp','AFR.slp',

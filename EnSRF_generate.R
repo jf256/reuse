@@ -378,7 +378,8 @@ if (generate_NTREND) {
 if (generate_PSEUDO){
   print("generate_PSEUDO")
   pseudoprox<-read_pseudo()
-  save(pseudoprox, file=paste0(workdir,"../pseudo_prox_",fsyr,"-",feyr,"_",pages_lm_fit,".Rdata"))
+  realprox<-pseudoprox
+  save(realprox, file=paste0("../data/proxies/real_proxies_",fsyr,"-",feyr,".Rdata"))
 }
 
 

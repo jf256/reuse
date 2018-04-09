@@ -14,8 +14,8 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
-syr=1904 #1902 #1941
-eyr=1930 #2003 #1970
+syr=1901 #1902 #1941
+eyr=2000 #2003 #1970
 
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
@@ -696,7 +696,10 @@ if (load_indices){
         }else{
           vind.allts$time=c(vind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
         }
-        
+        # if yearly output of indices is wanted this can be uncommented
+        # if(yearly_out){
+        #   vind.allts<-convert_to_yearly(vind.allts,s)
+        # }
         vind_all[[l]]<-vind
         vind.allts_all[[l]]<-vind.allts
       }
@@ -1545,6 +1548,54 @@ if (monthly_out){
 
 if (calc_vali_stat){
   
+  if(yearly_out){
+    echam<-convert_to_yearly(echam,s.plot)
+    analysis<-convert_to_yearly(analysis,s.plot)
+
+    calibrate<-convert_to_yearly(calibrate,s.plot)
+    echam.anom<-convert_to_yearly(echam.anom,s.plot)
+    analysis.anom<-convert_to_yearly(analysis.anom,s.plot)
+
+    calibrate.anom<-convert_to_yearly(calibrate.anom,s.plot)
+    
+
+    aind<-convert_to_yearly(aind,s.plot)
+    eind<-convert_to_yearly(eind,s.plot)
+    
+    validate.allts_all <- list()
+    validate.anom.allts_all<-list()
+    vind.allts_all<- list()
+    validate_init<-validate
+    validate.anom_init<-validate.anom
+    vind_init<-vind
+    valiname<-names(validate)
+    
+    l=0
+    for (v in valiname){  ## for multiple vali data sets
+      l=l+1
+      print(v)
+      validate<-validate_init[[v]]
+      validate.anom<-validate.anom_init[[v]]
+      vind<-vind_init[[v]]
+      
+      vind<-convert_to_yearly(vind,s.plot)
+      validate<-convert_to_yearly(validate,s.plot)
+      validate.anom<-convert_to_yearly(validate.anom,s.plot)
+      validate.allts_all[[l]] <-validate
+      validate.anom.allts_all[[l]] <- validate.anom
+      vind.allts_all[[l]] <- vind
+      
+    }
+    
+    names(validate.allts_all)<-valiname
+    validate <- validate.allts_all
+    names(validate.anom.allts_all)<- valiname
+    validate.anom <- validate.anom.allts_all
+    names(vind.allts_all)<- valiname
+    vind <- vind.allts_all
+    s.plot=1
+  }
+  
   
   
   
@@ -2206,12 +2257,12 @@ if (calc_vali_stat){
     if (vali) {
       if (ind_ECHAM) {
           # compute validation statistics on indices
-          ecorr.ind <- corr_fun(eind, vind, seas=2)
-          acorr.ind <- corr_fun(aind, vind, seas=2)
-          ermse.ind <- rmse_fun(eind, vind, seas=2)
-          armse.ind <- rmse_fun(aind, vind, seas=2)
-          ebias.ind <- bias_fun(eind, vind, seas=2)
-          abias.ind <- bias_fun(aind, vind, seas=2)
+          ecorr.ind <- corr_fun(eind, vind, seas=s.plot)
+          acorr.ind <- corr_fun(aind, vind, seas=s.plot)
+          ermse.ind <- rmse_fun(eind, vind, seas=s.plot)
+          armse.ind <- rmse_fun(aind, vind, seas=s.plot)
+          ebias.ind <- bias_fun(eind, vind, seas=s.plot)
+          abias.ind <- bias_fun(aind, vind, seas=s.plot)
           RE.ind <- RE_fun(armse.ind, y=ermse.ind)
       }
     }

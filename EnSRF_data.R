@@ -16,8 +16,8 @@ rm(list=ls())
 # enter syr ane eyr manually
 
 
-syr=1930
-eyr=1950
+syr=1904
+eyr=2000
 
 
 # read syr and eyr from Rscript parameters entered in bash and 
@@ -1330,7 +1330,7 @@ for (cyr in syr2:eyr) {
         # probably should have given instrumentals more error instead!
         Rcal[calibrate$sour=="doc"] <- 0.25 # equals 0.5 std. dev.
       } else if ((real_proxies) & (!instrumental) & (!docum)) { 
-        Rcal <- realprox$var_residu
+        Rcal <- realprox$var_residu/10
         Rcal[which(is.na(Rcal))] <- 0
       } else if (((instrumental) | (docum)) & (!real_proxies)) { 
         Rcal <- c(temp2=0.9, precip=50, slp=10)[calibrate$names]

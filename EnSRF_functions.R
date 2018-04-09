@@ -43,7 +43,7 @@ indicespath <- paste0(dataextdir,'vali_data/indices/')
 # install.packages("ggplot2")
 # install.packages("grid")
 # install.packages("cowplot")
-      
+# install.packages("RColorBrewer")      
 suppressMessages(library(akima))         # for interpolation
 suppressMessages(library(maps))
 suppressMessages(library(mapdata))
@@ -1662,7 +1662,7 @@ read_pseudo<-function(){
   pseudoprox$time<-pseudolist$time[ti]
   pseudoprox$lat<-pseudolist$lat[nhpos]
   pseudoprox$lon<-pseudolist$lon[nhpos]
-  pseudoprox$mr<-cbind(rep(0,nlat_nh),matrix(rep(1/12,12*nlat_nh),nlat_nh,12))
+  pseudoprox$mr<-cbind(rep(0,2*nlat_nh),matrix(rep(1/12,12*nlat_nh),2*nlat_nh,6),matrix(rep(NA,12*nlat_nh),2*nlat_nh,6))
   residus<-rep(NA,104)
   for(i in 1:length(pseudoprox$lon)){
     k=which(abs(lonlist-pseudoprox$lon[i]+0.001)==min(abs(lonlist-pseudoprox$lon[i]+0.001)))
@@ -1673,6 +1673,7 @@ read_pseudo<-function(){
     }
     pseudoprox$var_residu[i]<-var(residus)
   }
+  dimnames(pseudoprox$mr)[[2]]<-c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabt.seventh","unabt.eighth","unabt.ninth","unabt.tenth","unabt.eleventh","unabt.twelfth")
   invisible(pseudoprox)
 }
 
@@ -3029,7 +3030,7 @@ plot_echam <- function(x, levs, varname='temp2', type='data',  ti=1,
                      pch=4, col=rgb(0,0,10,8,maxColorValue=10), cex=st.cex))
           try(points(stations$lon[stations$names=='prox' & !is.na(stations$data[,i])], 
                      stations$lat[stations$names=='prox' & !is.na(stations$data[,i])], 
-                     pch=3, col=rgb(0,10,0,8,maxColorValue=10), cex=st.cex))
+                     pch=3, col=rgb(1,4,2,8,maxColorValue=10), cex=st.cex,lwd=1.5))
         } else {
           points(statlon, statlat, pch=1, col=st.col, cex=st.cex)
         }
@@ -3488,7 +3489,8 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$en
         cols <- rbfun(length(levs) - 1)
       }
     } else {
-      cols <- rep(cols, length.out=length(levs) - 1)
+      cols <- two.colors(n=length(levs)-1,start=cols[1],middle=cols[2],end=cols[3], alpha=1.0)
+      # cols <- brewer.pal(n = length(levs) - 1, name = "OrRd")
     }
     #    if (!is.null(centercol)) {
     #      if (is.even(length(cols)/2)) {
@@ -6096,22 +6098,39 @@ convert_to_2_seasons <- function(x,source){
   if (source=="proxy"){
     x.allts <- x
     tmp1=t(x$data)
-    points.on.SH <- which(x$lat<0)
-    tmp2=array(NA,c(dim(tmp1)[1],2,dim(tmp1)[2]))
-    tmp2[,2,]=tmp1
-    if (!isempty(points.on.SH)){
-    tmp2[points.on.SH,1,]<-tmp2[points.on.SH,2,]
-    tmp2[points.on.SH,2,]<-NA
+    if(pseudo_prox){
+      tmp2=array(NA,c(dim(tmp1)[1],2,dim(tmp1)[2]))
+      tmp2[,1,]<-tmp1
+      tmp2[,2,]<-tmp1
+      
+      x.allts$data=array(tmp2,c(dim(tmp2)[1],dim(tmp2)[2]*dim(tmp2)[3]))
+      x.allts$time=seq(min(x$time), max(x$time)+0.5,0.5) 
+      ti=which(floor(x.allts$time)==cyr)
+      sts=ti[1]
+      ets=ti[length(ti)]      
+      x$data=x.allts$data[,sts:ets]
+      x$time=x.allts$time[sts:ets]
+      x$names=rep("prox",dim(x.allts$data)[1])
+      return(list(x=x,x.allts=x.allts))
+  
+    }else{
+      points.on.SH <- which(x$lat<0)
+      tmp2=array(NA,c(dim(tmp1)[1],2,dim(tmp1)[2]))
+      tmp2[,2,]=tmp1
+      if (!isempty(points.on.SH)){
+        tmp2[points.on.SH,1,]<-tmp2[points.on.SH,2,]
+        tmp2[points.on.SH,2,]<-NA
+      }
+      x.allts$data=array(tmp2,c(dim(tmp2)[1],dim(tmp2)[2]*dim(tmp2)[3]))
+      x.allts$time=seq(fsyr,feyr+0.5,0.5) 
+      ti=which(floor(x.allts$time)==cyr)
+      sts=ti[1]
+      ets=ti[length(ti)]      
+      x$data=x.allts$data[,sts:ets]
+      x$time=x.allts$time[sts:ets]
+      x$names=rep("prox",dim(x.allts$data)[1])
+      return(list(x=x,x.allts=x.allts))
     }
-    x.allts$data=array(tmp2,c(dim(tmp2)[1],dim(tmp2)[2]*dim(tmp2)[3]))
-    x.allts$time=seq(fsyr,feyr+0.5,0.5) 
-    ti=which(floor(x.allts$time)==cyr)
-    sts=ti[1]
-    ets=ti[length(ti)]      
-    x$data=x.allts$data[,sts:ets]
-    x$time=x.allts$time[sts:ets]
-    x$names=rep("prox",dim(x.allts$data)[1])
-    return(list(x=x,x.allts=x.allts))
   }
   if (source=="doc"){
     tmp1 <- array(t(x$data),c(dim(x$data)[1] *  dim(x$data)[2]))
@@ -6166,6 +6185,31 @@ convert_to_monthly <- function(dataset) {
   dataset$lat <- dataset$lat[1:(dim(dataset$data)[1])] #/length(unique(dataset$names)))]
   return(dataset)
 }
+
+convert_to_yearly<-function(dataset,ns){
+  #Takes all datasets like analysis, echam, validate, vind, aind, eind and converts it from monthly (ns=12) or 
+  #seasonal (ns=2) into yearly data by calculating the yearly means (oct.-sept.)
+  #For calibrate not sure whether the $mr has to be changed into yearly (maybe it's not needed), for now it's not done by this
+  #function.
+  if(length(dim(dataset$data))==2){
+    dataset$data<-apply(array(dataset$data,c(dim(dataset$data)[1],ns,dim(dataset$data)[2]/ns)),c(1,3),mean)
+  }else{
+    dataset$data<-apply(array(dataset$data, c(dim(dataset$data)[1],ns,dim(dataset$data)[2]/ns,dim(dataset$data)[3])),c(1,3,4),mean)
+  }
+  
+  if("ensmean" %in% names(dataset)){
+    dataset$ensmean<-apply(array(dataset$ensmean,c(dim(dataset$ensmean)[1],ns,dim(dataset$ensmean)[2]/ns)),c(1,3),mean)
+  }
+  
+  if(ns==12){
+    dataset$time<-(round(dataset$time[1])):(floor(tail(dataset$time,1)))
+  }else{
+    dataset$time<-unique(floor(dataset$time))
+  }
+  
+  return(dataset)
+}
+
 
 convert_to_tps_only<-function(dataset){
   
@@ -6678,7 +6722,7 @@ calc_indices<-function(dataset, setname){
     indices <- c('ENH.temp2','NAM.temp2','SAM.temp2','AFR.temp2',
                  'ASI.temp2','AUS.temp2','ARC.temp2','ANT.temp2',
                  'NEU.temp2','MED.temp2',
-                 'GLO.temp','NAM.precip','SAM.precip','AFR.precip',
+                 'GLO.temp2','NAM.precip','SAM.precip','AFR.precip',
                  'ASI.precip','AUS.precip','ARC.precip','ANT.precip',
                  'NEU.precip','MED.precip',
                  'SH.temp2','NAM.slp','SAM.slp','AFR.slp',

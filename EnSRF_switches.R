@@ -1,4 +1,4 @@
-expname="proxies_only_pseudo_experiment_allvar_var_residu10" # "EKF400_v1.3_full_res" #
+expname="proxies_only_pseudo_test_allvar_anom" # "EKF400_v1.3_full_res" #
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -175,7 +175,7 @@ generate_PROXIES=F
 #        Abklären: ist in den jeweiligen  read_proxy_mxd zb t4 immer von t1-t12, weil sonst machen 
 #                  die colnames nicht Sinn!!!!! Zb Zeile:
 #                  Weil in Pages sind es nicht dieselben 
-generate_PROXIESnew=F
+generate_PROXIESnew=T
 if (generate_PROXIESnew==T) {
 # You can choose any combination of months and variable (T&P) for regression_months.
 # Then you can choose for each source whether it to be included or not. 
@@ -185,17 +185,17 @@ if (generate_PROXIESnew==T) {
 # For MXD and SCHWEINGR it only takes the temperature and leaves the precip. months NA.
 # PAGES_tree data also consists of location on the SH: if for ex. t4 (is chosen), it takes t10 (t4+6) 
 # for any locations with lat<0. 
-regression_months = c("t.first","t.second","t.third","t.fourth","t.fifth","t.sixth","t.seventh","t.eighth","t.ninth","t.tenth","t.eleventh","t.twelfth")
+regression_months = c("t.first","t.second","t.third","t.fourth","t.fifth","t.sixth") #"t.seventh","t.eighth","t.ninth","t.tenth","t.eleventh","t.twelfth"
 # ^ for MXD it will only take the temp. part of regression months
 # for pages trees on SH if you choose first April it automatically takes October of SH
   TRW=F
   MXD=F
   SCHWEINGR=F
-  PAGES=F
+  PAGES=T
   NTREND=F
   TRW_PETRA=F
    # can be CRU or GISS to calculate the reg coeff-s
-type = c("tree") 
+type = c("tree","coral") 
 #          ^ it only works with tree and coral (and both indiviually as well)
 } 
 pages_lm_fit = "CRU"
@@ -203,8 +203,8 @@ generate_PAGES = F      # using the screened PAGES proxy dataset
 generate_NTREND = F
 
 
-generate_PSEUDO=T
-pseudo_prox=T
+generate_PSEUDO=F
+pseudo_prox=F
 
 yuri_temp=F          # yuri's data compilation, SLP always loaded
 yuri_slp=F
@@ -281,9 +281,9 @@ reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=T            # calc on land only
 fasttest=F             # use even less data
-tps_only=T            # only use temp, precip and slp in state vector, remove other vars
-no_stream=F         # all echam vars but stream function as there is problem with 
-#                       # 5/9 levels, which are in lat dimension before and after 1880
+tps_only=F           # only use temp, precip and slp in state vector, remove other vars
+no_stream=T         # all echam vars but stream function as there is problem with 
+#                      # 5/9 levels, which are in lat dimension before and after 1880
 loo=F                  # leave-one-out validation 
 if (loo) {tps_only=T;no_stream=F}  # reduce state vector for faster validation
 no_forc_big_ens=F      # use all years as one big ensemble regardless of forcing like LMR
@@ -332,7 +332,7 @@ calc_prepplot=T  # save half year averages calc from monthly data into /prepplot
 # maybe change files names for new EKF400 version "1.0" to "1.1"
 # write_netcdf requires to run calc_prepplot before 
 # best set load_prepplot=F
-write_netcdf=T   # write entire EKF400 to NetCDF files
+write_netcdf=F   # write entire EKF400 to NetCDF files
 version="v1.3"   # set version number for netcdf file name
 # v1.1 at DKRZ is experiment 1.2 here!
 if (!monthly_out & write_netcdf) {
@@ -356,7 +356,8 @@ ind_anom=F       # calculate indices from anomaly data
 #####################################################################################
 # plot switches
 #####################################################################################
-validation_set=c("cru_vali")
+validation_set=c("cru_vali") #can be set to cru_vali, or twentycr_vali or both together c("cru_vali","twentycr_vali")
+                             #choses which validation set should be used in the plots
 yearly_out=F
 monthly=F
 pseudoproxy=F

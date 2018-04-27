@@ -16,7 +16,7 @@ rm(list=ls())
 # enter syr ane eyr manually
 
 
-syr=1904
+syr=1910
 eyr=2000
 
 
@@ -1330,7 +1330,7 @@ for (cyr in syr2:eyr) {
         # probably should have given instrumentals more error instead!
         Rcal[calibrate$sour=="doc"] <- 0.25 # equals 0.5 std. dev.
       } else if ((real_proxies) & (!instrumental) & (!docum)) { 
-        Rcal <- realprox$var_residu/10
+        Rcal <- realprox$var_residu
         Rcal[which(is.na(Rcal))] <- 0
       } else if (((instrumental) | (docum)) & (!real_proxies)) { 
         Rcal <- c(temp2=0.9, precip=50, slp=10)[calibrate$names]

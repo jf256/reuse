@@ -14,7 +14,7 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
-syr=1901 #1902 #1941
+syr=1905 #1902 #1941
 eyr=2000 #2003 #1970
 
 # read syr and eyr from Rscript parameters entered in bash and 
@@ -444,17 +444,17 @@ if (calc_prepplot) {
     }
     
     
-    if (ind_anom) {
-      echam2 <- echam2.anom
-      analysis2 <- analysis2.anom
-    } else {
-      echam2 <- echam2.abs
-      analysis2 <- analysis2.abs
-    }   
+
+      echam.anom2 <- echam2.anom
+      analysis.anom2 <- analysis2.anom
+
+      echam.abs2 <- echam2.abs
+      analysis.abs2 <- analysis2.abs
     
-    eind<-calc_indices(echam2,"echam2")
-    aind<-calc_indices(analysis2,"analysis2")
-    
+    eind<-calc_indices(echam.abs2,"echam2")
+    aind<-calc_indices(analysis.abs2,"analysis2")
+    eind.anom<-calc_indices(echam.anom2,"echam2")
+    aind.anom<-calc_indices(analysis.anom2,"analysis2")
     if (vali) {
       valiname = names(validate2)
       vind_all<-list()
@@ -503,11 +503,11 @@ if (calc_prepplot) {
         names(validate_all)<-valiname
         validate <- validate_all
         
-        save(analysis,analysis.anom,echam,echam.anom,validate,calibrate,vind,eind,aind,
+        save(analysis,analysis.anom,echam,echam.anom,validate,calibrate,vind,eind,aind,aind.anom,eind.anom,
              file=paste0(prepplotdir,'analysis_',cyr,'_2ndgrid.Rdata'))
       } else {
         print(paste("dim validate data:",paste(nrow(validate$data),ncol(validate$data))))
-        save(analysis,analysis.anom,echam,echam.anom,validate,calibrate,vind,eind,aind,
+        save(analysis,analysis.anom,echam,echam.anom,validate,calibrate,vind,eind,aind,aind.anom,eind.anom,
              file=paste0(prepplotdir,'analysis_',cyr,'.Rdata'))
         #save(analysis,analysis.anom,ana_ind,echam,echam.anom,ech_ind,validate,vali_ind,calibrate,
         #     file=paste0(prepplotdir,'/analysis_',cyr,'.Rdata'))
@@ -515,10 +515,10 @@ if (calc_prepplot) {
       }
     } else {
       if (every2grid) {
-        save(analysis,analysis.anom,echam,echam.anom,calibrate,aind,eind,
+        save(analysis,analysis.anom,echam,echam.anom,calibrate,aind,eind,aind.anom,eind.anom,
              file=paste0(prepplotdir,'analysis_',cyr,'_2ndgrid.Rdata'))
       } else {
-        save(analysis,analysis.anom,echam,echam.anom,calibrate,aind,eind,
+        save(analysis,analysis.anom,echam,echam.anom,calibrate,aind,eind,aind.anom,eind.anom,
              file=paste0(prepplotdir,'analysis_',cyr,'.Rdata'))
         #save(analysis,analysis.anom,ana_ind,echam,echam.anom,ech_ind,calibrate,
         #     file=paste0(prepplotdir,'/analysis_',cyr,'.Rdata'))
@@ -529,7 +529,7 @@ if (calc_prepplot) {
   # tps_only is set to F here because if it was T before it's not needed anymore from now on
   # set tps_only = T manually if in load_prepplot the not-tps-data should be discarded
   tps_only=F
-  rm(echam2,echam2.abs,echam2.anom,analysis2,analysis2.abs,analysis2.anom,validate2,validate2_all,validate2_init,vind_all,validate_all,validate_init)
+  rm(echam.abs2,echam2.abs,echam2.anom,analysis.anom2,echam.anom2,analysis.abs2,analysis2.abs,analysis2.anom,validate2,validate2_all,validate2_init,vind_all,validate_all,validate_init)
 } #end calc_prepplot
 
 
@@ -574,6 +574,8 @@ if (load_indices){
     if (tps_only) {
       eind<-convert_to_tps_only(eind)
       aind<-convert_to_tps_only(aind)
+      eind.anom<-convert_to_tps_only(eind.anom)
+      aind.anom<-convert_to_tps_only(aind.anom)
       if (vali){
         
         valiname = names(vind)
@@ -598,26 +600,41 @@ if (load_indices){
     if (cyr == syr) {
       aind.allts=aind
       eind.allts=eind
+      eind.anom.allts<-eind.anom
+      aind.anom.allts<-aind.anom
       
       if(monthly_out){
         aind.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
         eind.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
+        aind.anom.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
+        eind.anom.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
+        
       }else{
         aind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
         eind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
+        aind.anom.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
+        eind.anom.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
       }
     } else {
       aind.allts$data=abind(aind.allts$data,aind$data,along=2)
       aind.allts$ensmean=cbind(aind.allts$ensmean,aind$ensmean)
       eind.allts$data=abind(eind.allts$data,eind$data,along=2)
       eind.allts$ensmean=cbind(eind.allts$ensmean,eind$ensmean)
+      aind.anom.allts$data=abind(aind.anom.allts$data,aind.anom$data,along=2)
+      aind.anom.allts$ensmean=cbind(aind.anom.allts$ensmean,aind.anom$ensmean)
+      eind.anom.allts$data=abind(eind.anom.allts$data,eind.anom$data,along=2)
+      eind.anom.allts$ensmean=cbind(eind.anom.allts$ensmean,eind.anom$ensmean)
       
       if(monthly_out){
         aind.allts$time=c(aind.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
         eind.allts$time=c(eind.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+        aind.anom.allts$time=c(aind.anom.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+        eind.anom.allts$time=c(eind.anom.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
       } else {
         aind.allts$time=c(aind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
         eind.allts$time=c(eind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+        aind.anom.allts$time=c(aind.anom.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+        eind.anom.allts$time=c(eind.anom.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
       }
     }
     
@@ -717,21 +734,23 @@ if (load_indices){
   vind.tot<-vind.allts
   aind.tot<-aind.allts
   eind.tot<-eind.allts
+  eind.anom.tot<-eind.anom.allts
+  aind.anom.tot<-aind.anom.allts
   if (every2grid) {
     if (monthly_out) {
-      save(aind.tot, vind.tot, eind.tot, file=paste0("../data/image/",expname,"/indices_tot_",syr,"-",eyr,"_monthly_2ndgrid.Rdata"))
+      save(aind.tot, vind.tot, eind.tot,aind.anom.tot,eind.anom.tot, file=paste0("../data/image/",expname,"/indices_tot_",syr,"-",eyr,"_monthly_2ndgrid.Rdata"))
       
     } else {
-      save(aind.tot, vind.tot, eind.tot, file=paste0("../data/image/",expname,"/indices_tot_",syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
+      save(aind.tot, vind.tot, eind.tot,aind.anom.tot,eind.anom.tot, file=paste0("../data/image/",expname,"/indices_tot_",syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
     }  
   } else {
     if (monthly_out) {
-      save(aind.tot, vind.tot, eind.tot, file=paste0("../data/image/",expname,"/indices_tot_",syr,"-",eyr,"_monthly.Rdata"))
+      save(aind.tot, vind.tot, eind.tot,aind.anom.tot,eind.anom.tot, file=paste0("../data/image/",expname,"/indices_tot_",syr,"-",eyr,"_monthly.Rdata"))
     } else {
-      save(aind.tot, vind.tot, eind.tot, file=paste0("../data/image/",expname,"/indices_tot_",syr,"-",eyr,"_seasonal.Rdata"))
+      save(aind.tot, vind.tot, eind.tot,aind.anom.tot,eind.anom.tot, file=paste0("../data/image/",expname,"/indices_tot_",syr,"-",eyr,"_seasonal.Rdata"))
     }
   }
-  rm(eind, eind.tot, aind, aind.tot, vind, vind.tot, allvindts, vind.allts, eind.allts, aind.allts)
+  rm(eind, eind.tot, aind, aind.tot, vind, vind.tot, allvindts, vind.allts, eind.allts, aind.allts,aind.anom.tot,eind.anom.tot)
 }# end load_indices
   
   
@@ -1064,6 +1083,8 @@ if (load_prepplot){
       analysis.anom<-convert_to_tps_only(analysis.anom)
       eind<-convert_to_tps_only(eind)
       aind<-convert_to_tps_only(aind)
+      eind.anom<-convert_to_tps_only(eind.anom)
+      aind.anom<-convert_to_tps_only(aind.anom)
       if (vali){
         
         valiname = names(validate)
@@ -1176,18 +1197,24 @@ if (load_prepplot){
       analysis.allts=analysis
       analysis.anom.allts=analysis.anom
       aind.allts=aind
+      aind.anom.allts<-aind.anom
       
       
       echam.allts=echam
       echam.anom.allts=echam.anom
       eind.allts=eind
+      eind.anom.allts<-eind.anom
       
       if(monthly_out){
         aind.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
         eind.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
+        aind.anom.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
+        eind.anom.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
       }else{
         aind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
         eind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
+        aind.anom.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
+        eind.anom.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
       }
 
       # only instr. calibration data for period with fixed network
@@ -1230,6 +1257,8 @@ if (load_prepplot){
 
       aind.allts$data=abind(aind.allts$data,aind$data,along=2)
       aind.allts$ensmean=cbind(aind.allts$ensmean,aind$ensmean)
+      aind.anom.allts$data=abind(aind.anom.allts$data,aind.anom$data,along=2)
+      aind.anom.allts$ensmean=cbind(aind.anom.allts$ensmean,aind.anom$ensmean)
       
       echam.allts$data=abind(echam.allts$data,echam$data,along=2)
       echam.allts$ensmean=cbind(echam.allts$ensmean,echam$ensmean)
@@ -1240,13 +1269,19 @@ if (load_prepplot){
 
       eind.allts$data=abind(eind.allts$data,eind$data,along=2)
       eind.allts$ensmean=cbind(eind.allts$ensmean,eind$ensmean)
+      eind.anom.allts$data=abind(eind.anom.allts$data,eind.anom$data,along=2)
+      eind.anom.allts$ensmean=cbind(eind.anom.allts$ensmean,eind.anom$ensmean)
       
       if(monthly_out){
         aind.allts$time=c(aind.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
         eind.allts$time=c(eind.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+        aind.anom.allts$time=c(aind.anom.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+        eind.anom.allts$time=c(eind.anom.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
       } else {
         aind.allts$time=c(aind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
         eind.allts$time=c(eind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+        aind.anom.allts$time=c(aind.anom.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+        eind.anom.allts$time=c(eind.anom.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
       }
     
       if (substring(expname,1,12)=="proxies_only") {
@@ -1404,15 +1439,17 @@ if (load_prepplot){
 echam <- echam.allts
 eind<-eind.allts
 echam.anom <- echam.anom.allts
+eind.anom<-eind.anom.allts
 #ech_ind <- ech_ind.allts
 # rm(ech_ind.allts)
 rm(echam.allts,echam.anom.allts, eind.allts)
 analysis <- analysis.allts
 aind<-aind.allts
 analysis.anom <- analysis.anom.allts
+aind.anom<-aind.anom.allts
 #ana_ind <- ana_ind.allts
 # rm(ana_ind.allts)
-rm(analysis.allts,analysis.anom.allts,aind.allts)
+rm(analysis.allts,analysis.anom.allts,aind.allts,aind.anom.allts,eind.anom.allts)
 calibrate <- calibrate.allts
 if (vali) {
   validate <- validate.allts
@@ -1423,7 +1460,7 @@ if (vali) {
 }
 print("calc time for a year")
 
-
+# calc validate.anom, validate.clim, calibrate.clim, calibrate.anom, vind.anom
 if (vali) {
   valiname = names(validate)
   validate_init <- validate
@@ -1466,11 +1503,52 @@ calibrate.clim$data <- apply(array(calibrate$data, c(nrow(calibrate$data), 2, nc
 calibrate.anom <- calibrate
 calibrate.anom$data <- array(calibrate$data - as.vector(calibrate.clim$data), c(nrow(calibrate$data), ncol(calibrate$data)))
 
+valiname = names(validate.anom)
+validate.anom_init <- validate.anom
+vind.anom_all <- list()
+vind.anom<-list()
+vind.anom.tot<-list()
+vanom.yrly<-list()
+l=1
+for (v in valiname){
+  validate.anom<-validate.anom_init[[v]]
+  validate.anom$data<-array(validate.anom$data,c(dim(validate.anom$data)[1],s,dim(validate.anom$data)[2]/s))
+  validate.anom$ensmean<-array(validate.anom$ensmean,c(dim(validate.anom$ensmean)[1],s,dim(validate.anom$ensmean)[2]/s))
+  validate.anom$time<-array(validate.anom$time,c(s,length(validate.anom$time)/s))
+  valitmp<-validate.anom
+  for (i in 1:dim(validate.anom$time)[2]){
+    valitmp$data<-validate.anom$data[,,i]
+    valitmp$ensmean<-validate.anom$ensmean[,,i]
+    valitmp$lon<-validate.anom$lon
+    valitmp$lat<-validate.anom$lat
+    valitmp$time<-validate.anom$time[,i]
+    valitmp$names<-validate.anom$names
+    vanom.yrly[[i]]<-valitmp
+  }
+  vind.anom_all<-lapply(vanom.yrly,calc_indices,setname=v)
+  vindtmp<-vind.anom_all[[1]]
+  vindtmp$time<-validate.anom$time[,1]
+  for(i in 2:length(vind.anom_all)){
+    vindtmp$data<-cbind(vindtmp$data,vind.anom_all[[i]]$data)
+    vindtmp$ensmean<-cbind(vindtmp$ensmean,vind.anom_all[[i]]$ensmean)
+    vindtmp$time<-c(vindtmp$time,validate.anom$time[,i])
+  }
+  vind.clim<-apply(vindtmp$data[35:40,],1,mean)
+  vindtmp$date[35:40]<-vindtmp$data[35:40,]-vind.clim
+  vindtmp$ensmean[35:40]<-vindtmp$ensmean[35:40,]-vind.clim
+  vind.anom[[l]]<-vindtmp
+  vind.anom.tot[[l]]<-vindtmp
+  
+  l=l+1
+}
+validate.anom<-validate.anom_init
+names(vind.anom)<-valiname
+names(vind.anom.tot)<-valiname
+
+
 print("calc anomalies")
-# print(proc.time() - ptm1)
 
-
-rm(v,valiname,validate_all,validate_init,validate.allts_all,validate.allts_init,validate.anom_all,validate.clim_all)
+rm(v,valiname,validate_all,validate_init,validate.allts_all,validate.allts_init,validate.anom_all,validate.clim_all,validate.anom_init,vind.anom_all,vanom.yrly)
 
 if (every2grid) {
   if (monthly_out) {

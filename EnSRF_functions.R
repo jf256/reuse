@@ -1573,7 +1573,22 @@ read_trw_petra<-function(fsyr, feyr, validate){
       unab <- unab[,match(onlytemp,colnames(unab))]
       
       # multiple linear regression
+      # fit<-lm(tree_petra_1901_1970$data[,i]~t.first+t.second+t.third+t.fourth+t.fifth+t.sixth,data=data.frame(unab), na.action = na.exclude)
+      # step<-stepAIC(fit)
       results <- lm(tree_petra_1901_1970$data[,i]~unab,  na.action=na.exclude)
+
+      # cnames<-names(results$coefficients)
+      # results$coefficients<-rep(0,length(results$coefficients))
+      # results$residuals<-rep(0,length(results$residuals))
+      # names(results$coefficients)<-cnames
+      # sumry<-summary(step)
+      # pval<-1-pf(sumry$fstatistic[1],sumry$fstatistic[2],sumry$fstatistic[3])
+      # if(pvaly<0.1){
+      #   results$coefficients[match(c("(Intercept)", paste0("unab",names(step$coefficients)[2:length(step$coefficients)])),names(results$coefficients))]<-step$coefficients
+      #   results$residuals<-step$residuals
+      # }
+      #results$coefficients[which(summary(results)$coefficients[,4]>0.05)]<-NA
+      #tree_petra_1901_1970$data[which(!is.na(tree_petra_1901_1970$data[,i])),i]-(results$coefficients[1]+t(results$coefficients[2:length(results$coefficients)])%*%t(unab[which(!is.na(tree_petra_1901_1970$data[,i])),]))
       corr = cor.test(fitted.values(results),tree_petra_1901_1970$data[,i])
       # print(corr[4]) # maybe under a certain corr value we could just set it to NA?
       
@@ -6787,4 +6802,210 @@ calc_indices<-function(dataset, setname){
     ind$ensmean<-ind$data
   }
   return(ind)
+}
+
+
+plot_example_ts<-function(validate,analysis,echam,lonlat,type="absolute",loc="somewhere",ylim_slp=NULL,ylim_p=NULL,ylim_t=NULL){
+  # takes validate, analysis and echam and makes time series for summer. Location can be specified by givin the number of the position of a
+  # specific lon/lat (lonlat). With loc ="locationname" a name for the plotname can be selected. Ylimits can be specified for each variable
+  # independently. for type = anomaly only one ylim each is enough, else it needs a list with two different ylims: One for echam and analysis
+  # one for validate (because of model bias)
+  
+  if (monthly_out) {
+    #3yr monthly temp
+    pos2 <- seq(1,36,1)
+    period <- as.Date(paste(rep(seq(from=1950,to=1952),each=12),rep(seq(1,12),3),rep(15,36),sep='-'))
+  }else if (yearly_out){
+    pos2<-seq(1,ncol(validate$data),1)
+    period<-validate$time
+  } else {
+    #30yr summer temp
+    pos2 <- seq(2,ncol(validate$data),2)
+    period <- validate$time[pos2]
+  }
+  
+  
+  if(type!="anomaly"){
+    
+    
+    if(lonlat==592){
+      loc="sibiria"
+      ylim_t=list(c(0,9),c(1.5,10.5))
+      ylim_p=list(c(0,100),c(-5,95))
+      ylim_s=list(c(1006,1020),c(1005,1019))
+      
+    }else if(lonlat==676){
+      loc="norway"
+      ylim_t=list(c(1,10),c(3,12))
+      ylim_p=list(c(30,150),c(21.5,141.5))
+      ylim_s=list(c(1005,1018),c(1005,1018))
+
+    }else if(lonlat==278){
+      loc="greenland"
+      ylim_t=list(c(-19,-8),c(-21.5,-10.5))
+      ylim_p=list(c(0,30),c(6,36))
+      ylim_s=list(c(1010,1023),c(1008,1021))
+
+    }else if(lonlat==632){
+      loc="alaska"
+      ylim_t=list(c(-3,9),c(-1.5,10.5))
+      ylim_p=list(c(10,130),c(-28.5,91.5))
+      ylim_s=list(c(1005,1017),c(1006,1018))
+
+    }else if(lonlat==1460){
+      loc="pakistan"
+      ylim_t=list(c(29,36),c(25,32))
+      ylim_p=list(c(-20,80),c(15,115))
+      ylim_s=list(c(997,1004),c(998.5,1005.5))
+
+    }
+    
+    if (monthly_out) {
+      pdf(paste(figpath,'/example_timeseries_',loc,'_',v,'_mon.pdf',sep=''),
+          width=4.5, height=6, paper='special')
+    }else if(yearly_out){
+      pdf(paste(figpath,'/example_timeseries_',loc,'_',v,'_yrly.pdf',sep=''),
+          width=7, height=6, paper='special')
+    } else {
+      pdf(paste(figpath,'/example_timeseries_',loc,'_',v,'.pdf',sep=''),
+          width=7, height=6, paper='special')
+    }
+    par(oma=c(0,0,0,0),mar=c(2,4,2,2),mfrow=c(3,1))
+    #50yr summer temp
+    plot(echam$time[pos2],echam$ensmean[lonlat,pos2],ylim=ylim_t[[1]],ty='l',col="black",main="Temperature",
+         xlab='',ylab='[ºC]',xaxt='n',axes=F)
+    
+    polygon(c(echam$time[pos2],rev(echam$time[pos2])),c(apply(echam$data[lonlat,pos2,],1,max),
+                                                        rev(apply(echam$data[lonlat,pos2,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
+    lines(analysis$time[pos2],analysis$ensmean[lonlat,pos2],col="red")
+    polygon(c(analysis$time[pos2],rev(analysis$time[pos2])),c(apply(analysis$data[lonlat,pos2,],1,max),
+                                                              rev(apply(analysis$data[lonlat,pos2,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
+    
+    axis(2,col="red")
+    par(new=T)
+    plot(validate$data[lonlat,pos2],ylim=ylim_t[[2]],ty='l',col="blue",main="",
+         xlab='',ylab='[ºC]',xaxt='n',axes=F)
+    axis(4, col="blue")
+    box()
+    #precip
+    
+    plot(echam$time[pos2],echam$ensmean[4608+lonlat,pos2],ylim=ylim_p[[1]],ty='l',col="black",main="Precipitation",
+         xlab='',ylab='[mm]',xaxt='n',axes=F)
+    
+    polygon(c(echam$time[pos2],rev(echam$time[pos2])),c(apply(echam$data[4608+lonlat,pos2,],1,max),
+                                                        rev(apply(echam$data[4608+lonlat,pos2,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
+    lines(analysis$time[pos2],analysis$ensmean[4608+lonlat,pos2],col="red")
+    polygon(c(analysis$time[pos2],rev(analysis$time[pos2])),c(apply(analysis$data[4608+lonlat,pos2,],1,max),
+                                                              rev(apply(analysis$data[4608+lonlat,pos2,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
+    
+    axis(2,col="red")
+    par(new=T)
+    plot(validate$data[4608+lonlat,pos2],ylim=ylim_p[[2]],ty='l',col="blue",main="",
+         xlab='',ylab='[mm]',xaxt='n',axes=F)
+    axis(4, col="blue")
+    box()
+    #slp
+    
+    plot(echam$time[pos2],echam$ensmean[2*4608+lonlat,pos2],ylim=ylim_s[[1]],ty='l',col="black",main="Sea level pressure",
+         xlab='',ylab='[hPa]',xaxt='n',axes=F)
+    
+    polygon(c(echam$time[pos2],rev(echam$time[pos2])),c(apply(echam$data[2*4608+lonlat,pos2,],1,max),
+                                                        rev(apply(echam$data[2*4608+lonlat,pos2,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
+    lines(analysis$time[pos2],analysis$ensmean[2*4608+lonlat,pos2],col="red")
+    polygon(c(analysis$time[pos2],rev(analysis$time[pos2])),c(apply(analysis$data[2*4608+lonlat,pos2,],1,max),
+                                                              rev(apply(analysis$data[2*4608+lonlat,pos2,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
+    
+    axis(2,col="red")
+    par(new=T)
+    plot(validate$time[pos2], validate$data[2*4608+lonlat,pos2],ylim=ylim_s[[2]],ty='l',col="blue",main="",
+         xlab='',ylab='[hPa]',xaxt='n',axes=F)
+    axis(4, col="blue")
+    axis(1)
+    box()
+    
+    legend("bottomleft", c(valilegend, 'CCC400', "EFK400"),col=c("blue", "black", "red"),
+           lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='transparent',
+           box.col='transparent', cex=1)
+    dev.off()
+    
+  }else{
+    if(lonlat==592){
+      loc="sibiria"
+      ylim_t=c(-5,5)
+      ylim_p=c(-50,50)
+      ylim_s=c(-6,6)
+      
+    }else if(lonlat==676){
+      loc="norway"
+      ylim_t=c(-4,4)
+      ylim_p=c(-50,50)
+      ylim_s=c(-7,7)
+
+    }else if(lonlat==278){
+      loc="greenland"
+      ylim_t=c(-4,4)
+      ylim_p=c(-20,20)
+      ylim_s=c(-6,6)
+
+    }else if(lonlat==632){
+      loc="alaska"
+      ylim_t=c(-5,5)
+      ylim_p=c(-50,50)
+      ylim_s=c(-6,6)
+
+    }else if(lonlat==1460){
+      loc="pakistan"
+      ylim_t=c(-4,4)
+      ylim_p=c(-40,60)
+      ylim_s=c(-4,4)
+
+    }
+    if (monthly_out) {
+      pdf(paste(figpath,'/example_timeseries_',loc,'_anom_',v,'_mon.pdf',sep=''), 
+          width=4.5, height=6, paper='special')
+    }else if(yearly_out){
+      pdf(paste(figpath,'/example_timeseries_',loc,'_anom_',v,'_yrly.pdf',sep=''), 
+          width=7, height=6, paper='special')
+    } else {
+      pdf(paste(figpath,'/example_timeseries_',loc,'_anom_',v,'.pdf',sep=''), 
+          width=7, height=6, paper='special')
+    }
+    par(oma=c(0,0,0,0),mar=c(2,4,2,2),mfrow=c(3,1))
+    #50yr summer temp
+    plot(validate$time[pos2],validate$ensmean[lonlat,pos2],ty='l',col="blue",main="Temperature",
+         xlab='',ylab='[ºC]',xaxt='n',ylim=ylim_t)
+    lines(echam$time[pos2],echam$ensmean[lonlat,pos2],col="black")
+    polygon(c(echam$time[pos2],rev(echam$time[pos2])),c(apply(echam$data[lonlat,pos2,],1,max),
+                                                        rev(apply(echam$data[lonlat,pos2,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
+    lines(analysis$time[pos2],analysis$ensmean[lonlat,pos2],col="red")
+    polygon(c(analysis$time[pos2],rev(analysis$time[pos2])),c(apply(analysis$data[lonlat,pos2,],1,max),
+                                                              rev(apply(analysis$data[lonlat,pos2,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
+    
+    #precip
+    
+    plot(validate$time[pos2],validate$ensmean[4608+lonlat,pos2],ty='l',col="blue",main="Precipitation",
+         xlab='',ylab='[mm]',xaxt='n',ylim=ylim_p)
+    lines(echam$time[pos2],echam$ensmean[4608+lonlat,pos2],col="black")
+    polygon(c(echam$time[pos2],rev(echam$time[pos2])),c(apply(echam$data[4608+lonlat,pos2,],1,max),
+                                                        rev(apply(echam$data[4608+lonlat,pos2,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
+    lines(analysis$time[pos2],analysis$ensmean[4608+lonlat,pos2],col="red")
+    polygon(c(analysis$time[pos2],rev(analysis$time[pos2])),c(apply(analysis$data[4608+lonlat,pos2,],1,max),
+                                                              rev(apply(analysis$data[4608+lonlat,pos2,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
+    
+    #slp
+    
+    plot(validate$time[pos2],validate$ensmean[2*4608+lonlat,pos2],ty='l',col="blue",main="Sea level pressure",
+         xlab='',ylab='[hPa]',ylim=ylim_s)
+    lines(echam$time[pos2],echam$ensmean[2*4608+lonlat,pos2],col="black")
+    polygon(c(echam$time[pos2],rev(echam$time[pos2])),c(apply(echam$data[2*4608+lonlat,pos2,],1,max),
+                                                        rev(apply(echam$data[2*4608+lonlat,pos2,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
+    lines(analysis$time[pos2],analysis$ensmean[2*4608+lonlat,pos2],col="red")
+    polygon(c(analysis$time[pos2],rev(analysis$time[pos2])),c(apply(analysis$data[2*4608+lonlat,pos2,],1,max),
+                                                              rev(apply(analysis$data[2*4608+lonlat,pos2,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
+    
+    legend("bottomleft", c(valilegend, 'CCC400', "EFK400"),col=c("blue", "black", "red"),
+           lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='transparent',
+           box.col='transparent', cex=1)
+    dev.off() 
+  }
 }

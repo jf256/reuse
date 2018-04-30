@@ -24,10 +24,10 @@
 rm(list=ls())
 
 # syrtot and eyrtot are only used for the total indices time series (e.g. ENH.temp2, Global temp2 etc)
-syrtot=1905 #set to the same syr and eyr of the prepplots script (default 1602)
+syrtot=1901 #set to the same syr and eyr of the prepplots script (default 1602)
 eyrtot=1910 #(default 2000) 
 
-syr=1905 #validation period: syr>=1902, eyr<2004. Syr should be the later of the two 1902 and syr in prepplots
+syr=1902 #validation period: syr>=1902, eyr<2004. Syr should be the later of the two 1902 and syr in prepplots
 eyr=1910 
 
 station_yr=1905 # specific year to plot the station locations (syr>=station_yr<=eyr)
@@ -610,9 +610,9 @@ for (v in validation_set){
   update <- echam
   update$data <- array(upd,c(dim(upd)[1],1,dim(upd)[2]))
   update$ensmean <- array(update$data,dim=c(dim(update$data)[1],dim(update$data)[3]))
-  tmax=round(max(abs(update$ensmean[which(update$names=="temp2")])),digits=2)
-  slpmax=round(max(abs(update$ensmean[which(update$names=="slp")])),digits=1)
-  prmax=round(max(abs(update$ensmean[which(update$names=="precip")])),digits=1)
+  tmax=round(max(abs(update$ensmean[which(update$names=="temp2"),])),digits=2)
+  slpmax=round(max(abs(update$ensmean[which(update$names=="slp"),])),digits=1)
+  prmax=round(max(abs(update$ensmean[which(update$names=="precip"),])),digits=1)
   if (monthly_out) {
     plot_echam4(update, varname='temp2', cex.pt=1.3, names=pnames[1:dim(update$data)[3]], type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('avg_upd_temp_summer.pdf'), paper='special')
     plot_echam4(update, varname='temp2', cex.pt=1.3, names=pnames[1:dim(update$data)[3]], type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('avg_upd_temp_winter.pdf'), paper='special')

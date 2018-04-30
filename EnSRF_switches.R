@@ -1,4 +1,6 @@
-expname="test_climcal" # "EKF400_v1.3_full_res" #
+# expname = "test"
+ expname="proxies_only_test_new_version" # EKF400_v1.3_merged_only_inst_with_temp_loc
+
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -118,8 +120,8 @@ syr_cru=1901
 eyr_cru=2004
 syr_recon=1750
 eyr_recon=1900
-syr_ncep=1948
-eyr_ncep=2009
+syr_twentycr=1901 # currently statistics only work for same periods of CRU and 20CR (20CR data actually start from 1850)
+eyr_twentycr=2004
 #syr_ind=1901
 #eyr_ind=2004
 
@@ -158,7 +160,7 @@ generate_HadCRU4=F     # HadCRU ens. SD for instr. uncertainty and error-spread 
 #} else {               # Kuettel's temp. precip. and SLP 
 generate_LUTPAULKUT=F # gridded seasonal recons (1750-1999)
 #} 
-#generate_ind_recon=F   # read Stefan's indices 1900-2000 from .txt to .RData
+generate_ind_recon=F   # read Stefan's indices 1900-2000 from .txt to .RData
 # use scripts in data_yuri to generate .Rdata files 
 generate_t_yuri=F      # if TRUE -> yuri's temp. data collection including HISTALP is read
 generate_slp_yuri=F    # if TRUE -> yuri's slp data collection is read
@@ -185,51 +187,85 @@ if (generate_PROXIESnew==T) {
 # For MXD and SCHWEINGR it only takes the temperature and leaves the precip. months NA.
 # PAGES_tree data also consists of location on the SH: if for ex. t4 (is chosen), it takes t10 (t4+6) 
 # for any locations with lat<0. 
-regression_months = c('t.first','t.second','t.third','t.fourth','t.fifth','t.sixth')
+
+regression_months = c('t.second','t.third','t.fourth','t.fifth','t.sixth')
+
 # ^ for MXD it will only take the temp. part of regression months
 # for pages trees on SH if you choose first April it automatically takes October of SH
+
   TRW=F
   MXD=F
   SCHWEINGR=F
   PAGES=F
+  NTREND=T
+  TRW_PETRA=F
+
 pages_lm_fit = "CRU"   # can be CRU or GISS to calculate the reg coeff-s
-type = c("coral","tree") 
+type = c("coral") 
 #          ^ it only works with tree and coral (and both indiviually as well)
-NTREND=T
 } 
+
 
 generate_PAGES = F      # using the screened PAGES proxy dataset
 generate_NTREND = F
 
-if ((generate_PAGES & PAGES) | (generate_NTREND & NTREND) | generate_PROXIES & generate_PROXIESnew){
-  stop("WATCH! These switches should not be set to TRUE simultaneously: 
 
-       generate_PROXIES & generate_PROXIESnew 
-       generate_PAGES   & PAGES
-       generate_NTRED   & NTREND")
-}
+generate_PSEUDO=F
+pseudo_prox=F
 
-
-
-
-yuri_temp=T          # yuri's data compilation, SLP always loaded
-yuri_slp=T
-ghcn_temp=T
+yuri_temp=F          # yuri's data compilation, SLP always loaded
+yuri_slp=F
+ghcn_temp=F
 isti_instead_ghcn=F  # switch from ghcn to isti (ghcn_temp must still be set to TRUE)
 ghcn_prec=F
+import_luca=F        # new docu data 
 trw_only=F           # Petra's TRW only
 mxd_only=F           # Use only MXD tree ring proxies, NOT Petra's TRW
 schweingr_only=F     # Use Schweingruber MXD grid only
 
 # all available data selected above are automatically switched on when available in EnSRF_data
 
+if (generate_PROXIESnew){
+  if ((generate_PAGES & PAGES) | (generate_NTREND & NTREND) | (generate_PROXIES & generate_PROXIESnew) |
+      (trw_only) | (mxd_only) | (schweingr_only)){
+    stop("WARNING! These switches should not be set to TRUE simultaneously: 
 
-loc=T      # T = WITH localization, F without
-covarclim=0 # set 50 or 100 [%] how much echam climatology covariance should be used
-# default=0, i.e. current year covar from ECHAM ensemble
-n_covar=500  # set sample size for covar calc, e.g. 250 or 500
+       generate_PROXIES & generate_PROXIESnew 
+       generate_PAGES   & PAGES
+       generate_NTRED   & NTREND
+       trw_only         & generate_PROXIESnew
+       mxd_only         & generate_PROXIESnew
+       schweingr_only   & generate_PROXIESnew
+         ")
+  }
+}
 
-calc_decorr_dist=F     # calculate decorrelation distance for each variable from ECHAM to set L
+
+# To use a bigger ensemble for the background
+no_forc_big_ens= F      # use all years as one big ensemble regardless of forcing like LMR
+                        # ONLY works with next option load_71yr_anom=T
+covarclim=0             # set 50 or 100 [%] how much echam climatology covariance should be used
+                            # default=0, i.e. current year covar from ECHAM ensemble
+# Only used if no_forx_big_ens=T or covarclim=0
+state = "static"        # can be "static" or "changing" (static = the same big ens used for all year, changing = it is recalculated for every year)
+n_covar=250             # set sample size for covar calc or for no_forc LMR like experiment, e.g. 250 or 500
+PHclim_loc = F          # whether we want to localize the PHclim, only works if covarclim > 0
+PHclim_lvec_factor = 2  # if PHclim_loc=T, we can use eg. 2times the distances as in the 30 ensemble member, at the moment only works for shape_wgt= "circle"
+
+
+# Calculate decorr length -> was done already
+calc_decorr_dist=F      # calculate decorrelation distance for each variable from ECHAM to set L
+region = "global"       # region: where the decorrelation length should be calculated
+                            # default = "global"
+                            # can select: "golbal", "ENH", "ESH", "tropics", "lat_band", "lon_band"
+cor_length_period = "annual"   # period: over which the decorrelation length should be calculated
+                                   # default = "annual
+                                   # can select: "annual", "summer", "winter"
+                                   # for corr_over_region function both region and cor_length_period is needed
+                                   # for compute_dist_2d function region is needed
+
+# Localizing the 30 ensemble members: distance and shape
+loc=F      # T = WITH localization, F without
 if (loc) {
   l_dist_temp2=1000*1.5  # factor *1.5 after stefans recommendation
   l_dist_slp=1800*1.5
@@ -257,6 +293,9 @@ if (loc) {
   l_dist_t850=999999
   l_dist_ind=999999 
 }
+shape_wgt = "circle" # can be "circle" or "ellipse" depends on how we want to do the localization
+                      # default is "circle"
+
 
 # ATTENTION: landcorrected only works with anomaly_assim==T and every2grid==T!!!
   landcorr = F      # use simulation WITHOUT land use bug if TRUE
@@ -266,19 +305,17 @@ first_prox_per_grid=F  # first proxy per echam grid box ATTENTION: only this
   firstproxres=10      # grid resolution for instr. stations (5 = echamgrid/5)
 avg_prox_per_grid=T    # average more than one proxy per echam grid box 
                        # and calc proxy vs echam correlation
+ins_tim_loc = F        # whether the instrumental obs-s should be localized in time or not
 instmaskprox=F         # remove proxy data from grid boxes that have instr. data
 reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
-land_only=F            # calc on land only
+land_only=T            # calc on land only
 fasttest=F             # use even less data
 tps_only=T             # only use temp, precip and slp in state vector, remove other vars
 no_stream=F            # all echam vars but stream function as there is problem with 
-#                       # 5/9 levels, which are in lat dimension before and after 1880
+                       # 5/9 levels, which are in lat dimension before and after 1880
 loo=F                  # leave-one-out validation 
 if (loo) {tps_only=T;no_stream=F}  # reduce state vector for faster validation
-no_forc_big_ens=F      # use all years as one big ensemble regardless of forcing like LMR
-                       # ONLY works with next option load_71yr_anom=T
-  n_no_forc=500         # ensemble size for no_forc LMR like experiment
 #load_71yr_anom=T       # load 71yr echam anomalies calculated with cdo
 #anom_reload=F          # reload anom calculated in R (next option)
 #anom_save=F            # save anom calculated in R to reload next time
@@ -290,41 +327,27 @@ check_assimdata=T      # screen assimilation data before using it
 if (no_stream & tps_only) {
   tps_only = F
   print('ACHTUNG: tps_only was set to FALSE')
+}else if(!tps_only &!no_stream){
+  no_stream=T
+  print('ACHTUNG: no_stream was set to TRUE')
 }
 
 
 # other options
 scaleprox=T            # scale standardized docu and prox data the echam variance at location
 anomaly_assim=T        # work with anomalies to avoid reg. const in state vector
-nseas <- 12            # year with 12 months
+# nseas <- 12            # year with 12 months
 check_dist=F           # test for ideal cut-off distance of spatial correlations
 #H_non_lin=F           # new H operator that also allows non-linear functions
 ana.enssize=F
 NCEP_SOCOL=F
 
-# choose validation data set
-# ONLY one can be TRUE
-# # next line not included yet: 
-# if (eyr < 1750) {
-#   vali=F                 # switch off prepplot if no vali data selected
-# } else {
-#   vali=T
-# }
-twcr_vali=F            # 20CR reanalysis data for validation
-ncep_vali=F            # NCEP/NCAR reanalysis data for validation
-# if ((syr > 1900) & (eyr < 2006)) {
-#   cru_vali=T             # monthly CRU TS3 temp, precip and HADSLP2 gridded instrumentals (1901-2004)
-# #  ind_recon=T            # Stefan's reconstructed indices until 1948 and NCAR reanalysis later added to CRU and NCEP
-# } else {
-#   cru_vali=F 
-# #  ind_recon=F
-# }
-# #ind_recon=F
-# if ((syr < 1901) & (eyr > 1749)) {
-#   recon_vali=T           # seasonal luterbacher, pauling, kuettel recons (1750-1999)
-# } else {
-#   recon_vali=F
-# }
+# choose validation data set:
+# (all three can be selected simultaneously)
+vali_cru=T
+vali_twentycr=F
+vali_recon=F
+
 
 #####################################################################################
 # prepare plot switches
@@ -347,26 +370,30 @@ if (!monthly_out & write_netcdf) {
 # 1902-2003, because it creates time series
 load_prepplot=T  # ATTENTION check if folder prepplot on scratch contains monthly or seasonal data!
                  # saves image and only needs to be run once, afterward set "load_image=T" 
-statyr=1903      # 1941 1850/69 year, when station network is kept constant
+statyr=1905    # 1941 1850/69 year, when station network is kept constant
+load_indices=T   # if TRUE: indices are combined to allts variables for whole period (e.g. also for 1604-2004) and saved into image folder for TS-plots
 load_image=T     # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
 calc_vali_stat=T # calculate validation statistics after preparation (set "load_image=T")
-CRPS = F      # calculate Continuous Ranked Probability Score
+CRPS = T      # calculate Continuous Ranked Probability Score
 vali_plots=F     # source EnSRF_plots.R script 
-ind_ECHAM=F      # delete/comment code in prepplot script and then delete switches here
+ind_ECHAM=T      # delete/comment code in prepplot script and then delete switches here
 ind_recon=F      # delete/comment code in prepplot script and then delete switches here
-
+ind_anom=F       # calculate indices from anomaly data
 
 #####################################################################################
 # plot switches
 #####################################################################################
-monthly=T
+validation_set=c("cru_vali") #can be set to cru_vali, or twentycr_vali or both together c("cru_vali","twentycr_vali")
+                             #choses which validation set should be used in the plots
+yearly_out=F
+monthly=F
 pseudoproxy=F
 plot_dweights=F
 write_nc=F
 recalc <- F
 reload <- F
 plstat <- NULL #calibrate # NULL or calibrate
-countseries <- F
+countseries <- T
 #PAGES <- F          # write output for PAGES paper
 
 

@@ -239,7 +239,7 @@ if (generate_PROXIESnew){
       } else { realprox<-trw_petra}
     }
   }
-  save(realprox, file=paste0("../data/proxies/real_proxies_",fsyr,"-",feyr,".Rdata"))
+  save(realprox, file=paste0("../data/proxies/real_proxies",fsyr,"-",feyr,".Rdata"))
 }
 
 if (generate_PROXIES){

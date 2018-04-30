@@ -1,4 +1,4 @@
-expname="proxies_only_petra_allvar" # "EKF400_v1.3_full_res" #
+expname="proxies_only_trw_petra_tps_fullmodel_pval95" # "EKF400_v1.3_full_res" #
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment
@@ -239,7 +239,7 @@ if (generate_PROXIESnew){
 loc=T      # T = WITH localization, F without
 covarclim=0 # set 50 or 100 [%] how much echam climatology covariance should be used
 # default=0, i.e. current year covar from ECHAM ensemble
-n_covar=500  # set sample size for covar calc, e.g. 250 or 500
+n_covar=100  # set sample size for covar calc, e.g. 250 or 500
 
 calc_decorr_dist=F     # calculate decorrelation distance for each variable from ECHAM to set L
 if (loc) {
@@ -283,14 +283,14 @@ reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=T            # calc on land only
 fasttest=F             # use even less data
-tps_only=F           # only use temp, precip and slp in state vector, remove other vars
-no_stream=T    # all echam vars but stream function as there is problem with 
+tps_only=T           # only use temp, precip and slp in state vector, remove other vars
+no_stream=F    # all echam vars but stream function as there is problem with 
 #                       # 5/9 levels, which are in lat dimension before and after 1880
 loo=F                  # leave-one-out validation 
 if (loo) {tps_only=T;no_stream=F}  # reduce state vector for faster validation
 no_forc_big_ens=F      # use all years as one big ensemble regardless of forcing like LMR
                        # ONLY works with next option load_71yr_anom=T
-  n_no_forc=500         # ensemble size for no_forc LMR like experiment
+  n_no_forc=100         # ensemble size for no_forc LMR like experiment
 #load_71yr_anom=T       # load 71yr echam anomalies calculated with cdo
 #anom_reload=F          # reload anom calculated in R (next option)
 #anom_save=F            # save anom calculated in R to reload next time

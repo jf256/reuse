@@ -15,8 +15,8 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
-syr=1602
-eyr=1990
+syr=1900
+eyr=2000
 
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 

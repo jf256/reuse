@@ -63,6 +63,7 @@ suppressMessages(library(grid))
 suppressMessages(library(cowplot))
 suppressMessages(library(lubridate)) # decinmal year to date conversion
 suppressMessages(library(birk)) # which.closest function
+suppressMessages(library(MASS))
 # suppressMessages(library(RColorBrewer))
 #library(pspline)
 # first install ncdfUtils of Jonas with all his functions 
@@ -1570,7 +1571,24 @@ read_trw_petra<-function(fsyr, feyr, validate){
       unab <- unab[,match(onlytemp,colnames(unab))]
       
       # multiple linear regression
+      #fit<-lm(tree_petra_1901_1970$data[,i]~t.first+t.second+t.third+t.fourth+t.fifth+t.sixth,data=data.frame(unab), na.action = na.exclude)
+      #step<-stepAIC(fit)
       results <- lm(tree_petra_1901_1970$data[,i]~unab,  na.action=na.exclude)
+      sumry<-summary(results)
+      pval<-1-pf(sumry$fstatistic[1],sumry$fstatistic[2],sumry$fstatistic[3])
+      cnames<-names(results$coefficients)
+      rnames<-names(results$residuals)
+      if(pval>0.05){
+        results$coefficients<-rep(NA,length(results$coefficients))
+        results$residuals<-rep(NA,length(results$residuals))
+        cnames->names(results$coefficients)
+        rnames->names(results$residuals)
+      }
+      #results$residuals<-step$residuals
+      #cnames<-names(results$coefficients)
+      #results$coefficients<-rep(0,length(results$coefficients))
+      #names(results$coefficients)<-cnames
+      #results$coefficients[match(c("(Intercept)", paste0("unab",names(step$coefficients)[2:length(step$coefficients)])),names(results$coefficients))]<-step$coefficients
       corr = cor.test(fitted.values(results),tree_petra_1901_1970$data[,i])
       # print(corr[4]) # maybe under a certain corr value we could just set it to NA?
       

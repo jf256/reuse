@@ -221,7 +221,7 @@ for (v in validation_set){
   }
   
   lonlatnr<-c(592,676,278,632,1460)
-
+  #look at plot_example_ts in function script.
   #codeline beneath finds gridbox with lowest correlation (was used because of strange bad results)
   #which(corr$ensmean[,2]==min(corr$ensmean[which(corr$lat<34&corr$lat>24&corr$lon<(90)&corr$lon>(68)&corr$names=="temp2"),2],na.rm=T))
   for (nr in lonlatnr){
@@ -409,6 +409,52 @@ for (v in validation_set){
   ###############################################################
   ################# figs.06: Talagrant Diagram ##################
   ###############################################################
+  if (vali) {
+    if (!recon_vali) {
+      if (anomaly_assim) {
+        ereliable.summer <- ereliable.anom.summer
+        areliable.summer <- areliable.anom.summer
+        # erel_obserr <- erel_obserr.anom
+        # arel_obserr <- arel_obserr.anom
+      }
+      if (length(names(ereliable$temp2)) == 31) {
+        pdf(paste(figpath,'talagrant_temp_summer.pdf',sep='/'), width=6, height=6, paper='special') 
+        par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+        names(ereliable.summer$temp2) <- seq(0,30)
+        barplot(ereliable.summer$temp2)
+        names(areliable.summer$temp2) <- seq(0,30)
+        barplot(areliable.summer$temp2)
+        dev.off()
+      }
+      if (length(names(ereliable$precip)) == 31) {
+        pdf(paste(figpath,'talagrant_precip_summer.pdf',sep='/'), width=6, height=6, paper='special') 
+        par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+        names(ereliable.summer$precip) <- seq(0,30)
+        barplot(ereliable.summer$precip)
+        names(areliable.summer$precip) <- seq(0,30)
+        barplot(areliable.summer$precip)
+        dev.off()
+      }
+      if (length(names(ereliable$slp)) == 31) {
+        pdf(paste(figpath,'talagrant_slp_summer.pdf',sep='/'), width=6, height=6, paper='special') 
+        par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+        names(ereliable.summer$slp) <- seq(0,30)
+        barplot(ereliable.summer$slp)
+        names(areliable.summer$slp) <- seq(0,30)
+        barplot(areliable.summer$slp)
+        dev.off()
+      }
+      # if (length(names(erel_obserr$temp2)) == 31) {
+      #   pdf(paste(figpath,'talagrant_obserr_temp.pdf',sep='/'), width=6, height=6, paper='special') 
+      #   par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+      #   names(erel_obserr$temp2) <- seq(0,30)
+      #   barplot(erel_obserr$temp2)
+      #   names(arel_obserr$temp2) <- seq(0,30)
+      #   barplot(arel_obserr$temp2)
+      #   dev.off()
+      # }
+    }
+  }
 
   if (vali & !monthly_out) {
     if (!recon_vali) {
@@ -418,6 +464,7 @@ for (v in validation_set){
         erel_obserr <- erel_obserr.anom
         arel_obserr <- arel_obserr.anom
       }
+
       
       # ereliable <- tapply(apply(echam$data[1:(dim(validate$data)[1]),,] > 
       #                             as.vector(validate$data),1:2,mean), rep(echam$names,
@@ -898,6 +945,7 @@ for (v in validation_set){
       plot_echam4(rmse, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse$data)[2]],  type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('rmse_anal-',v,'_',vari,'_winter.pdf'), paper='special')
     }else{
       plot_echam4(rmse, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse$data)[2]],lev=levs,cols=c('lightblue','royalblue','navy'), type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('rmse_anal-',v,'_',vari,'.pdf'), paper='special')
+
     }
     
     ###################################################################################
@@ -950,6 +998,7 @@ for (v in validation_set){
       plot_echam4(rmse.anom.diff, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse.anom.diff$data)[2]],lev=levs,cols=c('lightblue','royalblue','navy'), type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('rmse_diff_anom-',v,'_',vari,'.pdf'), paper='special')
     }
   } #end rmse plots for loop
+
   
   ###############################################################
   
@@ -1387,5 +1436,5 @@ for (v in validation_set){
   # points(analysis$lon[H.i[,1]],analysis$lat[H.i[,1]],col='blue',cex=0.5,pch=20) # nur die proxies sind in H.i
   
   
+  validate <- validate.init  
 } #end validation_set for loop
-

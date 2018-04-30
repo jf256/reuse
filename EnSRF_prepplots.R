@@ -14,8 +14,13 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
+<<<<<<< HEAD
 syr=1905 #1902 #1941
 eyr=2000 #2003 #1970
+=======
+syr=1904 #1902 #1941
+eyr=1960 #2003 #1970
+>>>>>>> 6d1c8e8a107e59dd15e90e16ba6feb419a4cc389
 
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
@@ -1056,6 +1061,7 @@ if (load_prepplot){
       cru_vali=F 
       #  ind_recon=F
     }
+
     if ((cyr > syr_twentycr) & (cyr <=eyr_twentycr)& vali_twentycr) {
       twentycr_vali=T             
     } else {
@@ -2150,7 +2156,16 @@ if (calc_vali_stat){
                                                                                          length=length(validate.anom$data[,])), table)
         areliable.anom <- tapply(apply(analysis.anom$data[1:(dim(validate.anom$data)[1]),,] > 
                                          as.vector(validate.anom$data[,]),1:2,mean), rep(analysis.anom$names,
-                                                                                         length=length(validate.anom$data[,])), table) 
+                                                                                         length=length(validate.anom$data[,])), table)
+        # Compute the rank histogram only for summer
+        # Added by added by Roni (2018.03)
+        summer = seq(2,dim(validate.anom$data)[2],2)
+        ereliable.anom.summer <- tapply(apply(echam.anom$data[1:(dim(validate.anom$data)[1]),summer,] > 
+                                   as.vector(validate.anom$data[,summer]),1:2,mean), rep(echam.anom$names,
+                                                                                   length=length(validate.anom$data[,summer])), table)
+        areliable.anom.summer <- tapply(apply(analysis.anom$data[1:(dim(validate.anom$data)[1]),summer,] > 
+                                   as.vector(validate.anom$data[,summer]),1:2,mean), rep(analysis.anom$names,
+                                                                                   length=length(validate.anom$data[,summer])), table) 
         #   ereliable.anom <- tapply(apply(echam.anom$data[1:(dim(validate.anom$data)[1]),1:160,] > 
         #                      as.vector(validate.anom$data[,1:160]),1:2,mean), rep(echam.anom$names,
         #                      length=length(validate.anom$data[,1:160])), table)
@@ -2280,6 +2295,8 @@ if (calc_vali_stat){
       # pos=pos[-1]
       # obserr2=obserr[pos,]
       cmat <- cor(t(obserr),use="pairwise.complete.obs")   #obserr2
+
+  
     }
     # there are correlated observations
     # hist(cmat,breaks=seq(-1,1,0.2))

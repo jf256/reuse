@@ -17,11 +17,11 @@
 
 rm(list=ls())
 
-syrtot=1603
-eyrtot=1990
+syrtot=1901
+eyrtot=2000
 
 syr=1902
-eyr=1990
+eyr=2000
 
 user <- system("echo $USER",intern=T)
 print(paste('User:',user))
@@ -43,7 +43,6 @@ setwd(workdir)
 
 source('EnSRF_switches.R')
 source('EnSRF_functions.R')
-
 
 statyr=1905
 

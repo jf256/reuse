@@ -36,7 +36,7 @@ if (user=="veronika") {
 } else if (user=="lucaf") {
   workdir='/scratch3/lucaf/reuse/reuse_git/'
 } else if (user == "nevin"){
-   workdir = '/scratch3/nevin/reuse_climcal/reuse_git/'
+   workdir = '/scratch3/nevin/reuse/reuse_git/'
  } else {
   stop("Unknown user!")
 }

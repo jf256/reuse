@@ -1,4 +1,4 @@
-expname="proxies_only_trw_petra_tps_fullmodel_pval95" # "EKF400_v1.3_full_res" #
+expname="proxies_only_trw_petra_tps_fullmodel_pval99" # "EKF400_v1.3_full_res" #
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
                                  # maybe idealized pseudoproxy experiment

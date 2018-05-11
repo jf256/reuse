@@ -1578,7 +1578,7 @@ read_trw_petra<-function(fsyr, feyr, validate){
       pval<-1-pf(sumry$fstatistic[1],sumry$fstatistic[2],sumry$fstatistic[3])
       cnames<-names(results$coefficients)
       rnames<-names(results$residuals)
-      if(pval>0.05){
+      if(pval>0.01){
         results$coefficients<-rep(NA,length(results$coefficients))
         results$residuals<-rep(NA,length(results$residuals))
         cnames->names(results$coefficients)

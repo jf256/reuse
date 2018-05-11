@@ -42,6 +42,7 @@ indicespath <- paste0(dataextdir,'vali_data/indices/')
 # install.packages("grid")
 # install.packages("cowplot")
 # install.packages("RColorBrewer")
+# install.packages("geosphere")
 suppressMessages(library(akima))         # for interpolation
 suppressMessages(library(maps))
 suppressMessages(library(mapdata))
@@ -65,6 +66,8 @@ suppressMessages(library(lubridate)) # decinmal year to date conversion
 suppressMessages(library(birk)) # which.closest function
 suppressMessages(library(MASS))
 # suppressMessages(library(RColorBrewer))
+suppressMessages(library(geosphere))
+
 #library(pspline)
 # first install ncdfUtils of Jonas with all his functions 
 # install.packages('.../jonas/ncdfUtils_0.4-12.tar.gz', repos=NULL)
@@ -1274,7 +1277,6 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
             NHelev <- c(NHelev,p_coral$elevation[i])
             NHdata <- cbind(NHdata,p_coral$data[,i])
           }
-          
         }else{
           if (!exists("mrSH")){
             mrSH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # nr of coeff + intercept
@@ -1476,7 +1478,6 @@ read_ntrend = function(fsyr,feyr, validate) {
   invisible(ntrend)
 }
 
-
 read_trw_petra<-function(fsyr, feyr, validate){
   load(paste0('/scratch3/nevin/reuse/trw_petra.RData'))
   na_tree<-rep(NA,2761)
@@ -1515,7 +1516,10 @@ read_trw_petra<-function(fsyr, feyr, validate){
   lonlist[lonlist > 180] <- lonlist[lonlist > 180] - 360
   latlist=ncvar_get(nc, "lat")
   nc_close(nc)
-  
+  logsc <- paste0(expname,'_screening_',syr,'-',eyr,'_',format(Sys.time(),"%Y%m%d_%H%M"),'.log')
+  write(c(user),file=paste0('../log/',logsc),append=F)
+  write("List of Excluded Proxies:",file=paste0('../log/',logsc),append=T)
+  count=0
   for (i in 1:length(tree_petra$lon)){
     k=which(abs(lonlist-tree_petra$lon[i]+0.001)==min(abs(lonlist-tree_petra$lon[i]+0.001)))
     l=which(abs(latlist-tree_petra$lat[i])==min(abs(latlist-tree_petra$lat[i])))
@@ -1525,32 +1529,40 @@ read_trw_petra<-function(fsyr, feyr, validate){
         if (!exists("mrNH")) {
           mrNH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) #nr of coeff + intercept
           var_residuNH <- NA
-          NHlat <- tree_petra$lat[i]
-          NHlon <- tree_petra$lon[i]
-          NHelev <- tree_petra$elevation[i]
-          NHdata <- tree_petra$data[,i]
+          NHlat <- NA
+          NHlon <- NA
+          NHelev <- NA
+          NHdata <- rep(NA,403)
+          write(paste0("lon: ",tree_petra$lon[i],"    lat: ,",tree_petra$lat[i]),file=paste0('../log/',logsc),append=T)
+          count=count+1
         } else {
           mrNH <- rbind(mrNH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))#nr of coeff + intercept
           var_residuNH <- c(var_residuNH,rep(NA,1))
-          NHlat <- c(NHlat,tree_petra$lat[i])
-          NHlon <- c(NHlon,tree_petra$lon[i])
-          NHelev <- c(NHelev,tree_petra$elevation[i])
-          NHdata <- cbind(NHdata,tree_petra$data[,i])}
+          NHlat <- c(NHlat,NA)
+          NHlon <- c(NHlon,NA)
+          NHelev <- c(NHelev,NA)
+          NHdata <- cbind(NHdata,rep(NA,403))}
+        write(paste0("lon: ",tree_petra$lon[i],"    lat: ,",tree_petra$lat[i]),file=paste0('../log/',logsc),append=T)
+        count=count+1
       }else  {
         if (!exists("mrSH")){
           mrSH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # nr of coeff + intercept
           var_residuSH <- NA
-          SHlat <- tree_petra$lat[i]
-          SHlon <- tree_petra$lon[i]
-          SHelev <- tree_petra$elevation[i]
-          SHdata <- tree_petra$data[,i]
+          SHlat <- NA
+          SHlon <- NA
+          SHelev <- NA
+          SHdata <- NA
+          write(paste0("lon: ",tree_petra$lon[i],"    lat: ,",tree_petra$lat[i]),file=paste0('../log/',logsc),append=T)
+          count=count+1
         }else{
           mrSH <- rbind(mrSH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))
           var_residuSH <- c(var_residuSH,rep(NA,1))
-          SHlat <- c(SHlat,tree_petra$lat[i])
-          SHlon <- c(SHlon,tree_petra$lon[i])
-          SHelev <- c(SHelev,tree_petra$elevation[i])
-          SHdata <- cbind(SHdata,tree_petra$data[,i])
+          SHlat <- c(SHlat,NA)
+          SHlon <- c(SHlon,NA)
+          SHelev <- c(SHelev,NA)
+          SHdata <- cbind(SHdata,rep(NA,403))
+          write(paste0("lon: ",tree_petra$lon[i],"    lat: ,",tree_petra$lat[i]),file=paste0('../log/',logsc),append=T)
+          count=count+1
         }
       }
     }else{ # we can calculate the regression
@@ -1567,28 +1579,42 @@ read_trw_petra<-function(fsyr, feyr, validate){
         unab <- tSH
       }
       colnames(unab) <- c('t.first','t.second','t.third','t.fourth','t.fifth','t.sixth')
+      
       onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
       unab <- unab[,match(onlytemp,colnames(unab))]
       
+      len<-length(grep("t.",regression_months,fixed=TRUE))
+      combos<-cbind(combn(len,2),rbind(1:len,1:len))
+      resultlist<-list()
+      pvals<-rep(NA,dim(combos)[2])
+      aics<-rep(NA,dim(combos)[2])
+      #bics<-rep(NA,dim(combos)[2])
+      for(j in 1:dim(combos)[2]){
+        resultlist[[j]]<-lm(tree_petra_1901_1970$data[,i]~unab[,combos[1,j]:combos[2,j]],na.action = na.exclude)
+        sumry<-summary(resultlist[[j]])
+        pvals[j]<-1-pf(sumry$fstatistic[1],sumry$fstatistic[2],sumry$fstatistic[3])
+        aics[j]<-AIC(resultlist[[j]])
+        #bics[j]<-BIC(resultlist[[j]])
+      }
+      fit<-resultlist[[which(aics==min(aics))]]
       # multiple linear regression
-      #fit<-lm(tree_petra_1901_1970$data[,i]~t.first+t.second+t.third+t.fourth+t.fifth+t.sixth,data=data.frame(unab), na.action = na.exclude)
-      #step<-stepAIC(fit)
+      # fit<-lm(tree_petra_1901_1970$data[,i]~t.first+t.second+t.third+t.fourth+t.fifth+t.sixth,data=data.frame(unab), na.action = na.exclude)
+      # step<-stepAIC(fit)
       results <- lm(tree_petra_1901_1970$data[,i]~unab,  na.action=na.exclude)
-      sumry<-summary(results)
-      pval<-1-pf(sumry$fstatistic[1],sumry$fstatistic[2],sumry$fstatistic[3])
       cnames<-names(results$coefficients)
       rnames<-names(results$residuals)
-      if(pval>0.01){
-        results$coefficients<-rep(NA,length(results$coefficients))
-        results$residuals<-rep(NA,length(results$residuals))
+      results$coefficients<-rep(NA,length(results$coefficients))
+      results$residuals<-rep(NA,length(results$residuals))
+      sumry<-summary(fit)
+      pval<-1-pf(sumry$fstatistic[1],sumry$fstatistic[2],sumry$fstatistic[3])
+      if(!(pval>0.05)){
+        results$coefficients[c(1,(combos[1,which(aics==min(aics))]+1):(combos[2,which(aics==min(aics))]+1))]<-resultlist[[which(aics==min(aics))]]$coefficients
+        results$residuals<-resultlist[[which(aics==min(aics))]]$residuals
         cnames->names(results$coefficients)
         rnames->names(results$residuals)
       }
-      #results$residuals<-step$residuals
-      #cnames<-names(results$coefficients)
-      #results$coefficients<-rep(0,length(results$coefficients))
-      #names(results$coefficients)<-cnames
-      #results$coefficients[match(c("(Intercept)", paste0("unab",names(step$coefficients)[2:length(step$coefficients)])),names(results$coefficients))]<-step$coefficients
+      #results$coefficients[which(summary(results)$coefficients[,4]>0.05)]<-NA
+      #tree_petra_1901_1970$data[which(!is.na(tree_petra_1901_1970$data[,i])),i]-(results$coefficients[1]+t(results$coefficients[2:length(results$coefficients)])%*%t(unab[which(!is.na(tree_petra_1901_1970$data[,i])),]))
       corr = cor.test(fitted.values(results),tree_petra_1901_1970$data[,i])
       # print(corr[4]) # maybe under a certain corr value we could just set it to NA?
       
@@ -1596,38 +1622,74 @@ read_trw_petra<-function(fsyr, feyr, validate){
         if (!exists("mrNH")) {
           mrNH <- results$coefficients
           var_residuNH <- var(results$residuals)
-          NHlat <- tree_petra$lat[i]
-          NHlon <- tree_petra$lon[i]
-          NHelev <- tree_petra$elevation[i]
-          NHdata <- tree_petra$data[,i]
+          if (all(is.na(results$coefficients))){
+            NHlat<-NA
+            NHlon<-NA
+            NHelev<-NA
+            NHdata<-rep(NA,403)
+            write(paste0("lon: ",tree_petra$lon[i],"    lat: ,",tree_petra$lat[i]),file=paste0('../log/',logsc),append=T)
+            count=count+1
+          } else {
+            NHlat <- tree_petra$lat[i]
+            NHlon <- tree_petra$lon[i]
+            NHelev <- tree_petra$elevation[i]
+            NHdata <- tree_petra$data[,i]
+          }
         } else {
           mrNH <- rbind(mrNH,results$coefficients)
           var_residuNH <- c(var_residuNH,var(results$residuals))
-          NHlat <- c(NHlat,tree_petra$lat[i])
-          NHlon <- c(NHlon,tree_petra$lon[i])
-          NHelev <- c(NHelev,tree_petra$elevation[i])
-          NHdata <- cbind(NHdata,tree_petra$data[,i])
+          if(all(is.na(results$coefficients))){
+            NHlat <- c(NHlat,NA)
+            NHlon <- c(NHlon,NA)
+            NHelev <- c(NHelev,NA)
+            NHdata <- cbind(NHdata,rep(NA,403))
+            write(paste0("lon: ",tree_petra$lon[i],"    lat: ,",tree_petra$lat[i]),file=paste0('../log/',logsc),append=T)
+            count=count+1
+          } else {
+            NHlat <- c(NHlat,tree_petra$lat[i])
+            NHlon <- c(NHlon,tree_petra$lon[i])
+            NHelev <- c(NHelev,tree_petra$elevation[i])
+            NHdata <- cbind(NHdata,tree_petra$data[,i])
+          }
         }
       }else{
         if (!exists("mrSH")) {
           mrSH <- results$coefficients
           var_residuSH <- var(results$residuals)
-          SHlat <- tree_petra$lat[i]
-          SHlon <- tree_petra$lon[i]
-          SHelev <- tree_petra$elevation[i]
-          SHdata <- tree_petra$data[,i]
+          if(all(is.na(results$coefficients))){
+            SHlat<-NA
+            SHlon<-NA
+            SHelev<-NA
+            SHdata<-rep(NA,403)
+            write(paste0("lon: ",tree_petra$lon[i],"    lat: ,",tree_petra$lat[i]),file=paste0('../log/',logsc),append=T)
+            count=count+1
+          }else{
+            SHlat <- tree_petra$lat[i]
+            SHlon <- tree_petra$lon[i]
+            SHelev <- tree_petra$elevation[i]
+            SHdata <- tree_petra$data[,i]
+          }
         } else {
           mrSH <- rbind(mrSH,results$coefficients)
           var_residuSH <- c(var_residuSH,var(results$residuals))
-          SHlat <- c(SHlat,tree_petra$lat[i])
-          SHlon <- c(SHlon,tree_petra$lon[i])
-          SHelev <- c(SHelev,tree_petra$elevation[i])
-          SHdata <- cbind(SHdata,tree_petra$data[,i])
+          if(all(is.na(results$coefficients))){
+            SHlat <- c(SHlat,NA)
+            SHlon <- c(SHlon,NA)
+            SHelev <- c(SHelev,NA)
+            SHdata <- cbind(SHdata,rep(NA,403))
+            write(paste0("lon: ",tree_petra$lon[i],"    lat: ,",tree_petra$lat[i]),file=paste0('../log/',logsc),append=T)
+            count=count+1
+          } else {
+            SHlat <- c(SHlat,tree_petra$lat[i])
+            SHlon <- c(SHlon,tree_petra$lon[i])
+            SHelev <- c(SHelev,tree_petra$elevation[i])
+            SHdata <- cbind(SHdata,tree_petra$data[,i])
+          }
         }
       }
     }
   }
-  
+  write(paste0("Number of Proxies excluded: ",count),file=paste0('../log/',logsc),append=T)
   mrtmp<-matrix(NA, nrow(mrNH)+nrow(mrSH),13)
   colnames(mrtmp) <- c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabp.first","unabp.second","unabp.third","unabp.fourth","unabp.fifth","unabp.sixth")
   mrtmp[1:nrow(mrNH),match(colnames(mrNH),colnames(mrtmp))]<-mrNH
@@ -1646,7 +1708,6 @@ read_trw_petra<-function(fsyr, feyr, validate){
   invisible(tree_petra)
 }
 
-
 read_pseudo<-function(){
   pseudodata<-as.matrix(read.table('../pseudoproxy_no_gaps.txt'))
   lonlat<-as.matrix(read.table('../lonlat_no_gaps.txt',header=T))
@@ -1660,7 +1721,6 @@ read_pseudo<-function(){
   pseudolist$time<-pseudotime
   pseudolist$lat<-lonlat[,2]
   pseudolist$lon<-lonlat[,1]
-  
   nc=nc_open(paste(crupath,'/cru_allvar_abs_1901-2004.nc',sep=''), write=F)
   t1=ncvar_get(nc, "temp2") # for CRU temp
   t2 <- t1[,,1:1248] # from year 1901 till 1971
@@ -1672,13 +1732,12 @@ read_pseudo<-function(){
   nlat_nh<-length(which(pseudolist$lat>0))
   nhpos<-which(pseudolist$lat>0)
   ti=which(pseudolist$time<=2004&pseudolist$time>=1901)
-  
   pseudoprox<-list(data=matrix(rep(NA,104*nlat_nh),104,nlat_nh),time=rep(NA,104), lon=rep(NA,nlat_nh),lat=rep(NA,nlat_nh),mr=matrix(rep(NA,13*nlat_nh),nlat_nh,13),var_residu=rep(NA,nlat_nh))
   pseudoprox$data<-pseudolist$data[ti,nhpos]
   pseudoprox$time<-pseudolist$time[ti]
   pseudoprox$lat<-pseudolist$lat[nhpos]
   pseudoprox$lon<-pseudolist$lon[nhpos]
-  pseudoprox$mr<-cbind(rep(0,nlat_nh),matrix(rep(1/12,12*nlat_nh),nlat_nh,12))
+  pseudoprox$mr<-cbind(rep(0,2*nlat_nh),matrix(rep(1/12,12*nlat_nh),2*nlat_nh,6),matrix(rep(NA,12*nlat_nh),2*nlat_nh,6))
   residus<-rep(NA,104)
   for(i in 1:length(pseudoprox$lon)){
     k=which(abs(lonlist-pseudoprox$lon[i]+0.001)==min(abs(lonlist-pseudoprox$lon[i]+0.001)))
@@ -1689,6 +1748,7 @@ read_pseudo<-function(){
     }
     pseudoprox$var_residu[i]<-var(residus)
   }
+  dimnames(pseudoprox$mr)[[2]]<-c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabt.seventh","unabt.eighth","unabt.ninth","unabt.tenth","unabt.eleventh","unabt.twelfth")
   invisible(pseudoprox)
 }
 
@@ -3044,7 +3104,8 @@ plot_echam <- function(x, levs, varname='temp2', type='data',  ti=1,
                      pch=4, col=rgb(0,0,10,8,maxColorValue=10), cex=st.cex))
           try(points(stations$lon[stations$names=='prox' & !is.na(stations$data[,i])], 
                      stations$lat[stations$names=='prox' & !is.na(stations$data[,i])], 
-                     pch=3, col=rgb(0,4,2,8,maxColorValue=10), cex=st.cex))
+                     pch=3, col=rgb(1,4,2,8,maxColorValue=10), cex=st.cex,lwd=1.5))
+
         } else {
           points(statlon, statlat, pch=1, col=st.col, cex=st.cex)
         }
@@ -3759,18 +3820,127 @@ compute_H_bias_correct <- function(stations, echam, echamatprox, seas=1, thresho
 # H has to have dim 380x30 (# of stations x ensemble size)
 }
 
-compute_dist_2d <- function(lon, lat, lon0, lat0){
+# Compute distance on a sphere
+# Modified by Roni (2018.02) -> added region that the distances could be calculated over different areas -> to test decorr length
+# However, this function is also used in the computation of the weights, therefore region should be = "global"
+compute_dist_2d <- function(lon, lat, lon0, lat0, region="global"){
+  if (region == "global") {
+    lon = lon
+    lon0 = lon0
+    lat = lat
+    lat0 = lat0
+  } else if (region == "ENH") {
+    lon = lon[which(lat>20 & lat<=90)]
+    lon0 = lon0[which(lat0>20 & lat0<=90)]
+    lat = lat[which(lat>20 & lat<=90)]
+    lat0 = lat0[which(lat0>20 & lat0<=90)]
+  } else if (region == "ESH") {
+    lon = lon[which(lat<(-20) & lat >= (-90))]
+    lon0 = lon0[which(lat0<(-20) & lat0 >= (-90))]
+    lat = lat[which(lat<(-20) & lat >= (-90))]
+    lat0 = lat0[which(lat0<(-20) & lat0 >= (-90))]
+  } else  if (region == "tropics") {
+    lon = lon[which(lat<=20 & lat >= (-20))]
+    lon0 = lon0[which(lat0<=20 & lat0 >= (-20))]
+    lat = lat[which(lat<=20 & lat >= (-20))]
+    lat0 = lat0[which(lat0<=20 & lat0 >= (-20))]
+  } else if (region == "lat_band") {
+    for (k in unique(lat)) {
+      lat1 = rep(k,length(unique(lon)))
+      lat0 = rep(k,length(unique(lon0)))
+      lon = unique(lon)
+      lon0 = unique(lon0)
+      lo <- lon/180*pi
+      la <- lat1/180*pi
+      lo0 <- lon0/180*pi
+      la0 <- lat0/180*pi
+      tmp <- outer(sin(la), sin(la0), '*') + outer(cos(la), cos(la0), '*') * outer(lo, lo0, function(x,y) cos(x - y))
+      # deal with rounding errors
+      tmp[abs(tmp) >= 1] <- round(tmp[abs(tmp) >= 1])
+      if (unique(lat)[1] == k) {
+        out1 <- 6375*acos(tmp)
+        out1 = array(out1, c(dim(out1),1))
+        out = out1
+      } else {
+        out1 <- 6375*acos(tmp)
+        out1 = array(out1, c(dim(out1),1))
+        out = abind(out, out1,along=3)
+      }
+    }
+    return(out)
+  } else if (region == "lon_band") {
+    for (k in unique(lon)) {
+      lon1 = rep(k,length(unique(lat)))
+      lon0 = rep(k,length(unique(lat0)))
+      lat = unique(lat)
+      lat0 = unique(lat0)
+      lo <- lon1/180*pi
+      la <- lat/180*pi
+      lo0 <- lon0/180*pi
+      la0 <- lat0/180*pi
+      tmp <- outer(sin(la), sin(la0), '*') + outer(cos(la), cos(la0), '*') * outer(lo, lo0, function(x,y) cos(x - y))
+      # deal with rounding errors
+      tmp[abs(tmp) >= 1] <- round(tmp[abs(tmp) >= 1])
+      if (unique(lon)[1] == k) {
+        out1 <- 6375*acos(tmp)
+        out1 = array(out1, c(dim(out1),1))
+        out = out1
+      } else {
+        out1 <- 6375*acos(tmp)
+        out1 = array(out1, c(dim(out1),1))
+        out = abind(out, out1,along=2+1)
+      }
+    }
+    return(out)
+  }
+  if (region != "lat_band" & region != "lon_band") {
   lo <- lon/180*pi
   la <- lat/180*pi
   lo0 <- lon0/180*pi
   la0 <- lat0/180*pi
   tmp <- outer(sin(la), sin(la0), '*') + outer(cos(la), cos(la0), '*') * outer(lo, lo0, function(x,y) cos(x - y))
-  ##tmp <- sin(la)*sin(la0) + cos(la) * cos(la0) * cos(lo - lo0)
   # deal with rounding errors
   tmp[abs(tmp) >= 1] <- round(tmp[abs(tmp) >= 1])
   out <- 6375*acos(tmp)
-  out
+  return(out)
+  }
 }
+
+# Calculate decorrelation length over a certain region and period (annual, summer, winter)
+# Added by Roni (2018.02)
+corr_over_region = function(xdata,lat1=NA, lat2=NA, region, cor_length_period) {
+  if (region == "global" | region=="ENH" | region == "ESH" | region == "tropics" | region == "lat_band") {
+    xdata$data = xdata$data[which(xdata$lat>lat1 & xdata$lat <= lat2),,] # selecting the region
+    xdata$names = xdata$names[which(xdata$lat>lat1 & xdata$lat <= lat2)] 
+  } else if (region == "lon_band") {
+    xdata$data = xdata$data[which(xdata$lon>lat1 & xdata$lon <= lat2),,] # selecting the region
+    xdata$names = xdata$names[which(xdata$lon>lat1 & xdata$lon <= lat2)] 
+  }
+  if (dim(xdata$data)[2] == 2) { # because echanomallts is already in sixmonstatevector format
+    xdata$names <-xdata$names[1:(length(xdata$names)/6)]
+    tmp_data =  array(xdata$data,c((dim(xdata$data)[1]/6),dim(xdata$data)[2]*6, dim(xdata$data)[3])) # transforming back to 12 month format
+    xdata$data =  array(tmp_data,c(dim(tmp_data)[1],dim(tmp_data)[2]* dim(tmp_data)[3])) # making one dimension from the months and years
+  }
+  if (cor_length_period == "annual") {
+    tmp <- xdata$data[xdata$names == i,] 
+  } else if (dim(xdata$data)[2] > 24) {
+    # selecting winter half years
+    period_start = seq(1,n_covar*12,12)
+    period_end = seq(6,n_covar*12,12)
+    period = matrix(NA, nrow =n_covar, 6) # 6=halfyear
+    for (k in 1:n_covar){
+      period[k,] = seq(period_start[k], period_end[k])
+    }
+    period = array(t(period))
+    if (cor_length_period == "winter") {
+      tmp <- xdata$data[xdata$names == i,(period)] 
+    } else if (cor_length_period == "summer") {
+      tmp <- xdata$data[xdata$names == i,(period+6)] 
+    }  
+  }
+}
+  
+  
 
 compute_dist <- function(lon, lat, lon0, lat0){
   lo <- lon/180*pi
@@ -3782,6 +3952,51 @@ compute_dist <- function(lon, lat, lon0, lat0){
   tmp[abs(tmp) >= 1] <- round(tmp[abs(tmp) >= 1])
   out <- 6375*acos(tmp)
   out
+}
+
+
+ 
+# Function to use ellipse localization
+# Added by Roni (2018.02)
+# Uses the distm function from the geosphere library (default is fun=distGeo -> using an ellipsoidal Earth not a spherical)
+compute_dist_2d_ellipse <- function(lon, lat, lon0, lat0, xnames, set_length, ysour){
+  if (ysour == "inst") {
+    lon0_lat = cbind(lon0,unique(lat)) # combination of all the coordinates along the same longitude (lon0)
+    lat0_lon = cbind(unique(lon),lat0)
+    lon_dist = distm(lon0_lat,c(lon0,lat0)) # distances along the same longitude
+    lat_dist = distm(lat0_lon,c(lon0,lat0)) # distances along a certain latitude from (lon0,lat0)
+  } else if (ysour == "prox") {
+    # Take only the first one from lon0 and lat0 since they are the same
+    lon0_lat = cbind(lon0[1],unique(lat)) # combination of all the coordinates along the same longitude (lon0)
+    lat0_lon = cbind(unique(lon),lat0[1])
+    lon_dist = distm(lon0_lat,c(lon0[1],lat0[1])) # distances along the same longitude
+    lat_dist = distm(lat0_lon,c(lon0[1],lat0[1])) # distances along a certain latitude from (lon0,lat0)
+  }
+  # define L-s
+  lvec2 = set_length* 1000 *2 # 1000: since my distances are in m here #2:ratio of the x:y axis is 2:1 -> this way keep the meridional wgt as it was for the circle
+  name_minL  = outer(lvec2[xnames], lvec2[xnames[h.i]], pmin) 
+  sigm1 = name_minL[unique(rownames(name_minL)),] # select only the unique cases. horizontal
+  sigm2 = sigm1 / 2 # meridional
+  wgt_ellipse = array(NA, c(length(lat_dist),length(lon_dist),length(sigm1)))
+  # wgt_elp = matrix(NA,nrow=one_var_dim*length(sigm1), ncol=1)
+  for (k in 1:length(sigm1)) {
+    for (i in 1:length(lat_dist)) {
+      for (j in 1:length(lon_dist)) {
+        wgt_ellipse[i,j,k] = exp(-0.5* ( ((lat_dist[i,1])**2/(sigm1[k]**2)) + ((lon_dist[j,1])**2/(sigm2[k]**2)) ) )
+      }
+    }
+  }
+  if (ysour == "inst") {
+    # making it to 6monstatevctor length 
+    wgt_elp = array(wgt_ellipse,c(dim(wgt_ellipse)[1]*dim(wgt_ellipse)[2]*dim(wgt_ellipse)[3],1))
+    wgt_elp = rep(wgt_elp,6) # 6 month
+    wgt = array(wgt_elp,c(length(wgt_elp),1))
+  } else if (ysour == "prox") {
+    wgt_elp =  array(wgt_ellipse,c(dim(wgt_ellipse)[1]*dim(wgt_ellipse)[2]*length(unique(echam$names)),dim(wgt_ellipse)[3]/length(unique(echam$names))))
+    b<-t(wgt_elp)
+    r<-rep(b,6) # can insert anything for 6 = six month
+    wgt = matrix(r,ncol=dim(wgt_elp)[2],byrow=T) 
+  }
 }
 
 compute_giorgi_H_sixmon <- function(giorgi, echam) { #}, numvar){
@@ -5968,18 +6183,16 @@ calculate_climatology <- function(x,cyr,subtracted,added,source){
       if (cyr < 1636) {
         y_start = agrep(paste0(1600,'.792'),as.character(x.clim$time))
       } else {
-        y_start =
-          agrep(paste0(cyr-subtracted,'.792'),as.character(x.clim$time))
+        y_start = agrep(paste0(cyr-subtracted,'.792'),as.character(x.clim$time))
       }
       if (cyr > 1970) {
-        y_end = grep(paste0(2005,'.708'),as.character(x.clim$time)) #
-        # 2012 should be changed to 2005, everywhere
+        y_end =  grep(paste0(2005,'.708'),as.character(x.clim$time)) # 2012 should be changed to 2005, everywhere
+
       } else {
         y_end = grep(paste0(cyr+added,'.708'),as.character(x.clim$time))
       }
     } else {
-      y_start =
-        agrep(paste0(cyr-subtracted,'.792'),as.character(x.clim$time))
+      y_start = agrep(paste0(cyr-subtracted,'.792'),as.character(x.clim$time))
       y_end = grep(paste0(cyr+added,'.708'),as.character(x.clim$time))
     }
     x.clim$data = x.clim$data[,y_start:y_end]
@@ -6111,22 +6324,39 @@ convert_to_2_seasons <- function(x,source){
   if (source=="proxy"){
     x.allts <- x
     tmp1=t(x$data)
-    points.on.SH <- which(x$lat<0)
-    tmp2=array(NA,c(dim(tmp1)[1],2,dim(tmp1)[2]))
-    tmp2[,2,]=tmp1
-    if (!isempty(points.on.SH)){
-    tmp2[points.on.SH,1,]<-tmp2[points.on.SH,2,]
-    tmp2[points.on.SH,2,]<-NA
+    if(pseudo_prox){
+      tmp2=array(NA,c(dim(tmp1)[1],2,dim(tmp1)[2]))
+      tmp2[,1,]<-tmp1
+      tmp2[,2,]<-tmp1
+      
+      x.allts$data=array(tmp2,c(dim(tmp2)[1],dim(tmp2)[2]*dim(tmp2)[3]))
+      x.allts$time=seq(min(x$time), max(x$time)+0.5,0.5) 
+      ti=which(floor(x.allts$time)==cyr)
+      sts=ti[1]
+      ets=ti[length(ti)]      
+      x$data=x.allts$data[,sts:ets]
+      x$time=x.allts$time[sts:ets]
+      x$names=rep("prox",dim(x.allts$data)[1])
+      return(list(x=x,x.allts=x.allts))
+  
+    }else{
+      points.on.SH <- which(x$lat<0)
+      tmp2=array(NA,c(dim(tmp1)[1],2,dim(tmp1)[2]))
+      tmp2[,2,]=tmp1
+      if (!isempty(points.on.SH)){
+        tmp2[points.on.SH,1,]<-tmp2[points.on.SH,2,]
+        tmp2[points.on.SH,2,]<-NA
+      }
+      x.allts$data=array(tmp2,c(dim(tmp2)[1],dim(tmp2)[2]*dim(tmp2)[3]))
+      x.allts$time=seq(fsyr,feyr+0.5,0.5) 
+      ti=which(floor(x.allts$time)==cyr)
+      sts=ti[1]
+      ets=ti[length(ti)]      
+      x$data=x.allts$data[,sts:ets]
+      x$time=x.allts$time[sts:ets]
+      x$names=rep("prox",dim(x.allts$data)[1])
+      return(list(x=x,x.allts=x.allts))
     }
-    x.allts$data=array(tmp2,c(dim(tmp2)[1],dim(tmp2)[2]*dim(tmp2)[3]))
-    x.allts$time=seq(fsyr,feyr+0.5,0.5) 
-    ti=which(floor(x.allts$time)==cyr)
-    sts=ti[1]
-    ets=ti[length(ti)]      
-    x$data=x.allts$data[,sts:ets]
-    x$time=x.allts$time[sts:ets]
-    x$names=rep("prox",dim(x.allts$data)[1])
-    return(list(x=x,x.allts=x.allts))
   }
   if (source=="doc"){
     tmp1 <- array(t(x$data),c(dim(x$data)[1] *  dim(x$data)[2]))
@@ -6181,6 +6411,31 @@ convert_to_monthly <- function(dataset) {
   dataset$lat <- dataset$lat[1:(dim(dataset$data)[1])] #/length(unique(dataset$names)))]
   return(dataset)
 }
+
+convert_to_yearly<-function(dataset,ns){
+  #Takes all datasets like analysis, echam, validate, vind, aind, eind and converts it from monthly (ns=12) or 
+  #seasonal (ns=2) into yearly data by calculating the yearly means (oct.-sept.)
+  #For calibrate not sure whether the $mr has to be changed into yearly (maybe it's not needed), for now it's not done by this
+  #function.
+  if(length(dim(dataset$data))==2){
+    dataset$data<-apply(array(dataset$data,c(dim(dataset$data)[1],ns,dim(dataset$data)[2]/ns)),c(1,3),mean)
+  }else{
+    dataset$data<-apply(array(dataset$data, c(dim(dataset$data)[1],ns,dim(dataset$data)[2]/ns,dim(dataset$data)[3])),c(1,3,4),mean)
+  }
+  
+  if("ensmean" %in% names(dataset)){
+    dataset$ensmean<-apply(array(dataset$ensmean,c(dim(dataset$ensmean)[1],ns,dim(dataset$ensmean)[2]/ns)),c(1,3),mean)
+  }
+  
+  if(ns==12){
+    dataset$time<-(round(dataset$time[1])):(floor(tail(dataset$time,1)))
+  }else{
+    dataset$time<-unique(floor(dataset$time))
+  }
+  
+  return(dataset)
+}
+
 
 convert_to_tps_only<-function(dataset){
   
@@ -6756,12 +7011,272 @@ calc_indices<-function(dataset, setname){
       ind <- list(data=Hind2 %*% validatanona, names=indices[1:34])
     }
     ind$ensmean<-ind$data
-    
-    
   }
   return(ind)
 }
 
+convert_to_monthly <- function(dataset) {
+  # converts dataset from sixmonstatevector back to twelve months (oktober-september)
+  syr<-get("syr")
+  eyr<-get("eyr")
+  s<-12 # set back to 12 months for plotting
+  tmptime <-  get("tmptime")
+  #reshape dataset
+  dataset$data <- array(dataset$data, c((dim(dataset$data)[1]/6), dim(dataset$data)[2]*6, dim(dataset$data)[3]))
+  dataset$ensmean <- array(dataset$ensmean, c((dim(dataset$ensmean)[1]/6), dim(dataset$ensmean)[2]*6))
+  dataset$time <- tmptime[(season[2]+1):(length(tmptime)-4)]
+  dataset$names <- dataset$names[1:dim(dataset$data)[1]]
+  dataset$lon <- dataset$lon[1:(dim(dataset$data)[1])] #/length(unique(dataset$names)))]
+  dataset$lat <- dataset$lat[1:(dim(dataset$data)[1])] #/length(unique(dataset$names)))]
+  return(dataset)
+}
 
 
 
+plot_example_ts<-function(validate,analysis,echam,lonlat,type="absolute",loc="somewhere",ylim_slp=NULL,ylim_p=NULL,ylim_t=NULL){
+  # takes validate, analysis and echam and makes time series for summer. Location can be specified by givin the number of the position of a
+  # specific lon/lat (lonlat). With loc ="locationname" a name for the plotname can be selected. Ylimits can be specified for each variable
+  # independently. for type = anomaly only one ylim each is enough, else it needs a list with two different ylims: One for echam and analysis
+  # one for validate (because of model bias)
+  
+  if (monthly_out) {
+    #3yr monthly temp
+    pos2 <- seq(1,36,1)
+    period <- as.Date(paste(rep(seq(from=1950,to=1952),each=12),rep(seq(1,12),3),rep(15,36),sep='-'))
+  }else if (yearly_out){
+    pos2<-seq(1,ncol(validate$data),1)
+    period<-validate$time
+  } else {
+    #30yr summer temp
+    pos2 <- seq(2,ncol(validate$data),2)
+    period <- validate$time[pos2]
+  }
+  
+  
+  if(type!="anomaly"){
+    
+    
+    if(lonlat==592){
+      loc="sibiria"
+      ylim_t=list(c(0,9),c(1.5,10.5))
+      ylim_p=list(c(0,100),c(-5,95))
+      ylim_s=list(c(1006,1020),c(1005,1019))
+      
+    }else if(lonlat==676){
+      loc="norway"
+      ylim_t=list(c(1,10),c(3,12))
+      ylim_p=list(c(30,150),c(21.5,141.5))
+      ylim_s=list(c(1005,1018),c(1005,1018))
+
+    }else if(lonlat==278){
+      loc="greenland"
+      ylim_t=list(c(-19,-8),c(-21.5,-10.5))
+      ylim_p=list(c(0,30),c(6,36))
+      ylim_s=list(c(1010,1023),c(1008,1021))
+
+    }else if(lonlat==632){
+      loc="alaska"
+      ylim_t=list(c(-3,9),c(-1.5,10.5))
+      ylim_p=list(c(10,130),c(-28.5,91.5))
+      ylim_s=list(c(1005,1017),c(1006,1018))
+
+    }else if(lonlat==1460){
+      loc="pakistan"
+      ylim_t=list(c(29,36),c(25,32))
+      ylim_p=list(c(-20,80),c(15,115))
+      ylim_s=list(c(997,1004),c(998.5,1005.5))
+
+    }
+    
+    if (monthly_out) {
+      pdf(paste(figpath,'/example_timeseries_',loc,'_',v,'_mon.pdf',sep=''),
+          width=4.5, height=6, paper='special')
+    }else if(yearly_out){
+      pdf(paste(figpath,'/example_timeseries_',loc,'_',v,'_yrly.pdf',sep=''),
+          width=7, height=6, paper='special')
+    } else {
+      pdf(paste(figpath,'/example_timeseries_',loc,'_',v,'.pdf',sep=''),
+          width=7, height=6, paper='special')
+    }
+    par(oma=c(0,0,0,0),mar=c(2,4,2,2),mfrow=c(3,1))
+    #50yr summer temp
+    plot(echam$time[pos2],echam$ensmean[lonlat,pos2],ylim=ylim_t[[1]],ty='l',col="black",main="Temperature",
+         xlab='',ylab='[ºC]',xaxt='n',axes=F)
+    
+    polygon(c(echam$time[pos2],rev(echam$time[pos2])),c(apply(echam$data[lonlat,pos2,],1,max),
+                                                        rev(apply(echam$data[lonlat,pos2,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
+    lines(analysis$time[pos2],analysis$ensmean[lonlat,pos2],col="red")
+    polygon(c(analysis$time[pos2],rev(analysis$time[pos2])),c(apply(analysis$data[lonlat,pos2,],1,max),
+                                                              rev(apply(analysis$data[lonlat,pos2,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
+    
+    axis(2,col="red")
+    par(new=T)
+    plot(validate$data[lonlat,pos2],ylim=ylim_t[[2]],ty='l',col="blue",main="",
+         xlab='',ylab='[ºC]',xaxt='n',axes=F)
+    axis(4, col="blue")
+    box()
+    #precip
+    
+    plot(echam$time[pos2],echam$ensmean[4608+lonlat,pos2],ylim=ylim_p[[1]],ty='l',col="black",main="Precipitation",
+         xlab='',ylab='[mm]',xaxt='n',axes=F)
+    
+    polygon(c(echam$time[pos2],rev(echam$time[pos2])),c(apply(echam$data[4608+lonlat,pos2,],1,max),
+                                                        rev(apply(echam$data[4608+lonlat,pos2,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
+    lines(analysis$time[pos2],analysis$ensmean[4608+lonlat,pos2],col="red")
+    polygon(c(analysis$time[pos2],rev(analysis$time[pos2])),c(apply(analysis$data[4608+lonlat,pos2,],1,max),
+                                                              rev(apply(analysis$data[4608+lonlat,pos2,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
+    
+    axis(2,col="red")
+    par(new=T)
+    plot(validate$data[4608+lonlat,pos2],ylim=ylim_p[[2]],ty='l',col="blue",main="",
+         xlab='',ylab='[mm]',xaxt='n',axes=F)
+    axis(4, col="blue")
+    box()
+    #slp
+    
+    plot(echam$time[pos2],echam$ensmean[2*4608+lonlat,pos2],ylim=ylim_s[[1]],ty='l',col="black",main="Sea level pressure",
+         xlab='',ylab='[hPa]',xaxt='n',axes=F)
+    
+    polygon(c(echam$time[pos2],rev(echam$time[pos2])),c(apply(echam$data[2*4608+lonlat,pos2,],1,max),
+                                                        rev(apply(echam$data[2*4608+lonlat,pos2,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
+    lines(analysis$time[pos2],analysis$ensmean[2*4608+lonlat,pos2],col="red")
+    polygon(c(analysis$time[pos2],rev(analysis$time[pos2])),c(apply(analysis$data[2*4608+lonlat,pos2,],1,max),
+                                                              rev(apply(analysis$data[2*4608+lonlat,pos2,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
+    
+    axis(2,col="red")
+    par(new=T)
+    plot(validate$time[pos2], validate$data[2*4608+lonlat,pos2],ylim=ylim_s[[2]],ty='l',col="blue",main="",
+         xlab='',ylab='[hPa]',xaxt='n',axes=F)
+    axis(4, col="blue")
+    axis(1)
+    box()
+    
+    legend("bottomleft", c(valilegend, 'CCC400', "EFK400"),col=c("blue", "black", "red"),
+           lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='transparent',
+           box.col='transparent', cex=1)
+    dev.off()
+    
+  }else{
+    if(lonlat==592){
+      loc="sibiria"
+      ylim_t=c(-5,5)
+      ylim_p=c(-50,50)
+      ylim_s=c(-6,6)
+      
+    }else if(lonlat==676){
+      loc="norway"
+      ylim_t=c(-4,4)
+      ylim_p=c(-50,50)
+      ylim_s=c(-7,7)
+
+    }else if(lonlat==278){
+      loc="greenland"
+      ylim_t=c(-4,4)
+      ylim_p=c(-20,20)
+      ylim_s=c(-6,6)
+
+    }else if(lonlat==632){
+      loc="alaska"
+      ylim_t=c(-5,5)
+      ylim_p=c(-50,50)
+      ylim_s=c(-6,6)
+
+    }else if(lonlat==1460){
+      loc="pakistan"
+      ylim_t=c(-4,4)
+      ylim_p=c(-40,60)
+      ylim_s=c(-4,4)
+
+    }
+    if (monthly_out) {
+      pdf(paste(figpath,'/example_timeseries_',loc,'_anom_',v,'_mon.pdf',sep=''), 
+          width=4.5, height=6, paper='special')
+    }else if(yearly_out){
+      pdf(paste(figpath,'/example_timeseries_',loc,'_anom_',v,'_yrly.pdf',sep=''), 
+          width=7, height=6, paper='special')
+    } else {
+      pdf(paste(figpath,'/example_timeseries_',loc,'_anom_',v,'.pdf',sep=''), 
+          width=7, height=6, paper='special')
+    }
+    par(oma=c(0,0,0,0),mar=c(2,4,2,2),mfrow=c(3,1))
+    #50yr summer temp
+    plot(validate$time[pos2],validate$ensmean[lonlat,pos2],ty='l',col="blue",main="Temperature",
+         xlab='',ylab='[ºC]',xaxt='n',ylim=ylim_t)
+    lines(echam$time[pos2],echam$ensmean[lonlat,pos2],col="black")
+    polygon(c(echam$time[pos2],rev(echam$time[pos2])),c(apply(echam$data[lonlat,pos2,],1,max),
+                                                        rev(apply(echam$data[lonlat,pos2,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
+    lines(analysis$time[pos2],analysis$ensmean[lonlat,pos2],col="red")
+    polygon(c(analysis$time[pos2],rev(analysis$time[pos2])),c(apply(analysis$data[lonlat,pos2,],1,max),
+                                                              rev(apply(analysis$data[lonlat,pos2,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
+    
+    #precip
+    
+    plot(validate$time[pos2],validate$ensmean[4608+lonlat,pos2],ty='l',col="blue",main="Precipitation",
+         xlab='',ylab='[mm]',xaxt='n',ylim=ylim_p)
+    lines(echam$time[pos2],echam$ensmean[4608+lonlat,pos2],col="black")
+    polygon(c(echam$time[pos2],rev(echam$time[pos2])),c(apply(echam$data[4608+lonlat,pos2,],1,max),
+                                                        rev(apply(echam$data[4608+lonlat,pos2,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
+    lines(analysis$time[pos2],analysis$ensmean[4608+lonlat,pos2],col="red")
+    polygon(c(analysis$time[pos2],rev(analysis$time[pos2])),c(apply(analysis$data[4608+lonlat,pos2,],1,max),
+                                                              rev(apply(analysis$data[4608+lonlat,pos2,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
+    
+    #slp
+    
+    plot(validate$time[pos2],validate$ensmean[2*4608+lonlat,pos2],ty='l',col="blue",main="Sea level pressure",
+         xlab='',ylab='[hPa]',ylim=ylim_s)
+    lines(echam$time[pos2],echam$ensmean[2*4608+lonlat,pos2],col="black")
+    polygon(c(echam$time[pos2],rev(echam$time[pos2])),c(apply(echam$data[2*4608+lonlat,pos2,],1,max),
+                                                        rev(apply(echam$data[2*4608+lonlat,pos2,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
+    lines(analysis$time[pos2],analysis$ensmean[2*4608+lonlat,pos2],col="red")
+    polygon(c(analysis$time[pos2],rev(analysis$time[pos2])),c(apply(analysis$data[2*4608+lonlat,pos2,],1,max),
+                                                              rev(apply(analysis$data[2*4608+lonlat,pos2,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
+    
+    legend("bottomleft", c(valilegend, 'CCC400', "EFK400"),col=c("blue", "black", "red"),
+           lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='transparent',
+           box.col='transparent', cex=1)
+    dev.off() 
+  }
+}
+# Using more members either for the whole assimilation or for calculating the background cov matrix
+# The B can be static or recalculated for every year
+# Modified by Roni (2018.02)
+background_matrix = function (state,n_covar, ech) {
+  if (state == "static") { # loading only once the members, selecting them and using the same ones over the whole assimilation period
+    if (cyr == syr2){
+      load(paste0(file=dataextdir,"/echam/echallts_for_covar.Rdata"))
+      dat = echanomallts 
+      # random_ncovar = floor(runif(n_covar,1,dim(dat$data)[3]))
+      # write.table(random_ncovar,file=paste0("../data/analysis/",expname,"/sample_ncovar.txt"),row.names = FALSE)
+      sample_ncovar = read.table(file=paste0("../data/analysis/",expname,"/sample_ncovar.txt"), skip = 1) # Roni: first I separately created this file
+      sample_ncovar = array(t(sample_ncovar))
+      dat$data = echanomallts$data[,,sample_ncovar]
+      # dat$data = echanomallts$data[,,sample(seq(1,dim(echanomallts$data)[3]),n_covar)]
+      dat$ensmean <- apply(dat$data,1:2,mean) 
+    } else {
+      dat = ech
+    }
+  } 
+  if (state == "changing") { # for each assimilation year a new random ensemble is created -> maybe they should be saved to be able to reproduce the results
+    yrs <- floor(runif(n_covar,1602,2004))
+    m <- floor(runif(n_covar,1,30))
+    for (n in 1:n_covar) {
+      yr1 <- yrs[n]
+      yr2 <- yr1+1
+      if (every2grid) {
+        load(paste0(echanompath,'echam_anom_',yr1,'-',yr2,'_2ndgrid.Rdata'))
+        dat = echam_anom
+      } else {
+        load(paste0(echanompath,'echam_anom_',yr1,'-',yr2,'.Rdata'))
+        dat = echam_anom
+      }
+      if (n==1){
+        echam_anom_data <- echam_anom$data[,,m[n]]
+      } else {
+        echam_anom_data <- abind(echam_anom_data,echam_anom$data[,,m[n]],along=3)
+      }
+    }
+    dat$data <- echam_anom_data
+    dat$ensmean <- apply(echam_anom_data,1:2,mean)
+  }
+  return(dat)
+}

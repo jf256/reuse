@@ -15,7 +15,7 @@ rm(list=ls())
 # enter syr ane eyr manually
 
 syr=1901 #1902 #1941
-eyr=1910 #2003 #1970
+eyr=1990 #2003 #1970
 
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
@@ -34,11 +34,11 @@ if (user=="veronika") {
 } else if (user=="joerg") {
   workdir='/scratch3/joerg/projects/reuse/reuse_git/'
 } else if (user=="lucaf") {
-
+  
   workdir='/scratch3/lucaf/reuse/reuse_git/'
 } else if (user == "nevin"){
-   workdir = '/scratch3/nevin/reuse/reuse_git/'
- } else {
+  workdir = '/scratch3/nevin/reuse_climcal/reuse_git/'
+} else {
   stop("Unknown user!")
   
 }
@@ -246,7 +246,7 @@ if (calc_prepplot) {
                                    dim(echam$data)[3]))
         echam$data <- array(NA,c(dim(etmp)[1],dim(etmp)[3:4]))
         for (ensmem in 1:(dim(etmp)[4])) {
-          print(paste('ECHAM member',ensmem))
+          #print(paste('ECHAM member',ensmem))
           echam$data[,,ensmem] <- apply(etmp[,,,ensmem],c(1,3),mean)
         }
         #      echam$data <- apply(etmp,c(1,3,4),mean)
@@ -264,7 +264,7 @@ if (calc_prepplot) {
                                       dim(analysis$data)[3]))  
         analysis$data <- array(NA,c(dim(atmp)[1],dim(atmp)[3:4]))
         for (ensmem in 1:(dim(atmp)[4])) {
-          print(paste('Analysis member',ensmem))
+          #print(paste('Analysis member',ensmem))
           analysis$data[,,ensmem] <- apply(atmp[,,,ensmem],c(1,3),mean)
         }
         #      analysis$data <- apply(atmp,c(1,3,4),mean)
@@ -284,7 +284,7 @@ if (calc_prepplot) {
                                         dim(echam.anom$data)[3]))
         echam.anom$data <- array(NA,c(dim(etmp)[1],dim(etmp)[3:4]))
         for (ensmem in 1:(dim(etmp)[4])) {
-          print(paste('ECHAM anomaly member',ensmem))
+          #print(paste('ECHAM anomaly member',ensmem))
           echam.anom$data[,,ensmem] <- apply(etmp[,,,ensmem],c(1,3),mean)
         }
         #    echam.anom$data <- apply(etmp,c(1,3,4),mean)
@@ -302,7 +302,7 @@ if (calc_prepplot) {
                                            dim(analysis.anom$data)[3])) 
         analysis.anom$data <- array(NA,c(dim(atmp)[1],dim(atmp)[3:4]))
         for (ensmem in 1:(dim(atmp)[4])) {
-          print(paste('Analysis anomaly member',ensmem))
+          #print(paste('Analysis anomaly member',ensmem))
           analysis.anom$data[,,ensmem] <- apply(atmp[,,,ensmem],c(1,3),mean)
         }
         #      analysis.anom$data <- apply(atmp,c(1,3,4),mean)
@@ -444,12 +444,12 @@ if (calc_prepplot) {
     }
     
     
-
-      echam.anom2 <- echam2.anom
-      analysis.anom2 <- analysis2.anom
-
-      echam.abs2 <- echam2.abs
-      analysis.abs2 <- analysis2.abs
+    
+    echam.anom2 <- echam2.anom
+    analysis.anom2 <- analysis2.anom
+    
+    echam.abs2 <- echam2.abs
+    analysis.abs2 <- analysis2.abs
     
     eind<-calc_indices(echam.abs2,"echam2")
     aind<-calc_indices(analysis.abs2,"analysis2")
@@ -702,7 +702,7 @@ if (load_indices){
       for (v in valiname){  ## for multiple vali data sets
         l=l+1
         print(v)
-
+        
         vind<-vind_init[[v]]
         vind.allts<-vind.allts_init[[v]]
         
@@ -720,7 +720,7 @@ if (load_indices){
         vind_all[[l]]<-vind
         vind.allts_all[[l]]<-vind.allts
       }
-
+      
       names(vind_all)<-valiname
       vind<-vind_all
       names(vind.allts_all)<-valiname
@@ -752,8 +752,8 @@ if (load_indices){
   }
   rm(eind, eind.tot, aind, aind.tot, vind, vind.tot, allvindts, vind.allts, eind.allts, aind.allts,aind.anom.tot,eind.anom.tot)
 }# end load_indices
-  
-  
+
+
 if (write_netcdf) {
   print("write_netcdf")
   dir.create(paste0(dataintdir,"netcdf/",version,"/CCC400_ensmean")) # maybe could call it prepplot_netcdf could have subfolder monthy or seasonal
@@ -1025,7 +1025,7 @@ if (write_netcdf) {
   } # end syr:eyr
 } # end write_netcdf
 
-  
+
 # loads saved data (yearly) from calc_prepplot part and merges the timesteps for the validation period, such that the statistics can be calculated. 
 # Again tps_only can be set to T here even when it was set to F before: like that the complete data is shortened to tps.
 # If you have run calc_prepplot successfully a subperiod can be chosen and run from load_prepplot. 
@@ -1033,7 +1033,7 @@ if (write_netcdf) {
 # (If someone wants to change months to jan-dec look at write_netcdf-part)
 # this part serves as a preparation for the validation statistics 
 if (load_prepplot){
-
+  
   
   # allvalits variable predefined here (beneath) to enable different periods of validation datasets: e.g. 20cr starts in 1850 and cru starts
   # in 1901: if syr = 1899 for the first two years validate only contains 20cr and from 1901 it also contains as well cru.
@@ -1056,7 +1056,7 @@ if (load_prepplot){
       cru_vali=F 
       #  ind_recon=F
     }
-
+    
     if ((cyr > syr_twentycr) & (cyr <=eyr_twentycr)& vali_twentycr) {
       twentycr_vali=T             
     } else {
@@ -1070,7 +1070,7 @@ if (load_prepplot){
     }
     print(paste("recon_vali=",recon_vali))
     print(paste("vali=",vali))
-  
+    
     if (every2grid) {
       load(file=paste0(prepplotdir,'analysis_',cyr,'_2ndgrid.Rdata')) 
     } else {
@@ -1217,7 +1217,7 @@ if (load_prepplot){
         aind.anom.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
         eind.anom.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
       }
-
+      
       # only instr. calibration data for period with fixed network
       # because proxies not in fixed grid format. Hence number of records
       # and position/row in data/ensmean matrix changes over time
@@ -1255,7 +1255,7 @@ if (load_prepplot){
       analysis.anom.allts$data=abind(analysis.anom.allts$data,analysis.anom$data,along=2)
       analysis.anom.allts$ensmean=cbind(analysis.anom.allts$ensmean,analysis.anom$ensmean)
       analysis.anom.allts$time=c(analysis.anom.allts$time,analysis.anom$time)
-
+      
       aind.allts$data=abind(aind.allts$data,aind$data,along=2)
       aind.allts$ensmean=cbind(aind.allts$ensmean,aind$ensmean)
       aind.anom.allts$data=abind(aind.anom.allts$data,aind.anom$data,along=2)
@@ -1267,7 +1267,7 @@ if (load_prepplot){
       echam.anom.allts$data=abind(echam.anom.allts$data,echam.anom$data,along=2)
       echam.anom.allts$ensmean=cbind(echam.anom.allts$ensmean,echam.anom$ensmean)
       echam.anom.allts$time=c(echam.anom.allts$time,echam.anom$time)
-
+      
       eind.allts$data=abind(eind.allts$data,eind$data,along=2)
       eind.allts$ensmean=cbind(eind.allts$ensmean,eind$ensmean)
       eind.anom.allts$data=abind(eind.anom.allts$data,eind.anom$data,along=2)
@@ -1284,7 +1284,7 @@ if (load_prepplot){
         aind.anom.allts$time=c(aind.anom.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
         eind.anom.allts$time=c(eind.anom.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
       }
-    
+      
       if (substring(expname,1,12)=="proxies_only") {
         pos <- which(calibrate$sour=="prox")
       }else{
@@ -1597,7 +1597,7 @@ if (load_image){
       
       load(file=paste("../data/image/",expname,"/prepplot_validation_image_",syr,"-",eyr,
                       "_monthly_2ndgrid.Rdata",sep=""))  
-
+      
       dir.create(paste0("../data/image/",expname,"/prepplot_validation_image_",syr,"-",eyr,
                         "_monthly_2ndgrid.Rdata"))
     } else {
@@ -1630,14 +1630,14 @@ if (calc_vali_stat){
   if(yearly_out){
     echam<-convert_to_yearly(echam,s.plot)
     analysis<-convert_to_yearly(analysis,s.plot)
-
+    
     calibrate<-convert_to_yearly(calibrate,s.plot)
     echam.anom<-convert_to_yearly(echam.anom,s.plot)
     analysis.anom<-convert_to_yearly(analysis.anom,s.plot)
-
+    
     calibrate.anom<-convert_to_yearly(calibrate.anom,s.plot)
     
-
+    
     aind<-convert_to_yearly(aind,s.plot)
     eind<-convert_to_yearly(eind,s.plot)
     
@@ -1901,7 +1901,7 @@ if (calc_vali_stat){
         
         
       }
-
+      
       
       #  rmse <- rmse_fun(analysis_noindex, y=validate, seas=s.plot)
       #  rmse.ech <- rmse_fun(echam_noindex, y=validate, seas=s.plot)
@@ -2156,11 +2156,11 @@ if (calc_vali_stat){
         # Added by added by Roni (2018.03)
         summer = seq(2,dim(validate.anom$data)[2],2)
         ereliable.anom.summer <- tapply(apply(echam.anom$data[1:(dim(validate.anom$data)[1]),summer,] > 
-                                   as.vector(validate.anom$data[,summer]),1:2,mean), rep(echam.anom$names,
-                                                                                   length=length(validate.anom$data[,summer])), table)
+                                                as.vector(validate.anom$data[,summer]),1:2,mean), rep(echam.anom$names,
+                                                                                                      length=length(validate.anom$data[,summer])), table)
         areliable.anom.summer <- tapply(apply(analysis.anom$data[1:(dim(validate.anom$data)[1]),summer,] > 
-                                   as.vector(validate.anom$data[,summer]),1:2,mean), rep(analysis.anom$names,
-                                                                                   length=length(validate.anom$data[,summer])), table) 
+                                                as.vector(validate.anom$data[,summer]),1:2,mean), rep(analysis.anom$names,
+                                                                                                      length=length(validate.anom$data[,summer])), table) 
         #   ereliable.anom <- tapply(apply(echam.anom$data[1:(dim(validate.anom$data)[1]),1:160,] > 
         #                      as.vector(validate.anom$data[,1:160]),1:2,mean), rep(echam.anom$names,
         #                      length=length(validate.anom$data[,1:160])), table)
@@ -2290,8 +2290,8 @@ if (calc_vali_stat){
       # pos=pos[-1]
       # obserr2=obserr[pos,]
       cmat <- cor(t(obserr),use="pairwise.complete.obs")   #obserr2
-
-  
+      
+      
     }
     # there are correlated observations
     # hist(cmat,breaks=seq(-1,1,0.2))
@@ -2346,14 +2346,14 @@ if (calc_vali_stat){
     
     if (vali) {
       if (ind_ECHAM) {
-          # compute validation statistics on indices
-          ecorr.ind <- corr_fun(eind, vind, seas=s.plot)
-          acorr.ind <- corr_fun(aind, vind, seas=s.plot)
-          ermse.ind <- rmse_fun(eind, vind, seas=s.plot)
-          armse.ind <- rmse_fun(aind, vind, seas=s.plot)
-          ebias.ind <- bias_fun(eind, vind, seas=s.plot)
-          abias.ind <- bias_fun(aind, vind, seas=s.plot)
-          RE.ind <- RE_fun(armse.ind, y=ermse.ind)
+        # compute validation statistics on indices
+        ecorr.ind <- corr_fun(eind, vind, seas=s.plot)
+        acorr.ind <- corr_fun(aind, vind, seas=s.plot)
+        ermse.ind <- rmse_fun(eind, vind, seas=s.plot)
+        armse.ind <- rmse_fun(aind, vind, seas=s.plot)
+        ebias.ind <- bias_fun(eind, vind, seas=s.plot)
+        abias.ind <- bias_fun(aind, vind, seas=s.plot)
+        RE.ind <- RE_fun(armse.ind, y=ermse.ind)
       }
     }
     

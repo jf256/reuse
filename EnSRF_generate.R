@@ -94,7 +94,6 @@ if (generate_ind_recon){
 }
 
 
-
 if (generate_CRUALLVAR) {
   print("generate_CRUALLVAR")
   #  see script in EnSRF/script/merge_cru.sh for regridding and co of orig. cru data set
@@ -254,7 +253,6 @@ if (generate_PROXIESnew){
         
       } else { realprox<-ntrend}
     }
-    
     if (varname=="trw_petra") {
       print("reading trw_petra")
       trw_petra <- read_trw_petra(fsyr,feyr, validate=pages_lm_fit) 
@@ -269,7 +267,6 @@ if (generate_PROXIESnew){
         
       } else { realprox<-trw_petra}
     }
-    
   }
   save(realprox, file=paste0("../data/proxies/real_proxies_",fsyr,"-",feyr,".Rdata"))
 }
@@ -381,5 +378,3 @@ if (generate_PSEUDO){
   realprox<-pseudoprox
   save(realprox, file=paste0("../data/proxies/real_proxies_",fsyr,"-",feyr,".Rdata"))
 }
-
-

@@ -15,7 +15,7 @@ rm(list=ls())
 # enter syr ane eyr manually
 
 syr=1901 #1902 #1941
-eyr=2000 #2003 #1970
+eyr=1990 #2003 #1970
 
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
@@ -246,7 +246,7 @@ if (calc_prepplot) {
                                    dim(echam$data)[3]))
         echam$data <- array(NA,c(dim(etmp)[1],dim(etmp)[3:4]))
         for (ensmem in 1:(dim(etmp)[4])) {
-          print(paste('ECHAM member',ensmem))
+          #print(paste('ECHAM member',ensmem))
           echam$data[,,ensmem] <- apply(etmp[,,,ensmem],c(1,3),mean)
         }
         #      echam$data <- apply(etmp,c(1,3,4),mean)
@@ -264,7 +264,7 @@ if (calc_prepplot) {
                                       dim(analysis$data)[3]))  
         analysis$data <- array(NA,c(dim(atmp)[1],dim(atmp)[3:4]))
         for (ensmem in 1:(dim(atmp)[4])) {
-          print(paste('Analysis member',ensmem))
+          #print(paste('Analysis member',ensmem))
           analysis$data[,,ensmem] <- apply(atmp[,,,ensmem],c(1,3),mean)
         }
         #      analysis$data <- apply(atmp,c(1,3,4),mean)
@@ -284,7 +284,7 @@ if (calc_prepplot) {
                                         dim(echam.anom$data)[3]))
         echam.anom$data <- array(NA,c(dim(etmp)[1],dim(etmp)[3:4]))
         for (ensmem in 1:(dim(etmp)[4])) {
-          print(paste('ECHAM anomaly member',ensmem))
+          #print(paste('ECHAM anomaly member',ensmem))
           echam.anom$data[,,ensmem] <- apply(etmp[,,,ensmem],c(1,3),mean)
         }
         #    echam.anom$data <- apply(etmp,c(1,3,4),mean)
@@ -302,7 +302,7 @@ if (calc_prepplot) {
                                            dim(analysis.anom$data)[3])) 
         analysis.anom$data <- array(NA,c(dim(atmp)[1],dim(atmp)[3:4]))
         for (ensmem in 1:(dim(atmp)[4])) {
-          print(paste('Analysis anomaly member',ensmem))
+          #print(paste('Analysis anomaly member',ensmem))
           analysis.anom$data[,,ensmem] <- apply(atmp[,,,ensmem],c(1,3),mean)
         }
         #      analysis.anom$data <- apply(atmp,c(1,3,4),mean)

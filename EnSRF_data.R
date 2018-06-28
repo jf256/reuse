@@ -16,8 +16,8 @@ rm(list=ls())
 # enter syr ane eyr manually
 
 
-syr=1903
-eyr=1960
+syr=1788
+eyr=1789
 
 
 # read syr and eyr from Rscript parameters entered in bash and 
@@ -210,6 +210,17 @@ for (cyr in syr2:eyr) {
       echam_anom$data <- echam_anom$data[tpspos,,]
       echam_anom$ensmean <- echam_anom$ensmean[tpspos,]
       echam_anom$names <- echam_anom$names[tpspos]
+      if (state == "changing" & covarclim>0) {
+        tpspos <- c(which(echanomallts$names=='temp2'), which(echanomallts$names=='precip'),
+                    which(echanomallts$names=='slp'), which(echanomallts$names=='bias'))
+        echanomallts$data <- echanomallts$data[tpspos,,]
+        echanomallts$ensmean <- echanomallts$ensmean[tpspos,]
+        echanomallts$names <- echanomallts$names[tpspos]
+      }
+      if (state == "static" & no_forc_big_ens ) {
+        tpspos <- c(which(echam_clim$names=='temp2'), which(echam_clim$names=='precip'),
+                    which(echam_clim$names=='slp'), which(echam_clim$names=='bias'))
+      }
       echam_clim$data <- echam_clim$data[tpspos,,]
       echam_clim$ensmean <- echam_clim$ensmean[tpspos,]
       echam_clim$names <- echam_clim$names[tpspos]
@@ -226,6 +237,12 @@ for (cyr in syr2:eyr) {
       echam_anom$data <- echam_anom$data[tpspos,,]
       echam_anom$ensmean <- echam_anom$ensmean[tpspos,]
       echam_anom$names <- echam_anom$names[tpspos]
+      if (state == "changing") {
+        tpspos <- c(which(echanomallts$names!='stream'))
+        echanomallts$data <- echanomallts$data[tpspos,,]
+        echanomallts$ensmean <- echanomallts$ensmean[tpspos,]
+        echanomallts$names <- echanomallts$names[tpspos]
+      }
       if (state == "static" & no_forc_big_ens ) {
         tpspos <- c(which(echam_clim$names!='stream'))
       }
@@ -359,6 +376,7 @@ for (cyr in syr2:eyr) {
       ech = echanomallts
     }
     for (i in unique(ech$names)) {
+      print(i)
       if (covarclim == 0) {
         tmp <- corr_over_region(echam.anom,-90,90,"global",cor_length_period)
       } else if (covarclim > 0) {
@@ -413,7 +431,7 @@ for (cyr in syr2:eyr) {
         }
       } else {
         corens <- cor(t(tmp[,]))
-        png(paste0('../figures/decorr_',cor_length_period,'_',i,'.png'), width = 1024, height = 768)
+        png(paste0('../figures/decorr_',cor_length_period,'_',region,'_',i,'.png'), width = 1024, height = 768)
         plot(as.vector(d),as.vector(corens),col='#4c8bff01',
              xlim=c(0,5000),ylim=c(0,1))
         lines(exp(-1/2 * (seq(1:5000)/get(paste0('l_dist_',i)))**2),col='red')
@@ -534,7 +552,8 @@ for (cyr in syr2:eyr) {
   lvec['v850'] <- l_dist_v850
   lvec['v200'] <- l_dist_v200
   lvec['omega500'] <- l_dist_omega500
-  lvec['t850'] <- l_dist_t850
+  # lvec['t850'] <- l_dist_t850 # replaced by t500
+  lvec['t500'] <- l_dist_t500
   
   print('calc time for loading data')
   print(proc.time() - ptm1)
@@ -1528,7 +1547,7 @@ for (cyr in syr2:eyr) {
           } else if (shape_wgt == "ellipse") {
             wgt = compute_dist_2d_ellipse (echam$lon, echam$lat, echam$lon[h.i], echam$lat[h.i],echam$names,lvec,calibrate$sour[j])
           }
-          if (covarclim>0 & covarclim<100) { 
+          if (covarclim>0 & covarclim<=100) { 
             if (PHclim_loc) {
               dist <- compute_dist_2d(echam$lon, echam$lat, echam$lon[h.i], echam$lat[h.i],region) 
               wgt_PHclim <- corr_function(dist,outer(PHclim_lvec[echam$names], PHclim_lvec[echam$names[h.i]], pmin))
@@ -1591,6 +1610,11 @@ for (cyr in syr2:eyr) {
                 analysis$ensmean[,i] <- analysis$ensmean[,i] + K[,1] * (calibrate$data[j,i] -
                                                                           H %*% analysis$ensmean[h.i,i])
                 analysis$data[,i,] <- analysis$data[,i,] - Ktilde %*% H %*% analysis$data[h.i,i,]
+                if (update_PHclim){
+                  ananomallts$ensmean[,i] <- ananomallts$ensmean[,i] + K[,1] * (calibrate$data[j,i] -
+                                                                            H %*% ananomallts$ensmean[h.i,i])
+                  ananomallts$data[,i,] <- ananomallts$data[,i,] - Ktilde %*% H %*% ananomallts$data[h.i,i,]
+                }
               }
             }
           }  
@@ -1619,6 +1643,9 @@ for (cyr in syr2:eyr) {
       ## add ensemble mean analysis back 
       if (!landcorr) {
         analysis$data <- analysis$data + as.vector(analysis$ensmean)
+        if (save_ananomallts == T) {
+        ananomallts$data <- ananomallts$data + as.vector(ananomallts$ensmean) 
+        }
         if (anomaly_assim){
           analysis.anom <- analysis
           analysis.abs <- analysis
@@ -1643,8 +1670,13 @@ for (cyr in syr2:eyr) {
       if (!landcorr) {
         if (vali){
           if (every2grid){
-            save(analysis.anom,analysis.abs,echam.anom,echam.abs,validate,calibrate,
-                 file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
+            if(save_ananomallts == T) {
+              save(analysis.anom,analysis.abs,echam.anom,echam.abs,validate,calibrate, ananomallts, 
+                   file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
+            } else {
+              save(analysis.anom,analysis.abs,echam.anom,echam.abs,validate,calibrate, 
+                   file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
+            }
           } else {
             save(analysis.anom,analysis.abs,echam.anom,echam.abs,validate,calibrate,
                  file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'.Rdata'))

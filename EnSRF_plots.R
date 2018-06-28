@@ -17,8 +17,8 @@
 
 rm(list=ls())
 
-syr=1930
-eyr=1960
+syr=1902
+eyr=2003
 
 user <- system("echo $USER",intern=T)
 print(paste('User:',user))
@@ -67,6 +67,11 @@ validate <- validate[[validation_set]]
 figpath=paste0('../figures/',expname,'_',syr,'-',eyr) #format(Sys.time(), "%Y%m%d_%H-%M_")
 dir.create(figpath)
 
+if (monthly_out){
+  s.plot <- 12
+}else {
+  s.plot <- 2
+}
 
 pnames <- paste(c('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'), ')', sep='')
 data.dim <- dim(echam$data)[c(1,2,2,3)]
@@ -464,128 +469,233 @@ dev.off()
 ################################################################################
 # Fig. xx: Talagrant diagram
 # Bug in plotting the analysis rank histograms is fixed by Roni (2018.03)
-if (vali) {
-  if (!recon_vali) {
-    if (anomaly_assim) {
-      ereliable <- ereliable.anom
-      areliable <- areliable.anom
-      erel_obserr <- erel_obserr.anom
-      arel_obserr <- arel_obserr.anom
-    }
-    
-    # ereliable <- tapply(apply(echam$data[1:(dim(validate$data)[1]),,] > 
-    #                             as.vector(validate$data),1:2,mean), rep(echam$names,
-    #                             length=length(validate$data)), table)
-    # areliable <- tapply(apply(analysis$data[1:(dim(validate$data)[1]),,] > 
-    #                             as.vector(validate$data),1:2,mean), rep(analysis$names,
-    #                             length=length(validate$data)), table)
-    if (length(names(ereliable$temp2)) == 31) {
-      pdf(paste(figpath,'talagrant_temp.pdf',sep='/'), width=6, height=6, paper='special') 
-      par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
-      names(ereliable$temp2) <- seq(0,30)
-      barplot(ereliable$temp2)
-      names(areliable$temp2) <- seq(0,30)
-      barplot(areliable$temp2)
-      dev.off()
-    }
-    if (length(names(ereliable$precip)) == 31) {
-      pdf(paste(figpath,'talagrant_precip.pdf',sep='/'), width=6, height=6, paper='special') 
-      par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
-      names(ereliable$precip) <- seq(0,30)
-      barplot(ereliable$precip)
-      names(areliable$precip) <- seq(0,30)
-      barplot(areliable$precip)
-      dev.off()
-    }
-    if (length(names(ereliable$slp)) == 31) {
-      pdf(paste(figpath,'talagrant_slp.pdf',sep='/'), width=6, height=6, paper='special') 
-      par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
-      names(ereliable$slp) <- seq(0,30)
-      barplot(ereliable$slp)
-      names(areliable$slp) <- seq(0,30)
-      barplot(areliable$slp)
-      dev.off()
-    }
-    if (length(names(erel_obserr$temp2)) == 31) {
-      pdf(paste(figpath,'talagrant_obserr_temp.pdf',sep='/'), width=6, height=6, paper='special') 
-      par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
-      names(erel_obserr$temp2) <- seq(0,30)
-      barplot(erel_obserr$temp2)
-      names(arel_obserr$temp2) <- seq(0,30)
-      barplot(arel_obserr$temp2)
-      dev.off()
-    }
-    # next lines are commented because we don't have uncertainty estimates for instr. prec. and slp
-    # if (length(names(erel_obserr$precip)) == 31) {
-    #   pdf(paste(figpath,'talagrant_obserr_precip.pdf',sep='/'), width=6, height=6, paper='special') 
-    #   par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
-    #   names(erel_obserr$precip) <- seq(0,30)
-    #   barplot(erel_obserr$precip)
-    #   names(arel_obserr$precip) <- seq(0,30)
-    #   barplot(arel_obserr$precip)
-    #   dev.off()
-    # }
-    # if (length(names(erel_obserr$slp)) == 31) {
-    #   pdf(paste(figpath,'talagrant_obserr_slp.pdf',sep='/'), width=6, height=6, paper='special') 
-    #   par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
-    #   names(erel_obserr$slp) <- seq(0,30)
-    #   barplot(erel_obserr$slp)
-    #   names(arel_obserr$slp) <- seq(0,30)
-    #   barplot(arel_obserr$slp)
-    #   dev.off()
-    # }
-  }
+
+if (anomaly_assim) {
+  ereliable <- ereliable.anom
+  areliable <- areliable.anom
+  erel_obserr <- erel_obserr.anom
+  arel_obserr <- arel_obserr.anom
 }
+
+# ereliable <- tapply(apply(echam$data[1:(dim(validate$data)[1]),,] > 
+#                             as.vector(validate$data),1:2,mean), rep(echam$names,
+#                             length=length(validate$data)), table)
+# areliable <- tapply(apply(analysis$data[1:(dim(validate$data)[1]),,] > 
+#                             as.vector(validate$data),1:2,mean), rep(analysis$names,
+#                             length=length(validate$data)), table)
+if (length(names(ereliable$temp2)) == 31) {
+  pdf(paste(figpath,'talagrant_temp.pdf',sep='/'), width=6, height=6, paper='special') 
+  par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+  names(ereliable$temp2) <- seq(0,30)
+  barplot(ereliable$temp2)
+  names(areliable$temp2) <- seq(0,30)
+  barplot(areliable$temp2)
+  dev.off()
+}
+if (length(names(ereliable$precip)) == 31) {
+  pdf(paste(figpath,'talagrant_precip.pdf',sep='/'), width=6, height=6, paper='special') 
+  par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+  names(ereliable$precip) <- seq(0,30)
+  barplot(ereliable$precip)
+  names(areliable$precip) <- seq(0,30)
+  barplot(areliable$precip)
+  dev.off()
+}
+if (length(names(ereliable$slp)) == 31) {
+  pdf(paste(figpath,'talagrant_slp.pdf',sep='/'), width=6, height=6, paper='special') 
+  par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+  names(ereliable$slp) <- seq(0,30)
+  barplot(ereliable$slp)
+  names(areliable$slp) <- seq(0,30)
+  barplot(areliable$slp)
+  dev.off()
+}
+if (length(names(erel_obserr$temp2)) == 31) {
+  pdf(paste(figpath,'talagrant_obserr_temp.pdf',sep='/'), width=6, height=6, paper='special') 
+  par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+  names(erel_obserr$temp2) <- seq(0,30)
+  barplot(erel_obserr$temp2)
+  names(arel_obserr$temp2) <- seq(0,30)
+  barplot(arel_obserr$temp2)
+  dev.off()
+}
+# next lines are commented because we don't have uncertainty estimates for instr. prec. and slp
+# if (length(names(erel_obserr$precip)) == 31) {
+#   pdf(paste(figpath,'talagrant_obserr_precip.pdf',sep='/'), width=6, height=6, paper='special') 
+#   par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+#   names(erel_obserr$precip) <- seq(0,30)
+#   barplot(erel_obserr$precip)
+#   names(arel_obserr$precip) <- seq(0,30)
+#   barplot(arel_obserr$precip)
+#   dev.off()
+# }
+# if (length(names(erel_obserr$slp)) == 31) {
+#   pdf(paste(figpath,'talagrant_obserr_slp.pdf',sep='/'), width=6, height=6, paper='special') 
+#   par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+#   names(erel_obserr$slp) <- seq(0,30)
+#   barplot(erel_obserr$slp)
+#   names(arel_obserr$slp) <- seq(0,30)
+#   barplot(arel_obserr$slp)
+#   dev.off()
+# }
 
 
 
 # Fig. xx: Talagrant diagram summer
 # Added by Roni (2018.03)
-if (vali) {
-  if (!recon_vali) {
-    if (anomaly_assim) {
-      ereliable.summer <- ereliable.anom.summer
-      areliable.summer <- areliable.anom.summer
-      # erel_obserr <- erel_obserr.anom
-      # arel_obserr <- arel_obserr.anom
-    }
-    if (length(names(ereliable$temp2)) == 31) {
-      pdf(paste(figpath,'talagrant_temp_summer.pdf',sep='/'), width=6, height=6, paper='special') 
-      par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
-      names(ereliable.summer$temp2) <- seq(0,30)
-      barplot(ereliable.summer$temp2)
-      names(areliable.summer$temp2) <- seq(0,30)
-      barplot(areliable.summer$temp2)
-      dev.off()
-    }
-    if (length(names(ereliable$precip)) == 31) {
-      pdf(paste(figpath,'talagrant_precip_summer.pdf',sep='/'), width=6, height=6, paper='special') 
-      par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
-      names(ereliable.summer$precip) <- seq(0,30)
-      barplot(ereliable.summer$precip)
-      names(areliable.summer$precip) <- seq(0,30)
-      barplot(areliable.summer$precip)
-      dev.off()
-    }
-    if (length(names(ereliable$slp)) == 31) {
-      pdf(paste(figpath,'talagrant_slp_summer.pdf',sep='/'), width=6, height=6, paper='special') 
-      par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
-      names(ereliable.summer$slp) <- seq(0,30)
-      barplot(ereliable.summer$slp)
-      names(areliable.summer$slp) <- seq(0,30)
-      barplot(areliable.summer$slp)
-      dev.off()
-    }
-    # if (length(names(erel_obserr$temp2)) == 31) {
-    #   pdf(paste(figpath,'talagrant_obserr_temp.pdf',sep='/'), width=6, height=6, paper='special') 
-    #   par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
-    #   names(erel_obserr$temp2) <- seq(0,30)
-    #   barplot(erel_obserr$temp2)
-    #   names(arel_obserr$temp2) <- seq(0,30)
-    #   barplot(arel_obserr$temp2)
-    #   dev.off()
-    # }
-  }
+if (anomaly_assim) {
+  ereliable.summer <- ereliable.anom.summer
+  areliable.summer <- areliable.anom.summer
+  # erel_obserr <- erel_obserr.anom
+  # arel_obserr <- arel_obserr.anom
+}
+if (length(names(ereliable$temp2)) == 31) {
+  pdf(paste(figpath,'talagrant_temp_summer.pdf',sep='/'), width=6, height=6, paper='special') 
+  par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+  names(ereliable.summer$temp2) <- seq(0,30)
+  barplot(ereliable.summer$temp2)
+  names(areliable.summer$temp2) <- seq(0,30)
+  barplot(areliable.summer$temp2)
+  dev.off()
+}
+if (length(names(ereliable$precip)) == 31) {
+  pdf(paste(figpath,'talagrant_precip_summer.pdf',sep='/'), width=6, height=6, paper='special') 
+  par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+  names(ereliable.summer$precip) <- seq(0,30)
+  barplot(ereliable.summer$precip)
+  names(areliable.summer$precip) <- seq(0,30)
+  barplot(areliable.summer$precip)
+  dev.off()
+}
+if (length(names(ereliable$slp)) == 31) {
+  pdf(paste(figpath,'talagrant_slp_summer.pdf',sep='/'), width=6, height=6, paper='special') 
+  par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+  names(ereliable.summer$slp) <- seq(0,30)
+  barplot(ereliable.summer$slp)
+  names(areliable.summer$slp) <- seq(0,30)
+  barplot(areliable.summer$slp)
+  dev.off()
+}
+# if (length(names(erel_obserr$temp2)) == 31) {
+#   pdf(paste(figpath,'talagrant_obserr_temp.pdf',sep='/'), width=6, height=6, paper='special') 
+#   par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+#   names(erel_obserr$temp2) <- seq(0,30)
+#   barplot(erel_obserr$temp2)
+#   names(arel_obserr$temp2) <- seq(0,30)
+#   barplot(arel_obserr$temp2)
+#   dev.off()
+# }
+
+
+
+# Fig. xx: Talagrant diagram summer over the ENH
+# Added by Roni (2018.03)
+if (anomaly_assim) {
+  ereliable.summer.ENH <- ereliable.anom.summer.ENH
+  areliable.summer.ENH <- areliable.anom.summer.ENH
+  # erel_obserr <- erel_obserr.anom
+  # arel_obserr <- arel_obserr.anom
+}
+if (length(names(ereliable$temp2)) == 31) {
+  pdf(paste(figpath,'talagrant_temp_summer.ENH.pdf',sep='/'), width=6, height=6, paper='special') 
+  par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+  names(ereliable.summer.ENH$temp2) <- seq(0,30)
+  barplot(ereliable.summer.ENH$temp2)
+  names(areliable.summer.ENH$temp2) <- seq(0,30)
+  barplot(areliable.summer.ENH$temp2)
+  dev.off()
+}
+if (length(names(ereliable$precip)) == 31) {
+  pdf(paste(figpath,'talagrant_precip_summer.ENH.pdf',sep='/'), width=6, height=6, paper='special') 
+  par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+  names(ereliable.summer.ENH$precip) <- seq(0,30)
+  barplot(ereliable.summer.ENH$precip)
+  names(areliable.summer.ENH$precip) <- seq(0,30)
+  barplot(areliable.summer.ENH$precip)
+  dev.off()
+}
+if (length(names(ereliable$slp)) == 31) {
+  pdf(paste(figpath,'talagrant_slp_summer.ENH.pdf',sep='/'), width=6, height=6, paper='special') 
+  par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+  names(ereliable.summer.ENH$slp) <- seq(0,30)
+  barplot(ereliable.summer.ENH$slp)
+  names(areliable.summer.ENH$slp) <- seq(0,30)
+  barplot(areliable.summer.ENH$slp)
+  dev.off()
+}
+
+
+
+# Fig. xx: Talagrant diagram summer over N20 - N70
+# Added by Roni (2018.03)
+if (anomaly_assim) {
+  ereliable.summer.N20_N70 <- ereliable.anom.summer.N20_N70
+  areliable.summer.N20_N70 <- areliable.anom.summer.N20_N70
+  # erel_obserr <- erel_obserr.anom
+  # arel_obserr <- arel_obserr.anom
+}
+if (length(names(ereliable$temp2)) == 31) {
+  pdf(paste(figpath,'talagrant_temp_summer.N20-N70.pdf',sep='/'), width=6, height=6, paper='special') 
+  par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+  names(ereliable.summer.N20_N70$temp2) <- seq(0,30)
+  barplot(ereliable.summer.N20_N70$temp2)
+  names(areliable.summer.N20_N70$temp2) <- seq(0,30)
+  barplot(areliable.summer.N20_N70$temp2)
+  dev.off()
+}
+if (length(names(ereliable$precip)) == 31) {
+  pdf(paste(figpath,'talagrant_precip_summer.N20-N70.pdf',sep='/'), width=6, height=6, paper='special') 
+  par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+  names(ereliable.summer.N20_N70$precip) <- seq(0,30)
+  barplot(ereliable.summer.N20_N70$precip)
+  names(areliable.summer.N20_N70$precip) <- seq(0,30)
+  barplot(areliable.summer.N20_N70$precip)
+  dev.off()
+}
+if (length(names(ereliable$slp)) == 31) {
+  pdf(paste(figpath,'talagrant_slp_summer.N20-N70.pdf',sep='/'), width=6, height=6, paper='special') 
+  par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+  names(ereliable.summer.N20_N70$slp) <- seq(0,30)
+  barplot(ereliable.summer.N20_N70$slp)
+  names(areliable.summer.N20_N70$slp) <- seq(0,30)
+  barplot(areliable.summer.N20_N70$slp)
+  dev.off()
+}
+
+# Fig. xx: Talagrant diagram summer over Europe
+# Added by Roni (2018.03)
+if (anomaly_assim) {
+  ereliable.summer.EU <- ereliable.anom.summer.EU
+  areliable.summer.EU <- areliable.anom.summer.EU
+  # erel_obserr <- erel_obserr.anom
+  # arel_obserr <- arel_obserr.anom
+}
+if (length(names(ereliable$temp2)) == 31) {
+  pdf(paste(figpath,'talagrant_temp_summer.EU.pdf',sep='/'), width=6, height=6, paper='special') 
+  par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+  names(ereliable.summer.EU$temp2) <- seq(0,30)
+  barplot(ereliable.summer.EU$temp2)
+  names(areliable.summer.EU$temp2) <- seq(0,30)
+  barplot(areliable.summer.EU$temp2)
+  dev.off()
+}
+if (length(names(ereliable$precip)) == 31) {
+  pdf(paste(figpath,'talagrant_precip_summer.EU.pdf',sep='/'), width=6, height=6, paper='special') 
+  par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+  names(ereliable.summer.EU$precip) <- seq(0,30)
+  barplot(ereliable.summer.EU$precip)
+  names(areliable.summer.EU$precip) <- seq(0,30)
+  barplot(areliable.summer.EU$precip)
+  dev.off()
+}
+if (length(names(ereliable$slp)) == 31) {
+  pdf(paste(figpath,'talagrant_slp_summer.EU.pdf',sep='/'), width=6, height=6, paper='special') 
+  par(mfrow=c(2,1), mar=c(3,3,1,1), oma=c(0,0,0,0))
+  names(ereliable.summer.EU$slp) <- seq(0,30)
+  barplot(ereliable.summer.EU$slp)
+  names(areliable.summer.EU$slp) <- seq(0,30)
+  barplot(areliable.summer.EU$slp)
+  dev.off()
 }
 
 
@@ -872,6 +982,11 @@ corr.tot$data <- array(cbind(corr.ech$ensmean,corr$ensmean),c(dim(corr$ensmean)[
 corr.tot$ensmean <- array(cbind(corr.ech$ensmean,corr$ensmean),c(dim(corr$ensmean)[1],dim(corr$ensmean)[2]*2)) #[,,1:2,drop=F]
 
 
+corr.diff <- corr.tot
+corr.diff$data <- corr.diff$data[,,(ncol(corr.tot$ensmean)/2+1):ncol(corr.tot$ensmean)]-corr.diff$data[,,1:(ncol(corr.tot$ensmean)/2)]
+corr.diff$ensmean <- corr.diff$ensmean[,(ncol(corr.tot$ensmean)/2+1):ncol(corr.tot$ensmean)]-corr.diff$ensmean[,1:(ncol(corr.tot$ensmean)/2)]
+
+
 #corr.ech <- corr               # analysis vs. validate
 #corr.ech$Analysis <- corr.ech  # echam vs. validate
 #names(corr.ech) <- c('echam', 'analysis_localized')
@@ -900,6 +1015,14 @@ if (monthly_out) {
 # dev.off()
 #    \caption{temp corr echam ens mean with cru validation (top) and analysis ens mean with cru validation (bottom). Winter left, summer right.}
 
+################################################################################
+# Fig.4.1a: correlation difference map (analysis-echam) TEMP
+if (monthly_out) {
+  plot_echam4(corr.diff, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('corr.diff_echam_anal-',validation_set,'_temp_summer.pdf'), paper='special')
+  plot_echam4(corr.diff, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('corr.diff_echam_anal-',validation_set,'_temp_winter.pdf'), paper='special')
+} else {
+  plot_echam4(corr.diff, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs ,type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('corr.diff_echam_anal-',validation_set,'_temp.pdf'), paper='special')
+}
 
 ################################################################################
 # Fig. 4b: average precip corr echam and analysis vs validation wrt ens. mean 
@@ -918,9 +1041,16 @@ if (monthly_out){
 # dev.off()
 #    \caption{precip corr echam ens mean with cru validation (top) and analysis ens mean with cru validation (bottom). Winter left, summer right.}
 
-
 ################################################################################
-# Fig. 4b: average slp corr echam and analysis vs validation wrt ens. mean 
+# Fig.4.1b: correlation difference map (analysis-echam) PRECIP
+if (monthly_out) {
+  plot_echam4(corr.diff, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('corr.diff_echam_anal-',validation_set,'_precip_summer.pdf'), paper='special')
+  plot_echam4(corr.diff, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('corr.diff_echam_anal-',validation_set,'_precip_winter.pdf'), paper='special')
+} else {
+  plot_echam4(corr.diff, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('corr.diff_echam_anal-',validation_set,'_precip.pdf'), paper='special')
+}
+################################################################################
+# Fig. 4c: average slp corr echam and analysis vs validation wrt ens. mean 
 
 pdf(paste(figpath,'corr_echam_anal-cru_slp.pdf',sep='/'), width=9, height=6, paper='special')
 layout(matrix(c(1,2,3,4,5,5), 3, 2, byrow = TRUE), height=c(3,3,1))
@@ -930,7 +1060,14 @@ plot_echam(corr.tot, varname='slp', cex.pt=1.5, names=pnames[1:dim(corr.tot$data
 dev.off()
 #    \caption{slp corr echam ens mean with cru validation (top) and analysis ens mean with cru validation (bottom). Winter left, summer right.}
 
-
+################################################################################
+# Fig.4.1c: correlation difference map (analysis-echam) SLP
+if (monthly_out) {
+  plot_echam4(corr.diff, varname='slp', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('corr.diff_echam_anal-',validation_set,'_slp_summer.pdf'), paper='special')
+  plot_echam4(corr.diff, varname='slp', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('corr.diff_echam_anal-',validation_set,'_slp_winter.pdf'), paper='special')
+} else {
+  plot_echam4(corr.diff, varname='slp', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('corr.diff_echam_anal-',validation_set,'_slp.pdf'), paper='special')
+}
 ################################################################################
 # Fig. 5a: average temperature bias echam and analysis vs. validate wrt ens. mean 
 #<<label=rmse, echo=FALSE, fig=TRUE, width=8, height=9, results=hide, eps=FALSE>>=
@@ -999,10 +1136,13 @@ RE.tot$ensmean <- array(RE.anom$ensmean,c(dim(RE$ensmean)[1], dim(RE$ensmean)[2]
 levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
 
 if (monthly_out){
-  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('re_anom_echam_anal-',validation_set,'_temp_summer.pdf'), paper='special')
-  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('re_anom_echam_anal-',validation_set,'_temp_winter.pdf'), paper='special')
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, type='ensmean', st.col=NULL, 
+              stations=plstat,NHseason="summer",plotname=paste0('re_anom_echam_anal-',validation_set,'_temp_summer.pdf'), paper='special')
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, type='ensmean', st.col=NULL, 
+              stations=plstat,NHseason="winter",plotname=paste0('re_anom_echam_anal-',validation_set,'_temp_winter.pdf'), paper='special')
 }else{
-  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('re_anom_echam_anal-',validation_set,'_temp.pdf'), paper='special')
+  plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, type='ensmean', st.col=NULL, 
+              stations=plstat,NHseason=NULL,plotname=paste0('re_anom_echam_anal-',validation_set,'_temp.pdf'), paper='special')
 }
 
 #RE.tot$data <- array(cbind(RE.anom$ensmean,RE.ech.clim.anom$ensmean), 
@@ -1040,10 +1180,13 @@ if (monthly_out){
 # Fig. 6b: average precip RE wrt ens. mean 
 #<<label=rmse, echo=FALSE, fig=TRUE, width=8, height=9, results=hide, eps=FALSE>>=
 if (monthly_out){
-  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('re_anom_echam_anal-',validation_set,'_precip_summer.pdf'), paper='special')
-  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname='re_anom_echam_anal-',validation_set,'_precip_winter.pdf', paper='special')
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, 
+              stations=plstat,NHseason="summer",plotname=paste0('re_anom_echam_anal-',validation_set,'_precip_summer.pdf'), paper='special')
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, 
+              stations=plstat,NHseason="winter",plotname=paste0('re_anom_echam_anal-',validation_set,'_precip_winter.pdf'), paper='special')
 }else{
-  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname='re_anom_echam_anal-',validation_set,'_precip.pdf', paper='special')
+  plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, 
+              stations=plstat,NHseason=NULL,plotname=paste0('re_anom_echam_anal-',validation_set,'_precip.pdf'), paper='special')
 }
 
 # 
@@ -1245,7 +1388,7 @@ plot_echam(RE.tot, varname='slp', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]
 dev.off()
 #    \caption{According to figure \ref{fig:update} but for average reduction of error of the analysis ensemble mean with respect to the ECHAM5 ensemble mean. Positive values indicate that the analysis is closer to the validation measurement than the unconstrained ensemble mean in the respective season.}
 
-
+# what is this here?????????
 RE.tot <- echam
 #RE.bkp <- RE
 #RE <- RE.bkp
@@ -1941,6 +2084,76 @@ if (monthly_out) {
   plot_echam4(crps.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('crps_anom_echam_anal-',validation_set,'_precip.pdf'), paper='special')
 }
 
+
+### plot emperical cumulative distribution finction of RE.anom$ensmean
+compute_giorgi_area <- function(giorgi, echam){
+  nll <- length(echam$lon)/(length(unique(echam$names)))
+  giorgi.arr <- t(sapply(giorgi, function(x, y){
+    lons <- y$lon[1:nll]
+    lats <- y$lat[1:nll]
+    ind <- c(lons > x$edges[1] & lons < x$edges[2] & lats > x$edges[3] & lats < x$edges[4])
+    weights <- ind * cos(lats/180*pi)
+    weights}, y=echam))
+  # stitch together to form the full giorgi_H
+  nreg <- nrow(giorgi.arr)
+  ndim <- length(echam$lon)
+  nvar <- floor(nrow(echam$data)/ndim)
+  H.giorgi <- array(0, c(nreg*nvar, nrow(echam$data)))
+  for (i in 1:nvar) {
+    H.giorgi[(i-1)*nreg + 1:nreg,(i-1)*ndim + 1:ndim] <- giorgi.arr
+  }
+  return(H.giorgi)
+}
+H.giorgi <- compute_giorgi_area(giorgi, RE.anom)
+# simple and area weighted ECDF
+varlist = unique(RE.anom$names)
+halfyear =c("winter","summer")
+for (varname in varlist) {
+  pdf(file=paste0(figpath,'/ecdf_RE.anom_',varname,'.pdf'))
+  # layout(matrix(c(1,2,3,4), 2, 2, byrow = TRUE))
+  layout(matrix(c(1,2), 2, 1, byrow = TRUE))
+  group_matrix = matrix(NA, nrow = dim(RE.anom$ensmean)[1]/length(unique(RE.anom$names)),ncol=3)
+  colnames(group_matrix) = c("RE", "Area", "RE_group")
+  # put the RE values to a range
+  for (i in 1:dim(RE.anom$ensmean)[2]){
+    group_matrix[,1] = RE.anom$ensmean[which(RE.anom$names == varname),i]
+    group_matrix[,2] = H.giorgi[which(giorgi.short == 'GLO'),which(RE.anom$names== varname)]
+    min_RE = min(RE.anom$ensmean[which(RE.anom$names == varname),i],na.rm = TRUE)
+    max_RE = max(RE.anom$ensmean[which(RE.anom$names == varname),i],na.rm = TRUE)
+    group_RE = seq(round(min_RE-0.01,digits = 2),round(max_RE+0.01,digits = 2),0.01)
+    for (v in 1:nrow(group_matrix)){
+      if (!is.na(group_matrix[v,1])){
+        for (j in 1:length(group_RE) ) {
+          if (group_matrix[v,1] > group_RE[j] & group_matrix[v,1] <= group_RE[j+1]){
+            group_matrix[v,3] = group_RE[j] + 0.005
+          }
+        }
+      }
+    }
+    # area sum by categories
+    area_sum = aggregate(Area ~ RE_group, group_matrix, sum)
+    total_sum = sum(area_sum[,2])
+    # "percentages" by RE_groups
+    area_perc = cbind(area_sum[,1],area_sum[,2]/total_sum)
+    # ecdf
+    RE.anom_s_ecdf = ecdf(RE.anom$ensmean[which(RE.anom$names  == varname),i])
+    plot(RE.anom_s_ecdf,main=paste("RE.anom",varname ," ecdf dist in",halfyear[i]),xlim=c(-1,1))
+    area_cumsum = cumsum(area_perc[,2])
+    area_cumsum = cbind(area_perc[,1],area_cumsum)
+    area_cumsum=rbind(cbind(seq(-20,area_cumsum[1,1],1),rep(area_cumsum[1,2],length(seq(-20,area_cumsum[1,1],1)))),area_cumsum,
+                     cbind(seq(area_cumsum[nrow(area_cumsum),1],10,1),
+                           rep(area_cumsum[nrow(area_cumsum),2],length(seq(area_cumsum[nrow(area_cumsum),1],10,1)))))
+    lines(area_cumsum,col="orange")
+    legend("bottomright",legend=c("simple","weighted"),col=c("black","orange"),lty = c(1,1),lwd=2)
+    # plot(area_cumsum,type="l",main=paste("area weighted RE.anom dist in",halfyear[i]),xlim=c(-1,1),ylab="Fn(x)",xlab="x")
+    # abline(h=0,col="grey",lty =2)
+    # abline(h=1,col="grey",lty =2)
+    # plot(ecdf(area_perc),main=paste("area weighted RE.anom dist in",halfyear[i]),xlim=c(-1,1),cex=0)
+ }
+  dev.off()
+}
+
+# plot(density(RE.anom$ensmean[which(RE.anom$names  == varname),i],na.rm=T,weights=area_wgt[!is.na(RE.anom$ensmean[which(RE.anom$names  == varname),i])]))
 
 
 validate <- validate.init

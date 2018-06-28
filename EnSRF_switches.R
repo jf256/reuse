@@ -1,5 +1,5 @@
 # expname = "test"
- expname="EKF400_v1.3_merged_covarclim50_ncovar250_static2_PHclim_2times_loc_proxy" # EKF400_v1.3_merged_only_inst_with_temp_loc
+expname="EKF400_v1.3_merged_covarclim100_ncovar250_changing_update_PHclim_loc_inst" # EKF400_v1.3_merged_only_inst_with_temp_loc
 
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
@@ -239,14 +239,14 @@ if (generate_PROXIESnew){
 # To use a bigger ensemble for the background
 no_forc_big_ens= F      # use all years as one big ensemble regardless of forcing like LMR
                         # ONLY works with next option load_71yr_anom=T
-covarclim=50             # set 50 or 100 [%] how much echam climatology covariance should be used
+covarclim=100             # set 50 or 100 [%] how much echam climatology covariance should be used
                             # default=0, i.e. current year covar from ECHAM ensemble
-# Only used if no_forx_big_ens=T or covarclim=0
-state = "static"        # can be "static" or "changing" (static = the same big ens used for all year, changing = it is recalculated for every year)
+# Only used if no_forx_big_ens=T or covarclim>0
+state = "changing"        # can be "static" or "changing" (static = the same big ens used for all year, changing = it is recalculated for every year)
 n_covar=250             # set sample size for covar calc or for no_forc LMR like experiment, e.g. 250 or 500
 PHclim_loc = T          # whether we want to localize the PHclim, only works if covarclim > 0
-PHclim_lvec_factor = 2  # if PHclim_loc=T, we can use eg. 2times the distances as in the 30 ensemble member, at the moment only works for shape_wgt= "circle"
-
+PHclim_lvec_factor = 1  # if PHclim_loc=T, we can use eg. 2times the distances as in the 30 ensemble member, at the moment only works for shape_wgt= "circle"
+update_PHclim = T       # whether PHclim should be updtaed assimilating observation-by-observation
 
 # Calculate decorr length -> was done already
 calc_decorr_dist=F      # calculate decorrelation distance for each variable from ECHAM to set L
@@ -272,7 +272,8 @@ if (loc) {
   l_dist_v850=1000*1.5
   l_dist_v200=1000*1.5
   l_dist_omega500=300*1.5
-  l_dist_t850=1000*1.5
+  # l_dist_t850=1000*1.5 #Roni: in the echam there is no t850 but t500. They refer to the same level but I forgot which one is the correct one
+  l_dist_t500=1000*1.5
   l_dist_ind=999999 # precalculated indices should be removed
 } else {
   l_dist_temp2=999999
@@ -306,8 +307,8 @@ reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=F            # calc on land only
 fasttest=F             # use even less data
-tps_only=F             # only use temp, precip and slp in state vector, remove other vars
-no_stream=T            # all echam vars but stream function as there is problem with 
+tps_only=T             # only use temp, precip and slp in state vector, remove other vars
+no_stream=F            # all echam vars but stream function as there is problem with 
 #                       # 5/9 levels, which are in lat dimension before and after 1880
 loo=F                  # leave-one-out validation 
 if (loo) {tps_only=T;no_stream=F}  # reduce state vector for faster validation
@@ -361,9 +362,9 @@ ncep_vali=F            # NCEP/NCAR reanalysis data for validation
 #####################################################################################
 # prepare plot switches
 #####################################################################################
-monthly_out = T    # if sixmonstatevector=T output is backtransformed to seasonal 
+monthly_out = F    # if sixmonstatevector=T output is backtransformed to seasonal 
                  # average or monthly data if monthly_out=T 
-calc_prepplot=T  # save half year averages calc from monthly data into /prepplot folder
+calc_prepplot=F  # save half year averages calc from monthly data into /prepplot folder
   write_coor=F     # write ascii files with assimilated stations and data per ts
 # maybe change files names for new EKF400 version "1.0" to "1.1"
 # write_netcdf requires to run calc_prepplot before 
@@ -379,7 +380,7 @@ if (!monthly_out & write_netcdf) {
 # 1902-2003, because it creates time series
 load_prepplot=F  # ATTENTION check if folder prepplot on scratch contains monthly or seasonal data!
                  # saves image and only needs to be run once, afterward set "load_image=T" 
-statyr=1934    # 1941 1850/69 year, when station network is kept constant
+statyr=1904      # 1941 1850/69 year, when station network is kept constant
 load_image=T     # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
 calc_vali_stat=T # calculate validation statistics after preparation (set "load_image=T")
 CRPS = TRUE      # calculate Continuous Ranked Probability Score

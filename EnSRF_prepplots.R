@@ -14,8 +14,8 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
-syr=1904 #1902 #1941
-eyr=1960 #2003 #1970
+syr=1902 #1902 #1941
+eyr=2004 #2003 #1970
 
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
@@ -478,6 +478,25 @@ for (cyr in syr:eyr) {
                                         dim(analysis.anom$ensmean)[2]))
       analysis.anom$ensmean <- apply(atmp2,c(1,3),mean)
       atmp <- NULL
+      
+      # in the covarclim experiments the ananomallts files sometimes are saved
+      if (exists("ananomallts")== T){
+        anallts_tmp <- array(ananomallts$data,c((dim(ananomallts$data)[1]/6),6,dim(ananomallts$data)[2],
+                                           dim(ananomallts$data)[3])) 
+        ananomallts$data <- array(NA,c(dim(anallts_tmp)[1],dim(anallts_tmp)[3:4]))
+        for (ensmem in 1:(dim(anallts_tmp)[4])) {
+          print(paste('Ananomallts member',ensmem))
+          ananomallts$data[,,ensmem] <- apply(anallts_tmp[,,,ensmem],c(1,3),mean)
+        }
+        ananomallts$names <- rep(unique(ananomallts$names),each=dim(ananomallts$data)[1]/
+                                     length(unique(ananomallts$names)))
+        ananomallts$lon <- ananomallts$lon[1:(dim(ananomallts$data)[1])] 
+        ananomallts$lat <- ananomallts$lat[1:(dim(ananomallts$data)[1])] 
+        anallts_tmp2 <- array(ananomallts$ensmean,c((dim(ananomallts$ensmean)[1]/6),6,
+                                               dim(analysis.anom$ensmean)[2]))
+        ananomallts$ensmean <- apply(anallts_tmp2,c(1,3),mean)
+        anallts_tmp <- NULL
+      }
   
       if (vali) {    
         if (!recon_vali) {
@@ -535,8 +554,14 @@ for (cyr in syr:eyr) {
       names(validate_all)<-get("valiname")
       validate <- validate_all
     
-      save(analysis,analysis.anom,echam,echam.anom,validate,calibrate,
+      if (exists("ananomallts") == T) {
+        save(analysis,analysis.anom,ananomallts,echam,echam.anom,validate,calibrate,
+             file=paste0(prepplotdir,'analysis_',cyr,'_2ndgrid.Rdata'))
+      } else {
+        save(analysis,analysis.anom,echam,echam.anom,validate,calibrate,
            file=paste0(prepplotdir,'analysis_',cyr,'_2ndgrid.Rdata'))
+      }
+      
     } else {
       print(paste("dim validate data:",paste(nrow(validate$data),ncol(validate$data))))
       save(analysis,analysis.anom,echam,echam.anom,validate,calibrate,
@@ -938,38 +963,18 @@ if (load_prepplot){
     load(paste0(prepplotdir,'analysis_',stat_yr,'.Rdata'))
   }
   if (tps_only) {
+    # well I think the tpspos is always the same, doesnt matter onwhich data (analysis, analysis.anom etc) it is defined
     tpspos <- sort(c(which(echam$names=='temp2'), which(echam$names=='precip'), 
                      which(echam$names=='slp'), which(echam$names=='bias')))
-    echam$data <- echam$data[tpspos,,]
-    echam$ensmean <- echam$ensmean[tpspos,]
-    echam$lon <- echam$lon[tpspos]
-    echam$lat <- echam$lat[tpspos]
-    echam$names <- echam$names[tpspos]
     
-    
-    tpspos <- sort(c(which(analysis$names=='temp2'), which(analysis$names=='precip'), 
-                     which(analysis$names=='slp'), which(analysis$names=='bias')))
-    analysis$data <- analysis$data[tpspos,,]
-    analysis$ensmean <- analysis$ensmean[tpspos,]
-    analysis$lon <- analysis$lon[tpspos]
-    analysis$lat <- analysis$lat[tpspos]
-    analysis$names <- analysis$names[tpspos]
-    
-    tpspos <- sort(c(which(analysis.anom$names=='temp2'), which(analysis.anom$names=='precip'), 
-                     which(analysis.anom$names=='slp'), which(analysis.anom$names=='bias')))
-    analysis.anom$data <- analysis.anom$data[tpspos,,]
-    analysis.anom$ensmean <- analysis.anom$ensmean[tpspos,]
-    analysis.anom$lon <- analysis.anom$lon[tpspos]
-    analysis.anom$lat <- analysis.anom$lat[tpspos]
-    analysis.anom$names <- analysis.anom$names[tpspos]
-    
-    tpspos <- sort(c(which(echam.anom$names=='temp2'), which(echam.anom$names=='precip'), 
-                     which(echam.anom$names=='slp'), which(echam.anom$names=='bias')))
-    echam.anom$data <- echam.anom$data[tpspos,,]
-    echam.anom$ensmean <- echam.anom$ensmean[tpspos,]
-    echam.anom$lon <- echam.anom$lon[tpspos]
-    echam.anom$lat <- echam.anom$lat[tpspos]
-    echam.anom$names <- echam.anom$names[tpspos]
+    # make it shorter with the shorten_func
+    echam = shorten_func(echam,tpspos)
+    echam.anom = shorten_func(echam.anom,tpspos)
+    analysis =  shorten_func(analysis,tpspos)
+    analysis.anom =  shorten_func(analysis.anom,tpspos)
+    if (exists("ananomallts") == T) {
+      ananomallts =  shorten_func(ananomallts,tpspos)
+    }
     
   }
   cali <- calibrate
@@ -1008,38 +1013,18 @@ if (load_prepplot){
       load(file=paste0(prepplotdir,'analysis_',(cyr+1),'.Rdata')) 
     }
     if (tps_only) {
+      # well I think the tpspos is always the same, doesnt matter onwhich data (analysis, analysis.anom etc) it is defined
       tpspos <- sort(c(which(echam$names=='temp2'), which(echam$names=='precip'), 
                        which(echam$names=='slp'), which(echam$names=='bias')))
-      echam$data <- echam$data[tpspos,,]
-      echam$ensmean <- echam$ensmean[tpspos,]
-      echam$lon <- echam$lon[tpspos]
-      echam$lat <- echam$lat[tpspos]
-      echam$names <- echam$names[tpspos]
       
-      
-      tpspos <- sort(c(which(analysis$names=='temp2'), which(analysis$names=='precip'), 
-                       which(analysis$names=='slp'), which(analysis$names=='bias')))
-      analysis$data <- analysis$data[tpspos,,]
-      analysis$ensmean <- analysis$ensmean[tpspos,]
-      analysis$lon <- analysis$lon[tpspos]
-      analysis$lat <- analysis$lat[tpspos]
-      analysis$names <- analysis$names[tpspos]
-      
-      tpspos <- sort(c(which(analysis.anom$names=='temp2'), which(analysis.anom$names=='precip'), 
-                       which(analysis.anom$names=='slp'), which(analysis.anom$names=='bias')))
-      analysis.anom$data <- analysis.anom$data[tpspos,,]
-      analysis.anom$ensmean <- analysis.anom$ensmean[tpspos,]
-      analysis.anom$lon <- analysis.anom$lon[tpspos]
-      analysis.anom$lat <- analysis.anom$lat[tpspos]
-      analysis.anom$names <- analysis.anom$names[tpspos]
-      
-      tpspos <- sort(c(which(echam.anom$names=='temp2'), which(echam.anom$names=='precip'), 
-                       which(echam.anom$names=='slp'), which(echam.anom$names=='bias')))
-      echam.anom$data <- echam.anom$data[tpspos,,]
-      echam.anom$ensmean <- echam.anom$ensmean[tpspos,]
-      echam.anom$lon <- echam.anom$lon[tpspos]
-      echam.anom$lat <- echam.anom$lat[tpspos]
-      echam.anom$names <- echam.anom$names[tpspos]
+      # make it shorter with the shorten_func
+      echam = shorten_func(echam,tpspos)
+      echam.anom = shorten_func(echam.anom,tpspos)
+      analysis =  shorten_func(analysis,tpspos)
+      analysis.anom =  shorten_func(analysis.anom,tpspos)
+      if (exists("ananomallts") == T) {
+        ananomallts =  shorten_func(ananomallts,tpspos)
+      }
       
     }
     echam2 <- echam
@@ -1050,39 +1035,18 @@ if (load_prepplot){
       load(file=paste0(prepplotdir,'analysis_',cyr,'.Rdata')) 
     }
     if (tps_only) {
+      # well I think the tpspos is always the same, doesnt matter onwhich data (analysis, analysis.anom etc) it is defined
       tpspos <- sort(c(which(echam$names=='temp2'), which(echam$names=='precip'), 
                        which(echam$names=='slp'), which(echam$names=='bias')))
-      echam$data <- echam$data[tpspos,,]
-      echam$ensmean <- echam$ensmean[tpspos,]
-      echam$lon <- echam$lon[tpspos]
-      echam$lat <- echam$lat[tpspos]
-      echam$names <- echam$names[tpspos]
-      
-      
-      tpspos <- sort(c(which(analysis$names=='temp2'), which(analysis$names=='precip'), 
-                       which(analysis$names=='slp'), which(analysis$names=='bias')))
-      analysis$data <- analysis$data[tpspos,,]
-      analysis$ensmean <- analysis$ensmean[tpspos,]
-      analysis$lon <- analysis$lon[tpspos]
-      analysis$lat <- analysis$lat[tpspos]
-      analysis$names <- analysis$names[tpspos]
-      
-      tpspos <- sort(c(which(analysis.anom$names=='temp2'), which(analysis.anom$names=='precip'), 
-                       which(analysis.anom$names=='slp'), which(analysis.anom$names=='bias')))
-      analysis.anom$data <- analysis.anom$data[tpspos,,]
-      analysis.anom$ensmean <- analysis.anom$ensmean[tpspos,]
-      analysis.anom$lon <- analysis.anom$lon[tpspos]
-      analysis.anom$lat <- analysis.anom$lat[tpspos]
-      analysis.anom$names <- analysis.anom$names[tpspos]
-      
-      tpspos <- sort(c(which(echam.anom$names=='temp2'), which(echam.anom$names=='precip'), 
-                       which(echam.anom$names=='slp'), which(echam.anom$names=='bias')))
-      echam.anom$data <- echam.anom$data[tpspos,,]
-      echam.anom$ensmean <- echam.anom$ensmean[tpspos,]
-      echam.anom$lon <- echam.anom$lon[tpspos]
-      echam.anom$lat <- echam.anom$lat[tpspos]
-      echam.anom$names <- echam.anom$names[tpspos]
-      
+        
+        # make it shorter with the shorten_func
+        echam = shorten_func(echam,tpspos)
+        echam.anom = shorten_func(echam.anom,tpspos)
+        analysis =  shorten_func(analysis,tpspos)
+        analysis.anom =  shorten_func(analysis.anom,tpspos)
+        if (exists("ananomallts") == T) {
+          ananomallts =  shorten_func(ananomallts,tpspos)
+        }
     }
     
     #provisorily commented this because not sure if going back to Jan-Dec is suitable for calc_vali_stat
@@ -1108,67 +1072,53 @@ if (load_prepplot){
       validate[["twentycr_vali"]]$names[which(validate[["twentycr_vali"]]$names=="omega")] <- "omega500"
       validate[["twentycr_vali"]]$names[which(validate[["twentycr_vali"]]$names=="geopoth")] <- "gph500"
       twentycr.var <- unique(validate[["twentycr_vali"]]$names)
-      var.tmp<-which(echam$names%in%twentycr.var)
       
-      analysis$data=analysis$data[var.tmp,,]
-      analysis$ensmean=analysis$ensmean[var.tmp,]
-      analysis$names=analysis$names[var.tmp]
-      analysis$lon=analysis$lon[var.tmp]
-      analysis$lat=analysis$lat[var.tmp]
-      echam$data=echam$data[var.tmp,,]
-      echam$ensmean=echam$ensmean[var.tmp,]
-      echam$names=echam$names[var.tmp]
-      echam$lon=echam$lon[var.tmp]
-      echam$lat=echam$lat[var.tmp]
-      analysis.anom=analysis.anom
-      analysis.anom$data=analysis.anom$data[var.tmp,,]
-      analysis.anom$ensmean=analysis.anom$ensmean[var.tmp,]
-      analysis.anom$names=analysis.anom$names[var.tmp]
-      analysis.anom$lon=analysis.anom$lon[var.tmp]
-      analysis.anom$lat=analysis.anom$lat[var.tmp]
-      echam.anom=echam.anom
-      echam.anom$data=echam.anom$data[var.tmp,,]
-      echam.anom$ensmean=echam.anom$ensmean[var.tmp,]
-      echam.anom$names=echam.anom$names[var.tmp]
-      echam.anom$lon=echam.anom$lon[var.tmp]
-      echam.anom$lat=echam.anom$lat[var.tmp]
+      var.tmp<-which(echam$names%in%twentycr.var)
+      # make it shorter with the shorten_func
+      echam = shorten_func(echam,var.tmp)
+      echam.anom = shorten_func(echam.anom,var.tmp)
+      analysis =  shorten_func(analysis,var.tmp)
+      analysis.anom =  shorten_func(analysis.anom,var.tmp)
+      if (exists("ananomallts") == T) {
+        ananomallts =  shorten_func(ananomallts,var.tmp)
+      }
+      
     }else{
-    
-    lenvar2 <- length(c(which(echam$names=="temp2"), which(echam$names=="precip"), 
-                        which(echam$names=="slp")))
-#    analysis_noindex=analysis
-    analysis$data=analysis$data[1:lenvar2,,]
-    analysis$ensmean=analysis$ensmean[1:lenvar2,]
-    analysis$names=analysis$names[1:lenvar2]
-    analysis$lon=analysis$lon[1:lenvar2]
-    analysis$lat=analysis$lat[1:lenvar2]
-    echam=echam
-    echam$data=echam$data[1:lenvar2,,]
-    echam$ensmean=echam$ensmean[1:lenvar2,]
-    echam$names=echam$names[1:lenvar2]
-    echam$lon=echam$lon[1:lenvar2]
-    echam$lat=echam$lat[1:lenvar2]
-    analysis.anom=analysis.anom
-    analysis.anom$data=analysis.anom$data[1:lenvar2,,]
-    analysis.anom$ensmean=analysis.anom$ensmean[1:lenvar2,]
-    analysis.anom$names=analysis.anom$names[1:lenvar2]
-    analysis.anom$lon=analysis.anom$lon[1:lenvar2]
-    analysis.anom$lat=analysis.anom$lat[1:lenvar2]
-    echam.anom=echam.anom
-    echam.anom$data=echam.anom$data[1:lenvar2,,]
-    echam.anom$ensmean=echam.anom$ensmean[1:lenvar2,]
-    echam.anom$names=echam.anom$names[1:lenvar2]
-    echam.anom$lon=echam.anom$lon[1:lenvar2]
-    echam.anom$lat=echam.anom$lat[1:lenvar2]
-    
+      
+      lenvar2 <- length(c(which(echam$names=="temp2"), which(echam$names=="precip"), 
+                          which(echam$names=="slp")))
+      # make it shorter with the shorten_func
+      # why these 3 have to be defined again?
+      echam=echam
+      analysis.anom=analysis.anom
+      echam.anom=echam.anom
+      
+      echam = shorten_func(echam,lenvar2)
+      echam.anom = shorten_func(echam.anom,lenvar2)
+      analysis =  shorten_func(analysis,lenvar2)
+      analysis.anom =  shorten_func(analysis.anom,lenvar2)
+      if (exists("ananomallts") == T) {
+        # shall this be done as well then?
+        ananomallts = ananomallts
+        ananomallts = shorten_func(ananomallts,lenvar2)
+      }
     }
     
     
     if (cyr == syr) {
       analysis.allts=analysis
       analysis.anom.allts=analysis.anom
+      if (exists("ananomallts") == T) {
+        ananomallts.allts = ananomallts
+      }
 #      ana_ind.allts=ana_ind
       if (vali) {
+        if (!"cru_vali" %in% names(validate) & !"twentycr_vali" %in% names(validate)){
+          validate_new<-list()
+          validate_new[[1]]<-validate 
+          names(validate_new)<-"cru_vali"
+          validate<-validate_new
+        }
         validate.allts=validate
 #        vali_ind.allts=vali_ind
       }
@@ -1180,7 +1130,8 @@ if (load_prepplot){
       # because proxies not in fixed grid format. Hence number of records 
       # and position/row in data/ensmean matrix changes over time
       calibrate.allts=calibrate
-      if (substring(expname,1,12)=="proxies_only") {
+      # if (substring(expname,1,12)=="proxies_only") {
+      if ( length(unique(calibrate$sour)) == 1 & unique(calibrate$sour) == "prox") {
         pos <- which(calibrate$sour=="prox")
       }else{
         pos <- which(calibrate$sour=="inst")
@@ -1215,11 +1166,22 @@ if (load_prepplot){
       analysis.anom.allts$data=abind(analysis.anom.allts$data,analysis.anom$data,along=2)
       analysis.anom.allts$ensmean=cbind(analysis.anom.allts$ensmean,analysis.anom$ensmean)
       analysis.anom.allts$time=c(analysis.anom.allts$time,analysis.anom$time)
+      if (exists("ananomallts")== T) {
+        ananomallts.allts$data=abind(ananomallts.allts$data,ananomallts$data,along=2)
+        ananomallts.allts$ensmean=cbind(ananomallts.allts$ensmean,ananomallts$ensmean)
+        ananomallts.allts$time=c(ananomallts.allts$time,ananomallts$time)
+      }
 #      ana_ind.allts$data=abind(ana_ind.allts$data,ana_ind$data,along=2)
 #      ana_ind.allts$ensmean=cbind(ana_ind.allts$ensmean,ana_ind$ensmean)
       #      ana_ind.allts$time=c(ana_ind.allts$time,ana_ind$time)
       if (vali & cyr>1751) {
         
+        if (!"cru_vali" %in% names(validate) & !"twentycr_vali" %in% names(validate)) {
+          validate_new<-list()
+          validate_new[[1]]<-validate 
+          names(validate_new)<-"cru_vali"
+          validate<-validate_new
+        }
         
         valiname = names(validate)
         validate_init <- validate
@@ -1265,7 +1227,8 @@ if (load_prepplot){
 #      ech_ind.allts$data=abind(ech_ind.allts$data,ech_ind$data,along=2)
 #      ech_ind.allts$ensmean=cbind(ech_ind.allts$ensmean,ech_ind$ensmean)
 #      ech_ind.allts$time=c(ech_ind.allts$time,ech_ind$time)
-      if (substring(expname,1,12)=="proxies_only") {
+      # if (substring(expname,1,12)=="proxies_only") {
+      if ( length(unique(calibrate$sour)) == 1 & unique(calibrate$sour) == "prox") {
         pos <- which(calibrate$sour=="prox")
       }else{
         pos <- which(calibrate$sour=="inst")
@@ -1351,6 +1314,10 @@ analysis.anom <- analysis.anom.allts
 #ana_ind <- ana_ind.allts
 # rm(ana_ind.allts)
 rm(analysis.allts,analysis.anom.allts)
+if (exists("ananomallts") == T) {
+  ananomallts = ananomallts.allts
+  rm(ananomallts.allts)
+}
 calibrate <- calibrate.allts
 #calibrate.anom <- calibrate.anom.allts
 if (vali) {
@@ -1629,6 +1596,24 @@ if (load_image){
                       "_seasonal.Rdata",sep=""))
     }
   }
+  if (!"cru_vali" %in% names(validate) & !"twentycr_vali" %in% names(validate)) {
+  validate_new<-list()
+  validate_new[[1]]<-validate 
+  names(validate_new)<-"cru_vali"
+  validate<-validate_new
+  }
+  if (!"cru_vali" %in% names(validate.anom) & !"twentycr_vali" %in% names(validate.anom)) {
+  validate_new<-list()
+  validate_new[[1]]<-validate.anom 
+  names(validate_new)<-"cru_vali"
+  validate.anom <- validate_new
+  }
+  if (!"cru_vali" %in% names(validate.clim) & !"twentycr_vali" %in% names(validate.clim)) {
+  validate_new<-list()
+  validate_new[[1]]<-validate.clim
+  names(validate_new)<-"cru_vali"
+  validate.clim<-validate_new
+  }
   source('EnSRF_switches.R') # set switches again because they may differ in loaded image
   rm(s,v,valiname,validate_all,validate_init,validate.allts_all,validate.allts_init,validate.anom_all,validate.clim_all)
 }
@@ -1651,6 +1636,9 @@ if (calc_vali_stat){
   echam.anom.init <- echam.anom
   analysis.init <- analysis
   analysis.anom.init <- analysis.anom
+  if (exists("ananomallts")== T){
+    ananomallts.init = ananomallts
+  }
   calibrate.init <- calibrate
   calibrate.anom.init <- calibrate.anom
   calibrate.clim.init <- calibrate.clim
@@ -1678,6 +1666,7 @@ if (calc_vali_stat){
   
     if (nrow(echam$data)!=nrow(validate$data)) { # when 20cr_vali then nrow should be different when v="cru_vali"
       
+      # probably could use here the shorten_func as well
       var.tmp<-which(echam$names%in%validate$names)
       analysis$data=analysis$data[var.tmp,,]
       analysis$ensmean=analysis$ensmean[var.tmp,]
@@ -1701,6 +1690,14 @@ if (calc_vali_stat){
       echam.anom$names=echam.anom$names[var.tmp]
       echam.anom$lon=echam.anom$lon[var.tmp]
       echam.anom$lat=echam.anom$lat[var.tmp]
+      if (exists("ananomallts") == T) {
+        ananomallts=ananomallts
+        ananomallts$data=ananomallts$data[var.tmp,,]
+        ananomallts$ensmean=ananomallts$ensmean[var.tmp,]
+        aananomallts$names=ananomalltsm$names[var.tmp]
+        ananomallts$lon=aananomallts$lon[var.tmp]
+        ananomallts$lat=ananomallts$lat[var.tmp]
+      }
       
     }
   
@@ -1841,6 +1838,9 @@ if (vali) {
     ## first option: make a loop
     crps.ana <- array(NA, dim=dim(validate.anom$data))
     crps.ech <- crps.ana
+    if (exists("ananomallts") == T){
+    crps.ananomallts = crps.ana
+      }
     k=0
     for (i in 1:nrow(analysis.anom$data)) {
       if (i %% 100 == 0) {
@@ -1848,6 +1848,9 @@ if (vali) {
       }
       dressed.ana <- DressEnsemble(analysis.anom$data[i,,])
       dressed.ech <- DressEnsemble(echam.anom$data[i,,])
+      if (exists("ananomallts") == T){
+        dressed.ananomallts = DressEnsemble(ananomallts$data[i,,])
+      }
       
       if (k==0&!any(is.na(dressed.ana$ens))){
         PlotDressedEns(dressed.ana)  ## as an illustration
@@ -1856,7 +1859,9 @@ if (vali) {
       
       crps.ana[i,] <- DressCrps(dressed.ana,validate.anom$data[i,])
       crps.ech[i,] <- DressCrps(dressed.ech,validate.anom$data[i,])
-      
+      if (exists("ananomallts") == T){
+        crps.ananomallts[i,] <- DressCrps(dressed.ananomallts,validate.anom$data[i,])
+      }
       
     }
 
@@ -1864,7 +1869,10 @@ if (vali) {
       crps.ech <- array(crps.ech,dim=c(nrow(crps.ech),s.plot,ncol(crps.ech)/s.plot))
       crps.ana <- apply(crps.ana,c(1,2),mean,na.rm=T)
       crps.ech <- apply(crps.ech,c(1,2),mean,na.rm=T)
-    
+      if (exists("ananomallts") == T){
+        crps.ananomallts <- array(crps.ananomallts,dim=c(nrow(crps.ananomallts),s.plot,ncol(crps.ananomallts)/s.plot))
+        crps.ananomallts <- apply(crps.ananomallts,c(1,2),mean,na.rm=T)
+      }
     
   }
   
@@ -1895,6 +1903,9 @@ if (vali) {
 #  rmse.ech.anom <- rmse_fun(echam.anom_noindex, y=validate.anom, seas=s.plot)    
   rmse.anom <- rmse_fun(analysis.anom, y=validate.anom, seas=s.plot)
   rmse.ech.anom <- rmse_fun(echam.anom, y=validate.anom, seas=s.plot) 
+  if (exists("ananomallts") == T){
+    rmse.ananomallts <- rmse_fun(ananomallts, y=validate.anom, seas=s.plot)
+  }
   # vali.clim.anom <- multiyear_seas_average(validate.anom, seas=s.plot)
   # vali.clim.anom.data <- vali.clim.anom$data
   # vali.clim.anom.time <- vali.clim.anom$time
@@ -1936,6 +1947,9 @@ if (vali) {
   RE.echam.clim.anom <- RE_fun(rmse.anom, y=rmse.echam.clim.anom)
 #  RE.ech.clim.anom <- RE_fun(rmse.ech.anom, y=rmse.clim.anom)
   RE.echam.clim <- RE_fun(rmse, y=rmse.echam.clim)
+  if (exists("ananomallts") == T){
+    RE.ananomallts <- RE_fun(rmse.ananomallts, y=rmse.ech.anom)
+  }
 }
 ##corr <- lapply(analysis, corr_fun, y=validate, seas=s.plot)
 if (vali) {
@@ -1943,6 +1957,9 @@ if (vali) {
 #  corr.ech <- corr_fun(echam_noindex, y=validate, seas=s.plot)
   corr <-  corr_fun(analysis, y=validate, seas=s.plot)
   corr.ech <- corr_fun(echam, y=validate, seas=s.plot)
+  if (exists("ananomallts") == T){ # correlation between the anomalies
+    corr.ananomallts <-  corr_fun(ananomallts, y=validate.anom, seas=s.plot)
+  }
 }
 ##bias <- lapply(analysis, bias_fun, y=validate, seas=s.plot)
 if (vali) {
@@ -1973,6 +1990,10 @@ ech.spread <- apply(sqrt(apply(array(echam[['data']] - as.vector(echam[['ensmean
 #                  1:2, mean, na.rm=T))
 ana.spread <- apply(sqrt(apply(array(analysis[['data']] - as.vector(analysis[['ensmean']]), 
                    data.dim)**2, 1:3, mean,na.rm=T)), 1:2, mean, na.rm=T)
+if (exists("ananomallts") == T){ # correlation between the anomalies
+  ananomallts.spread <- apply(sqrt(apply(array(ananomallts[['data']] - as.vector(ananomallts[['ensmean']]), 
+                                       data.dim)**2, 1:3, mean,na.rm=T)), 1:2, mean, na.rm=T)
+}
 #analysis.pre1800 <-
 #analysis.post1800 <-
 #analysis.post1900 <-
@@ -2123,8 +2144,13 @@ if (vali) {
   areliable.anom <- tapply(apply(analysis.anom$data[1:(dim(validate.anom$data)[1]),,] > 
                       as.vector(validate.anom$data[,]),1:2,mean), rep(analysis.anom$names,
                       length=length(validate.anom$data[,])), table) 
+  if (exists("ananomallts") == T) {
+    areliable.ananomallts <- tapply(apply(ananomallts$data[1:(dim(validate.anom$data)[1]),,] > 
+                       as.vector(validate.anom$data[,]),1:2,mean), rep(ananomallts$names,
+                       length=length(validate.anom$data[,])), table)
+  }
   # Compute the rank histogram only for summer
-  # Added by added by Roni (2018.03)
+  # Added by Roni (2018.03)
   summer = seq(2,dim(validate.anom$data)[2],2)
   ereliable.anom.summer <- tapply(apply(echam.anom$data[1:(dim(validate.anom$data)[1]),summer,] > 
                                    as.vector(validate.anom$data[,summer]),1:2,mean), rep(echam.anom$names,
@@ -2132,7 +2158,42 @@ if (vali) {
   areliable.anom.summer <- tapply(apply(analysis.anom$data[1:(dim(validate.anom$data)[1]),summer,] > 
                                    as.vector(validate.anom$data[,summer]),1:2,mean), rep(analysis.anom$names,
                                                                                    length=length(validate.anom$data[,summer])), table) 
-#   ereliable.anom <- tapply(apply(echam.anom$data[1:(dim(validate.anom$data)[1]),1:160,] > 
+  # Compute the rank histogram only for summer over the ENH
+  lat = validate.anom$lat[1:(dim(validate.anom$data)[1])]
+  lat = which(lat>20 & lat<=90)
+  ereliable.anom.summer.ENH <- tapply(apply(echam.anom$data[lat,summer,] > 
+                                          as.vector(validate.anom$data[lat,summer]),1:2,mean), rep(echam.anom$names,
+                                                                                                length=length(validate.anom$data[lat,summer])), table)
+  areliable.anom.summer.ENH <- tapply(apply(analysis.anom$data[lat,summer,] > 
+                                          as.vector(validate.anom$data[lat,summer]),1:2,mean), rep(analysis.anom$names,
+                                                                                                length=length(validate.anom$data[lat,summer])), table) 
+  # Compute the rank histogram only for summer over the N20 - N70
+  lat = validate.anom$lat[1:(dim(validate.anom$data)[1])]
+  lat = which(lat>20 & lat<=70)
+  ereliable.anom.summer.N20_N70 <- tapply(apply(echam.anom$data[lat,summer,] > 
+                                              as.vector(validate.anom$data[lat,summer]),1:2,mean), rep(echam.anom$names,
+                                                                                                       length=length(validate.anom$data[lat,summer])), table)
+  areliable.anom.summer.N20_N70 <- tapply(apply(analysis.anom$data[lat,summer,] > 
+                                              as.vector(validate.anom$data[lat,summer]),1:2,mean), rep(analysis.anom$names,
+                                                                                                       length=length(validate.anom$data[lat,summer])), table) 
+  
+  # Compute the rank histogram only for summer over Europe
+  lat = validate.anom$lat[1:(dim(validate.anom$data)[1])]
+  lat = which(lat>30 & lat<=75)
+  lon = validate.anom$lon[1:(dim(validate.anom$data)[1])]
+  lon = which(lon>-10 & lon<=40)
+  xx = match(lat,lon)
+  x = lon[xx]
+  ereliable.anom.summer.EU <- tapply(apply(echam.anom$data[x,summer,] > 
+                                                  as.vector(validate.anom$data[x,summer]),1:2,mean), rep(echam.anom$names,
+                                                                                                           length=length(validate.anom$data[x,summer])), table)
+  areliable.anom.summer.EU <- tapply(apply(analysis.anom$data[x,summer,] > 
+                                                  as.vector(validate.anom$data[x,summer]),1:2,mean), rep(analysis.anom$names,
+                                                                                                           length=length(validate.anom$data[x,summer])), table) 
+  
+  
+  
+  #   ereliable.anom <- tapply(apply(echam.anom$data[1:(dim(validate.anom$data)[1]),1:160,] > 
 #                      as.vector(validate.anom$data[,1:160]),1:2,mean), rep(echam.anom$names,
 #                      length=length(validate.anom$data[,1:160])), table)
 #   areliable.anom <- tapply(apply(analysis.anom$data[1:(dim(validate.anom$data)[1]),1:160,] > 
@@ -2212,7 +2273,8 @@ calibrate.anom$names <- as.vector(calibrate.anom$names[,1])
 #   }
 #   H
 # }
-if (!substring(expname,1,12)=="proxies_only") { ### this is for experiments where only proxies are used
+# if (!substring(expname,1,12)=="proxies_only") { ### this is for experiments where only proxies are used
+if ("inst" %in% unique(calibrate$sour)) {
   
 stat=calibrate.anom
 stat$data=stat$data[which(stat$sour=="inst"),]
@@ -2808,19 +2870,60 @@ validate.anom <- validate.anom_init
     print("saving...")
     if (every2grid) {
       if (monthly_out) {
-        save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,H.giorgi,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,cali,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim, 
+        save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,
+             H.giorgi,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,
+             arel_obserr.anom,areliable,areliable.anom,areliable.anom.summer,areliable.anom.summer.ENH,areliable.anom.summer.N20_N70,
+             areliable.anom.summer.EU,bias,bias.ech,cali,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,
+             ech.sprerr.c.sum,ech.sprerr.c.win, ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim,echam.clim.anom.time,
+             echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,ereliable.anom.summer,ereliable.anom.summer.ENH,
+             ereliable.anom.summer.N20_N70,ereliable.anom.summer.EU,giorgi,giorgi.names, giorgi.short,RE,RE.anom,RE.echam.clim,
+             RE.echam.clim.anom,validate,validate.anom,validate.clim,sprerr.win,sprerr.sum, sprerr.c.win,sprerr.c.sum,
              file=paste0("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",syr,"-",eyr,"_monthly_2ndgrid.Rdata"))
         
       } else {
-        save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,H.giorgi,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,cali,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim ,
+        if (exists("ananomallts") == T) {
+          save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,
+               H.giorgi,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,
+               arel_obserr.anom,areliable,areliable.anom,areliable.anom.summer,areliable.anom.summer.ENH,areliable.anom.summer.N20_N70,
+               areliable.anom.summer.EU,bias,bias.ech,cali,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,
+               ech.sprerr.c.sum,ech.sprerr.c.win, ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim,echam.clim.anom.time,
+               echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,ereliable.anom.summer,ereliable.anom.summer.ENH,
+               ereliable.anom.summer.N20_N70,ereliable.anom.summer.EU,giorgi,giorgi.names, giorgi.short,RE,RE.anom,RE.echam.clim,
+               RE.echam.clim.anom,validate,validate.anom,validate.clim,sprerr.win,sprerr.sum, sprerr.c.win,sprerr.c.sum,
+               crps.ananomallts,rmse.ananomallts,RE.ananomallts,corr.ananomallts,ananomallts.spread,areliable.ananomallts,
+               file=paste0("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
+        } else {
+        save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,
+             H.giorgi,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,
+             arel_obserr.anom,areliable,areliable.anom,areliable.anom.summer,areliable.anom.summer.ENH,areliable.anom.summer.N20_N70,
+             areliable.anom.summer.EU,bias,bias.ech,cali,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,
+             ech.sprerr.c.sum,ech.sprerr.c.win, ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim,echam.clim.anom.time,
+             echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,ereliable.anom.summer,ereliable.anom.summer.ENH,
+             ereliable.anom.summer.N20_N70,ereliable.anom.summer.EU,giorgi,giorgi.names, giorgi.short,RE,RE.anom,RE.echam.clim,
+             RE.echam.clim.anom,validate,validate.anom,validate.clim,sprerr.win,sprerr.sum, sprerr.c.win,sprerr.c.sum,
              file=paste0("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
+        }
       }  
     } else {
       if (monthly_out) {
-        save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,H.giorgi,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,cali,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim ,
+        save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,
+             H.giorgi,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,
+             arel_obserr.anom,areliable,areliable.anom,areliable.anom.summer,areliable.anom.summer.ENH,areliable.anom.summer.N20_N70,
+             areliable.anom.summer.EU,bias,bias.ech,cali,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,
+             ech.sprerr.c.sum,ech.sprerr.c.win, ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim,echam.clim.anom.time,
+             echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,ereliable.anom.summer,ereliable.anom.summer.ENH,
+             ereliable.anom.summer.N20_N70,ereliable.anom.summer.EU,giorgi,giorgi.names, giorgi.short,RE,RE.anom,RE.echam.clim,
+             RE.echam.clim.anom,validate,validate.anom,validate.clim,sprerr.win,sprerr.sum, sprerr.c.win,sprerr.c.sum,
              file=paste("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",syr,"-",eyr,"_monthly.Rdata",sep=""))
       } else {
-        save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,H.giorgi,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,arel_obserr.anom,areliable,areliable.anom,bias,bias.ech,cali,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,ech.sprerr.c.sum,ech.sprerr.c.win,ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim, echam.clim.anom.time,echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,giorgi,giorgi.names,giorgi.short,RE,RE.anom,RE.echam.clim,RE.echam.clim.anom,validate,validate.anom,validate.clim ,
+        save(ana.spread,crps.ana,crps.ech,ech.spread,ech.sprerr,ech.sprerr.corr,echam.clim.anom.data,echam.clim.data,giorgi.edges,
+             H.giorgi,obs_sd,obs.sd.nona,obs.spread.sum,obs.spread.win,sprerr,sprerr.corr,v.sum,v.win,a.sum,a.win,analysis,analysis.anom,
+             arel_obserr.anom,areliable,areliable.anom,areliable.anom.summer,areliable.anom.summer.ENH,areliable.anom.summer.N20_N70,
+             areliable.anom.summer.EU,bias,bias.ech,cali,calibrate,calibrate.allts,calibrate.anom,calibrate.clim,corr,corr.ech,
+             ech.sprerr.c.sum,ech.sprerr.c.win, ech.sprerr.sum,ech.sprerr.win,echam,echam.anom,echam.clim,echam.clim.anom.time,
+             echam.clim.time,erel_obserr.anom,ereliable,ereliable.anom,ereliable.anom.summer,ereliable.anom.summer.ENH,
+             ereliable.anom.summer.N20_N70,ereliable.anom.summer.EU,giorgi,giorgi.names, giorgi.short,RE,RE.anom,RE.echam.clim,
+             RE.echam.clim.anom,validate,validate.anom,validate.clim,sprerr.win,sprerr.sum, sprerr.c.win,sprerr.c.sum,
              file=paste("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",syr,"-",eyr,"_seasonal.Rdata",sep=""))
       }
     }

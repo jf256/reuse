@@ -247,6 +247,7 @@ n_covar=250             # set sample size for covar calc or for no_forc LMR like
 PHclim_loc = T          # whether we want to localize the PHclim, only works if covarclim > 0
 PHclim_lvec_factor = 1  # if PHclim_loc=T, we can use eg. 2times the distances as in the 30 ensemble member, at the moment only works for shape_wgt= "circle"
 update_PHclim = T       # whether PHclim should be updtaed assimilating observation-by-observation
+save_ananomallts = T    # in the covarclim exps if we update the climatology part -> whether to save the "climatological" analysis or not
 
 # Calculate decorr length -> was done already
 calc_decorr_dist=F      # calculate decorrelation distance for each variable from ECHAM to set L

@@ -3,8 +3,11 @@ echmaskpath <- paste0(dataextdir,'echam/')
 #echmaskpath <- paste0(dataintdir,'echam/')
 echpath <- paste0(dataextdir,'echam/1600-2005/')
 echallvarpath <- paste0(dataextdir,'echam_nc_allvar7/')
+# echallvarpath <-"/scratch3/veronika/60_members_1941-1970" # for 60_ensm
 echanompath <- paste0(dataextdir,'echam_anom/')
+# echanompath = "/scratch3/veronika/60_members_1941-1970/anom" # for 60_ensm
 echclimpath <- paste0(dataextdir,'echam_clim/')
+# echclimpath <- "/scratch3/veronika/60_members_1941-1970/clim" # for 60_ensm
 echsdpath <- paste0(dataextdir,'echam_sd/')
 crupath <- paste0(dataintdir,'cru/')
 gisspath = '/scratch/veronika/PAGES/climdata/giss/' # can be copied to climstore
@@ -20,7 +23,7 @@ pagespath = '/scratch3/veronika/reuse/'
 ntrendpath = '/scratch3/veronika/reuse/'
 schweingrpath <- paste0(dataextdir,'assimil_data/proxies/schweingr/')
 nceppath <- paste0(dataintdir,'reanalysis/ncep/')
-twentycrpath <- paste0(workdir,'../comparison_data/20cr/')
+twentycrpath <- paste0(dataextdir,'vali_data/20cr/')
 indicespath <- paste0(dataextdir,'vali_data/indices/')
 
 
@@ -127,7 +130,8 @@ read_echam4 <- function(filehead, path=echallvarpath, xlim=c(-180,180), ylim=c(-
     lon[lon > 180] <- lon[lon > 180] - 360
     loi <- which(lon >= xlim[1] & lon <= xlim[2])
     lai <- which(lat >= ylim[1] & lat <= ylim[2])
-    latstream <- nc$dim$lat_2$vals
+    # latstream <- nc$dim$lat_2$vals -> Roni: there is no lat_2 -> will use simply lat
+    latstream <- nc$dim$lat$vals
     laistream <- which(latstream >= ylim[1] & latstream <= ylim[2])   
     if (small==T) {
       mulc <- floor(length(loi)/96)
@@ -337,7 +341,8 @@ read_echam4 <- function(filehead, path=echallvarpath, xlim=c(-180,180), ylim=c(-
           tmp[[i]] <- outdata
         }
       }
-      if (i != length(files)) ensmean <- ensmean + outdata  
+      # if (i != length(files)) ensmean <- ensmean + outdata  
+      if (i <= length(files)) ensmean <- ensmean + outdata 
     }
     ensmean <- ensmean/(length(tmp)) #-1) why -1 ???
     if (landonly) {
@@ -3728,9 +3733,9 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$en
                         addcontours=F, contvarname='gph500', conttype='data', contcol='black',
                         contlev=levs, addvectors=F, vecnames=NULL, #vectortype='data',
                         veccol='black', veclen=0.03, vecscale=0.3, vecwd=0.75, every_x_vec=4,
-                        wcol='black', zonalmean=F, zmvarname='gph500', colorbar=T,NHseason,plotname,paper){
-  
-  oldpar <- par(no.readonly=TRUE)
+                        wcol='black', zonalmean=F, zmvarname='gph500', colorbar=T,NHseason,plotname,paper,diff_map=FALSE, valimask=FALSE){
+
+   oldpar <- par(no.readonly=TRUE)
   if (monthly_out & s.plot==12 & length(ti)==24){
     if (NHseason=="winter") {
       ti=c(seq(1,ncol(x$ensmean)/4),seq((ncol(x$ensmean)/2)+1,ncol(x$ensmean)/4*3))
@@ -3915,6 +3920,11 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$en
       #           axes=F, xlab='', ylab='')      
       plot(0, type='n', xlim=lonlim, ylim=latlim,
            axes=F, xlab='', ylab='')
+      if (valimask == T & (varname=="temp2" | varname=="precip" | varname =="slp")) {
+        dvali = apply(validate$ensmean[validate$names==varname,], 1, mean)
+        dvali = which(is.na(dvali))
+        points(validate$lon[dvali],validate$lat[dvali],pch=15,col="gray93",cex=cex.pt)
+      }
       li <- as.numeric(cut(plotdata[,i], breaks=levs))
       points(x$lon, x$lat, pch=15, col=cols[li], cex=cex.pt)
       if (!is.null(colnames)) {
@@ -3978,6 +3988,11 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$en
         } else {
           points(statlon, statlat, pch=1, col=st.col, cex=st.cex)
         }
+      }
+      if (diff_map) {
+        points(RE.anom_exp$lon[RE.anom_exp$names==varname & (RE.anom_exp$ensmean[,i] < 0)], 
+               RE.anom_exp$lat[RE.anom_exp$names==varname & (RE.anom_exp$ensmean[,i] < 0)], 
+               pch=20, cex=st.cex)
       }
       if (!is.null(x$p.value)){
         signif <- x$p.value[,ti,i] > siglev
@@ -4246,32 +4261,70 @@ compute_dist_2d <- function(lon, lat, lon0, lat0, region="global"){
 # Added by Roni (2018.02)
 corr_over_region = function(xdata,lat1=NA, lat2=NA, region, cor_length_period) {
   if (region == "global" | region=="ENH" | region == "ESH" | region == "tropics" | region == "lat_band") {
-    xdata$data = xdata$data[which(xdata$lat>lat1 & xdata$lat <= lat2),,] # selecting the region
+    xdata$data = xdata$data[which(xdata$names == i),,]
+    xdata$data = xdata$data[which(xdata$lat>lat1 & xdata$lat <= lat2),,]  # selecting the region
+    xdata$names = xdata$names[which(xdata$names == i)]
     xdata$names = xdata$names[which(xdata$lat>lat1 & xdata$lat <= lat2)] 
   } else if (region == "lon_band") {
     xdata$data = xdata$data[which(xdata$lon>lat1 & xdata$lon <= lat2),,] # selecting the region
     xdata$names = xdata$names[which(xdata$lon>lat1 & xdata$lon <= lat2)] 
   }
-  if (dim(xdata$data)[2] == 2) { # because echanomallts is already in sixmonstatevector format
+  if (dim(xdata$data)[2] == 2) { # because echanomallts is already in sixmonstatevector format if state = "static
     xdata$names <-xdata$names[1:(length(xdata$names)/6)]
     tmp_data =  array(xdata$data,c((dim(xdata$data)[1]/6),dim(xdata$data)[2]*6, dim(xdata$data)[3])) # transforming back to 12 month format
-    xdata$data =  array(tmp_data,c(dim(tmp_data)[1],dim(tmp_data)[2]* dim(tmp_data)[3])) # making one dimension from the months and years
+    xdata$data =  array(tmp_data,c(dim(tmp_data)[1],dim(tmp_data)[2]* dim(tmp_data)[3])) # making one dimension from the months and years -> is that right? isn't it month and members?
   }
   if (cor_length_period == "annual") {
-    tmp <- xdata$data[xdata$names == i,] 
-  } else if (dim(xdata$data)[2] > 24) {
-    # selecting winter half years
-    period_start = seq(1,n_covar*12,12)
-    period_end = seq(6,n_covar*12,12)
-    period = matrix(NA, nrow =n_covar, 6) # 6=halfyear
-    for (k in 1:n_covar){
-      period[k,] = seq(period_start[k], period_end[k])
+    if (covarclim > 0) {
+      print(paste("in state vector there are",dim(xdata$data)[2],"months"))
+      print (paste("corr calculated from",n_covar, " members"))
+      if (state == "changing") {
+        xdata$data =  array(xdata$data,c(dim(xdata$data)[1],dim(xdata$data)[2]* dim(xdata$data)[3])) # making one dimension from the years and members
+        tmp <- xdata$data
+      } else if (state == "static") {
+        tmp <- xdata$data
+      }
+    } else {
+      print("corr calculated from the ensemble mean")
+      tmp <- xdata$ensmean[xdata$names == i,] 
     }
-    period = array(t(period))
+  } else if (dim(xdata$data)[2] >= 24) {
+    # selecting winter half years
+    # using only one year
+    # period_start = seq(1,n_covar*12,12)
+    # period_end = seq(6,n_covar*12,12) 
+    if (state == "static") {
+      period_start = seq(1,n_covar*dim(xdata$data)[2],12)
+      period_end = seq(6,n_covar*dim(xdata$data)[2],12)
+      period = matrix(NA, nrow =length(period_start), 6) # 6=halfyear
+      for (k in 1:length(period_start)) {
+        period[k,] = seq(period_start[k], period_end[k])
+      }
+      period = array(t(period))
+    } else if (state == "changing") {
+      step = n_covar*dim(xdata$data)[2]/12
+      period = matrix(NA, nrow =step, 6)
+      for (k in 0:(step-1)) {
+        if (cor_length_period == "winter") {
+          period[k+1,] = c(1,2,3,10,11,12) + 12*k
+        } else if (cor_length_period == "summer") {
+          period[k+1,] = c(4,5,6,7,8,9) + 12*k
+        }
+      }
+      period = array(t(period))
+    }
     if (cor_length_period == "winter") {
-      tmp <- xdata$data[xdata$names == i,(period)] 
+      # tmp <- xdata$data[xdata$names == i,(period)] 
+      xdata$data =  array(xdata$data,c(dim(xdata$data)[1],dim(xdata$data)[2]* dim(xdata$data)[3])) # making one dimension from the years and members
+      tmp <- xdata$data[,(period)] 
     } else if (cor_length_period == "summer") {
-      tmp <- xdata$data[xdata$names == i,(period+6)] 
+      # tmp <- xdata$data[xdata$names == i,(period+6)] 
+      xdata$data =  array(xdata$data,c(dim(xdata$data)[1],dim(xdata$data)[2]* dim(xdata$data)[3])) # making one dimension from the years and members
+      if (state == "static") {
+        tmp = xdata$data[,(period+6)]
+      } else if (state == "changing") {
+        tmp = xdata$data[,(period)]
+      }
     }  
   }
 }
@@ -7601,6 +7654,7 @@ background_matrix = function (state,n_covar, ech) {
   return(dat)
 }
 
+
 calc_avg_realprox_per_grid<-function(stat){
   if (every2grid){
     load(file=paste0('../data/analysis/proxies_only_trw_petra_tps_pval99/analysis_1905_2ndgrid.Rdata'))
@@ -7658,3 +7712,4 @@ calc_avg_realprox_per_grid<-function(stat){
   stat$ensmean <- NULL
   return(stat)
 }
+

@@ -17,6 +17,7 @@ rm(list=ls())
 syr=1901 #1902 #1941
 eyr=1990 #2003 #1970
 
+
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
 args <- commandArgs(TRUE)
@@ -1032,9 +1033,7 @@ if (write_netcdf) {
 # After this part calibrate.anom and validate.anom are calculated and all the data is stored in an image file.
 # (If someone wants to change months to jan-dec look at write_netcdf-part)
 # this part serves as a preparation for the validation statistics 
-if (load_prepplot){
-  
-  
+if (load_prepplot){  
   # allvalits variable predefined here (beneath) to enable different periods of validation datasets: e.g. 20cr starts in 1850 and cru starts
   # in 1901: if syr = 1899 for the first two years validate only contains 20cr and from 1901 it also contains as well cru.
   # (works for vind.allts as well)
@@ -1061,8 +1060,7 @@ if (load_prepplot){
       twentycr_vali=T             
     } else {
       twentycr_vali=F 
-    }
-    
+    }   
     if ((cyr > syr_recon) & (cyr <=eyr_recon) & vali_recon) {
       recon_vali=T           # seasonal luterbacher, pauling, kuettel recons (1750-1999)
     } else {
@@ -1199,8 +1197,7 @@ if (load_prepplot){
       analysis.anom.allts=analysis.anom
       aind.allts=aind
       aind.anom.allts<-aind.anom
-      
-      
+
       echam.allts=echam
       echam.anom.allts=echam.anom
       eind.allts=eind
@@ -1222,7 +1219,8 @@ if (load_prepplot){
       # because proxies not in fixed grid format. Hence number of records
       # and position/row in data/ensmean matrix changes over time
       calibrate.allts=calibrate
-      if (substring(expname,1,12)=="proxies_only") {
+      # if (substring(expname,1,12)=="proxies_only") {
+      if ( length(unique(calibrate$sour)) == 1 & unique(calibrate$sour) == "prox") {
         pos <- which(calibrate$sour=="prox")
       }else{
         pos <- which(calibrate$sour=="inst")
@@ -1255,12 +1253,7 @@ if (load_prepplot){
       analysis.anom.allts$data=abind(analysis.anom.allts$data,analysis.anom$data,along=2)
       analysis.anom.allts$ensmean=cbind(analysis.anom.allts$ensmean,analysis.anom$ensmean)
       analysis.anom.allts$time=c(analysis.anom.allts$time,analysis.anom$time)
-      
-      aind.allts$data=abind(aind.allts$data,aind$data,along=2)
-      aind.allts$ensmean=cbind(aind.allts$ensmean,aind$ensmean)
-      aind.anom.allts$data=abind(aind.anom.allts$data,aind.anom$data,along=2)
-      aind.anom.allts$ensmean=cbind(aind.anom.allts$ensmean,aind.anom$ensmean)
-      
+
       echam.allts$data=abind(echam.allts$data,echam$data,along=2)
       echam.allts$ensmean=cbind(echam.allts$ensmean,echam$ensmean)
       echam.allts$time=c(echam.allts$time,echam$time)
@@ -1286,6 +1279,7 @@ if (load_prepplot){
       }
       
       if (substring(expname,1,12)=="proxies_only") {
+
         pos <- which(calibrate$sour=="prox")
       }else{
         pos <- which(calibrate$sour=="inst")
@@ -1450,7 +1444,9 @@ analysis.anom <- analysis.anom.allts
 aind.anom<-aind.anom.allts
 #ana_ind <- ana_ind.allts
 # rm(ana_ind.allts)
+
 rm(analysis.allts,analysis.anom.allts,aind.allts,aind.anom.allts,eind.anom.allts)
+
 calibrate <- calibrate.allts
 if (vali) {
   validate <- validate.allts
@@ -1613,6 +1609,24 @@ if (load_image){
                       "_seasonal.Rdata",sep=""))
     }
   }
+  if (!"cru_vali" %in% names(validate) & !"twentycr_vali" %in% names(validate)) {
+  validate_new<-list()
+  validate_new[[1]]<-validate 
+  names(validate_new)<-"cru_vali"
+  validate<-validate_new
+  }
+  if (!"cru_vali" %in% names(validate.anom) & !"twentycr_vali" %in% names(validate.anom)) {
+  validate_new<-list()
+  validate_new[[1]]<-validate.anom 
+  names(validate_new)<-"cru_vali"
+  validate.anom <- validate_new
+  }
+  if (!"cru_vali" %in% names(validate.clim) & !"twentycr_vali" %in% names(validate.clim)) {
+  validate_new<-list()
+  validate_new[[1]]<-validate.clim
+  names(validate_new)<-"cru_vali"
+  validate.clim<-validate_new
+  }
   source('EnSRF_switches.R') # set switches again because they may differ in loaded image
   rm(s,v,valiname,validate_all,validate_init,validate.allts_all,validate.allts_init,validate.anom_all,validate.clim_all)
 }
@@ -1683,6 +1697,9 @@ if (calc_vali_stat){
   echam.anom.init <- echam.anom
   analysis.init <- analysis
   analysis.anom.init <- analysis.anom
+  if (exists("ananomallts")== T){
+    ananomallts.init = ananomallts
+  }
   calibrate.init <- calibrate
   calibrate.anom.init <- calibrate.anom
   calibrate.clim.init <- calibrate.clim
@@ -1712,6 +1729,7 @@ if (calc_vali_stat){
     
     if (nrow(echam$data)!=nrow(validate$data)) { # when 20cr_vali then nrow should be different when v="cru_vali"
       
+      # probably could use here the shorten_func as well
       var.tmp<-which(echam$names%in%validate$names)
       analysis$data=analysis$data[var.tmp,,]
       analysis$ensmean=analysis$ensmean[var.tmp,]
@@ -1735,6 +1753,14 @@ if (calc_vali_stat){
       echam.anom$names=echam.anom$names[var.tmp]
       echam.anom$lon=echam.anom$lon[var.tmp]
       echam.anom$lat=echam.anom$lat[var.tmp]
+      if (exists("ananomallts") == T) {
+        ananomallts=ananomallts
+        ananomallts$data=ananomallts$data[var.tmp,,]
+        ananomallts$ensmean=ananomallts$ensmean[var.tmp,]
+        aananomallts$names=ananomalltsm$names[var.tmp]
+        ananomallts$lon=aananomallts$lon[var.tmp]
+        ananomallts$lat=ananomallts$lat[var.tmp]
+      }
       
     }
     
@@ -2083,7 +2109,7 @@ if (calc_vali_stat){
         }  
       }
       ech.sprerr <- cbind(ech.sprerr.win,ech.sprerr.sum) # corrected for obs. uncertainties
-      
+     
       # This does NOT account for observations errors. Hence we apply the correction suggested by Bowler (2007)
       # (http://research.metoffice.gov.uk/research/nwp/publications/papers/technical_reports/reports/506.pdf):
       # true rmse (RMSE_t), given an additive observation error can be estimated with the SD of the 
@@ -2290,7 +2316,6 @@ if (calc_vali_stat){
       # pos=pos[-1]
       # obserr2=obserr[pos,]
       cmat <- cor(t(obserr),use="pairwise.complete.obs")   #obserr2
-      
       
     }
     # there are correlated observations

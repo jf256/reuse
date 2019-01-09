@@ -163,20 +163,25 @@ if (generate_PROXIESnew){
 
 #################
 # To use a bigger ensemble for the background
-no_forc_big_ens= F              # use all years as one big ensemble regardless of forcing like LMR
-# ONLY works with next option load_71yr_anom=T
-covarclim=0                     # set 50 or 100 [%] how much echam climatology covariance should be used
-# default=0, i.e. current year covar from ECHAM ensemble
-# Only used if no_forc_big_ens=T or covarclim=0
+no_forc_big_ens= F      # use all years as one big ensemble regardless of forcing like LMR
+                        # ONLY works with next option load_71yr_anom=T
+covarclim=50             # set 50 or 100 [%] how much echam climatology covariance should be used
+                            # default=0, i.e. current year covar from ECHAM ensemble
+cov_inflate = F         # inflate the PB matrix
+inflate_fac = 1.02      # the factor of covariance inflation
+# Only used if no_forx_big_ens=T or covarclim>0
+state = "changing"        # can be "static" or "changing" (static = the same big ens used for all year, changing = it is recalculated for every year)
+n_covar=250             # set sample size for covar calc or for no_forc LMR like experiment, e.g. 250 or 500
+PHclim_loc = F          # whether we want to localize the PHclim, only works if covarclim > 0
+PHclim_lvec_factor = 2  # if PHclim_loc=T, we can use eg. 2times the distances as in the 30 ensemble member, at the moment only works for shape_wgt= "circle"
+mixed_loc = F           # first combining Pb and Pclim then localizing
+update_PHclim = T       # whether PHclim should be updtaed assimilating observation-by-observation
+save_ananomallts = F    # in the covarclim exps if we update the climatology part -> whether to save the "climatological" analysis or not
+
 
 if((covarclim>0)&no_forc_big_ens){
   stop("Warning: covarclim>0 and no_forc_big_ens are both TRUE: These two experiments cannot be combined")
 }
-
-state = "changing"                # can be "static" or "changing" (static = the same big ens used for all year, changing = it is recalculated for every year)
-n_covar=30                     # set sample size for covar calc or for no_forc LMR like experiment, e.g. 250 or 500
-PHclim_loc = F                  # whether we want to localize the PHclim, only works if covarclim > 0
-PHclim_lvec_factor = 2          # if PHclim_loc=T, we can use eg. 2times the distances as in the 30 ensemble member, at the moment only works for shape_wgt= "circle"
 
 
 # Calculate decorr length -> was done already
@@ -203,8 +208,10 @@ if (loc) {
   l_dist_v850=1000*1.5
   l_dist_v200=1000*1.5
   l_dist_omega500=300*1.5
-  l_dist_t850=1000*1.5
-  l_dist_ind=999999             # precalculated indices should be removed
+  # l_dist_t850=1000*1.5 #Roni: in the echam there is no t850 but t500. They refer to the same level but I forgot which one is the correct one
+  l_dist_t500=1000*1.5
+  l_dist_ind=999999 # precalculated indices should be removed
+
 } else {
   l_dist_temp2=999999
   l_dist_slp=999999
@@ -229,19 +236,20 @@ landcorr = F                  # use simulation WITHOUT land use bug if TRUE
 # how to treat multiple input series in same grid box
 first_prox_per_grid=F           # first proxy per echam grid box ATTENTION: only this 
 # or second next option (avg_prox_per_grid) can be TRUE
-firstproxres=10               # grid resolution for instr. stations (5 = echamgrid/5)
-avg_prox_per_grid=T             # average more than one proxy per echam grid box 
-# and calc proxy vs echam correlation
-ins_tim_loc = F                 # whether the instrumental obs-s should be localized in time or not
-instmaskprox=F                  # remove proxy data from grid boxes that have instr. data
-reduced_proxies=F               # use every ??th (see code below) proxy record
-every2grid=T                    # only use every third grid cell of ECHAM, CRU validation, ...
-land_only=T                     # calc on land only
-fasttest=F                      # use even less data
-tps_only=T                      # only use temp, precip and slp in state vector, remove other vars
-no_stream=F                     # all echam vars but stream function as there is problem with 
-#                               # 5/9 levels, which are in lat dimension before and after 1880
-loo=F                           # leave-one-out validation 
+  firstproxres=10      # grid resolution for instr. stations (5 = echamgrid/5)
+avg_prox_per_grid=T    # average more than one proxy per echam grid box 
+                       # and calc proxy vs echam correlation
+ins_tim_loc = F        # whether the instrumental obs-s should be localized in time or not
+instmaskprox=F         # remove proxy data from grid boxes that have instr. data
+reduced_proxies=F      # use every ??th (see code below) proxy record
+every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
+land_only=F            # calc on land only
+fasttest=F             # use even less data
+tps_only=T             # only use temp, precip and slp in state vector, remove other vars
+no_stream=F            # all echam vars but stream function as there is problem with 
+#                       # 5/9 levels, which are in lat dimension before and after 1880
+loo=F                  # leave-one-out validation 
+
 if (loo) {tps_only=T;no_stream=F}  # reduce state vector for faster validation
 #load_71yr_anom=T               # load 71yr echam anomalies calculated with cdo
 #anom_reload=F                  # reload anom calculated in R (next option)
@@ -283,8 +291,6 @@ vali_recon=F
 #####################################################################################
 # prepare plot switches
 #####################################################################################
-
-
 monthly_out = F                 # if sixmonstatevector=T output is backtransformed to seasonal 
 yearly_out=F
 # average or monthly data if monthly_out=T 
@@ -319,7 +325,6 @@ ind_recon=F                     # delete/comment code in prepplot script and the
 ind_anom=F                      # calculate indices from anomaly data
 
 #####################################################################################
-
 
 
 

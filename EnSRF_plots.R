@@ -77,6 +77,11 @@ if (monthly_out) {
 figpath=paste0('../figures/',expname,'_',syr,'-',eyr) #format(Sys.time(), "%Y%m%d_%H-%M_")
 dir.create(figpath)
 
+if (monthly_out){
+  s.plot <- 12
+}else {
+  s.plot <- 2
+}
 
 pnames <- paste(c('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'), ')', sep='')
 
@@ -144,7 +149,6 @@ if (countseries) {
   dev.off()
 }
 
-################################################################################
 
 
 
@@ -1357,6 +1361,14 @@ for (v in validation_set){
     }
     
   }
+  dev.off()
+}
+
+# plot(density(RE.anom$ensmean[which(RE.anom$names  == varname),i],na.rm=T,weights=area_wgt[!is.na(RE.anom$ensmean[which(RE.anom$names  == varname),i])]))
+
+
+validate <- validate.init
+
   
   #############################################################################
   
@@ -1444,3 +1456,4 @@ for (v in validation_set){
   
   validate <- validate.init  
 } #end validation_set for loop
+

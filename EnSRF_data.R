@@ -16,8 +16,8 @@ rm(list=ls())
 # enter syr ane eyr manually
 
 
-syr=1788
-eyr=1789
+syr=2001
+eyr=2002
 
 
 # read syr and eyr from Rscript parameters entered in bash and 
@@ -84,7 +84,7 @@ for (cyr in syr2:eyr) {
     instrumental=F
   }
   if (cyr < 1960) {        
-    real_proxies=T         # Proxy data experiment (regression NOT H operator) 
+    real_proxies=T         # Proxy data experiment (regression NOT H operator)
   } else {
     real_proxies=F
   }
@@ -124,7 +124,7 @@ for (cyr in syr2:eyr) {
   recon_vali=F
   #}
   print(paste0("instr:",instrumental, "; proxies:",real_proxies, "; documentary:",docum, 
-              "; validation data:",vali,"; CRU:",cru_vali,"; 20cr:",twentycr_vali,"; Recon:",recon_vali))
+               "; validation data:",vali,"; CRU:",cru_vali,"; 20cr:",twentycr_vali,"; Recon:",recon_vali))
   write(paste("instr:",instrumental, "; proxies:",real_proxies, "; documentary:",docum, 
               "; validation data:",vali,"; CRU:",cru_vali,"; 20cr:",twentycr_vali,"; Recon:",recon_vali),
         file=paste0('../log/',logfn),append=T)
@@ -237,18 +237,20 @@ for (cyr in syr2:eyr) {
       echam_anom$data <- echam_anom$data[tpspos,,]
       echam_anom$ensmean <- echam_anom$ensmean[tpspos,]
       echam_anom$names <- echam_anom$names[tpspos]
-      if (state == "changing") {
-        tpspos <- c(which(echanomallts$names!='stream'))
-        echanomallts$data <- echanomallts$data[tpspos,,]
-        echanomallts$ensmean <- echanomallts$ensmean[tpspos,]
-        echanomallts$names <- echanomallts$names[tpspos]
-      }
+      if (covarclim>0 | no_forc_big_ens) {
+        if (state == "changing") {
+          tpspos <- c(which(echanomallts$names!='stream'))
+          echanomallts$data <- echanomallts$data[tpspos,,]
+          echanomallts$ensmean <- echanomallts$ensmean[tpspos,]
+          echanomallts$names <- echanomallts$names[tpspos]
+        }
       if (state == "static" & no_forc_big_ens ) {
         tpspos <- c(which(echam_clim$names!='stream'))
       }
-      echam_clim$data <- echam_clim$data[tpspos,,]
-      echam_clim$ensmean <- echam_clim$ensmean[tpspos,]
-      echam_clim$names <- echam_clim$names[tpspos]
+    }
+    echam_clim$data <- echam_clim$data[tpspos,,]
+    echam_clim$ensmean <- echam_clim$ensmean[tpspos,]
+    echam_clim$names <- echam_clim$names[tpspos]
       if (landcorr) {
         landcorrected_anom$data <- landcorrected_anom$data[tpspos,,]
         landcorrected_anom$names <- landcorrected_anom$names[tpspos]
@@ -415,28 +417,107 @@ for (cyr in syr2:eyr) {
           }
         }
       }
-      if (region == "lat_band" | region == "lon_band") {
-        for (k in 1:dim(tmp)[3]) {
-          if (region == "lat_band") {
-            png(paste0('../figures/decorr_lat_',cor_length_period,'_',i,'_lat:',unique(echanomallts$lat)[k],'.png'), width = 1024, height = 768)
-          } else {
-            png(paste0('../figures/decorr_lon_',cor_length_period,'_',i,'_lon:',unique(echanomallts$lon)[k],'.png'), width = 1024, height = 768)
-          }
-          d_dist = d[,,k]
-          tmp_cor = tmp[,,k]
-          corens <- cor(t(tmp_cor[,]))
-          plot(as.vector(d_dist),as.vector(corens),col='blue', xlim=c(0,5000),ylim=c(0,1), pch = 16)
-          lines(exp(-1/2 * (seq(1:5000)/get(paste0('l_dist_',i)))**2),col='red')
-          dev.off()
+      # if (region == "lat_band" | region == "lon_band") {
+      #   for (k in 1:dim(tmp)[3]) {
+      #     if (region == "lat_band") {
+      #       png(paste0('../figures/decorr_lat_',cor_length_period,'_',i,'_lat:',unique(echanomallts$lat)[k],'.png'), width = 1024, height = 768)
+      #     } else {
+      #       png(paste0('../figures/decorr_lon_',cor_length_period,'_',i,'_lon:',unique(echanomallts$lon)[k],'.png'), width = 1024, height = 768)
+      #     }
+      #     d_dist = d[,,k]
+      #     tmp_cor = tmp[,,k]
+      #     corens <- cor(t(tmp_cor[,]))
+      #     plot(as.vector(d_dist),as.vector(corens),col='blue', xlim=c(0,5000),ylim=c(0,1), pch = 16)
+      #     lines(exp(-1/2 * (seq(1:5000)/get(paste0('l_dist_',i)))**2),col='red')
+      #     dev.off()
+      #   }
+      # } else {
+      #   corens <- cor(t(tmp[,]))
+      #   png(paste0('../figures/decorr_',cor_length_period,'_',region,'_',i,'.png'), width = 1024, height = 768)
+      #   plot(as.vector(d),as.vector(corens),col='#4c8bff01',
+      #        xlim=c(0,5000),ylim=c(0,1))
+      #   lines(exp(-1/2 * (seq(1:5000)/get(paste0('l_dist_',i)))**2),col='red')
+      #   dev.off()
+      # }
+      # make a plot as in Ingebly 2001
+      # select unique lats from matrix d and corens
+      ind0 = seq(1,ncol(d),96)
+      d96 =d[,ind0]
+      corens <- cor(t(tmp[,]))
+      cor96 =corens[,ind0]
+      
+      l = 1
+      coruj = matrix(NA,nrow=49,ncol=48)
+      for (g in ind0){
+      vmi = matrix(NA,nrow=49,ncol=96)
+      k=1
+      for (vv in g:(g+95)) {
+        if (vv+48 > 4608) {
+          dif = (vv+48) - 4608
+          vmi[,k] = corens[c(vv:((vv+48)-dif),1:dif),vv]
+        } else {
+          vmi[,k] = corens[vv:(vv+48),vv]
         }
-      } else {
-        corens <- cor(t(tmp[,]))
-        png(paste0('../figures/decorr_',cor_length_period,'_',region,'_',i,'.png'), width = 1024, height = 768)
-        plot(as.vector(d),as.vector(corens),col='#4c8bff01',
-             xlim=c(0,5000),ylim=c(0,1))
-        lines(exp(-1/2 * (seq(1:5000)/get(paste0('l_dist_',i)))**2),col='red')
-        dev.off()
+          k=k+1
       }
+      coruj[,l] = rowMeans(vmi)
+      l=l+1
+    }
+      
+      # select for the growing longitudes (from 0 till 180) the data
+      # first distance should be 0, first cor = 1
+      duj = matrix(NA,nrow=49,ncol=48)
+      #coruj = matrix(NA,nrow=49,ncol=48)
+      for(v in 1:48){
+        duj[,v] = d96[ind0[v]:(ind0[v]+48),v]
+        #coruj[,v] = cor96[ind0[v]:(ind0[v]+48),v]
+      }
+      
+      # need the distance along a latitude and not on a sphere that in in d
+      for (h in 2:48) {
+      duj[h+1,] = duj[2,]*h
+      }
+      
+      # interpolating the cor values to fix distances
+      fixdist <- seq(100,3000,100) # define the fix distances
+      fixcor <- matrix(NA,nrow=48,ncol=length(fixdist)+1)
+      fixcor[,1] <- 1
+      for (ilat in 1:48) {
+        for (j in 1:length(fixdist)) {
+          if (max(duj[,ilat] >= fixdist[j])) {
+            # find the minimum positive distance
+            difference <- fixdist[j] - duj[,ilat]
+            difference[difference<0] <- 10e+10
+            k <- which.min(difference)
+            # interpolate between the closest value to j and the one after that
+            x <- duj[k:(k+1),ilat]
+            y <- coruj[k:(k+1),ilat]
+            lmodel <- lm(y~x)
+            fixcor[ilat,j+1] <- lmodel$coefficients[1] + lmodel$coefficients[2]*fixdist[j]
+          }
+        }
+      }
+      # end interpolation
+      lats = unique(echanomallts$lat)[48:1]
+      corplot = t(fixcor)[2:31,48:1]
+      colfunc <- colorRampPalette(c("dodgerblue4","dodgerblue1","white","brown1","brown4"))
+      # png(paste0('../figures/contourplot_',i,'.png'), width = 768, height = 1024)
+      pdf(paste0('../figures/contourplot_',i,'.pdf'),paper = "a4") # saving as pdf displayed with white interior grid
+      # use only every second lat
+      # filled.contour(x=fixdist,y=lats[seq(2,length(lats),2)],z=corplot[,seq(2,ncol(corplot),2)], col= colfunc(10),levels=seq(-1,1,0.2),
+      #                plot.axes = { contour(x=fixdist,y=lats[seq(2,length(lats),2)],z=corplot[,seq(2,ncol(corplot),2)], nlevels = 5, 
+      #                                      drawlabels = TRUE, axes = FALSE, frame.plot = FALSE, add = TRUE);
+      #                                      axis(1); axis(2,at=seq(-90,90,10)) },
+      #                key.axes = axis(4, seq(-1,1,0.2)) )
+      # use all the lat
+      filled.contour(x=fixdist,y=lats,z=corplot, col= colfunc(10),levels=seq(-1,1,0.2),
+                     plot.axes = { contour(x=fixdist,y=lats,z=corplot, nlevels = 5, labcex = 1, drawlabels = TRUE, axes = FALSE, frame.plot = FALSE, add = TRUE);
+                                   axis(1); axis(2,at=seq(-90,90,10)) },
+                     key.axes = axis(4, seq(-1,1,0.2)),
+                     plot.title = title(main =paste(i), xlab = "Distance", ylab = "Latitude")
+                     )
+      
+      dev.off()
     }
   }
   
@@ -446,7 +527,7 @@ for (cyr in syr2:eyr) {
     # change array to have 6 months in state vector for winter and summer
     # first winter starts in oct of syr
     # 6 mon stat vectors for oct-mar and apr and sep
-
+    
     echam <-convert_to_2_seasons(echam,source="echam")
     if (!no_forc_big_ens & covarclim== 0) {
       echam.anom <- convert_to_2_seasons(echam.anom,source="echam")
@@ -459,7 +540,7 @@ for (cyr in syr2:eyr) {
     if (state=="changing" & (covarclim > 0)) {
       echanomallts = convert_to_2_seasons(echanomallts,source="echam")
     }
-
+    
     
     if (landcorr) {
       land41 <- array(landcorrected.anom$data,c(dim(landcorrected.anom$data)[1]*
@@ -473,7 +554,7 @@ for (cyr in syr2:eyr) {
       landcorrected.anom$time <- c(cyr,cyr+0.5)
     }
     
-
+    
     if (no_forc_big_ens) {
       # Special because climatology is only 1 year long -> reorder months
       tmp61 <- array(echam.clim$data,c(dim(echam.clim$data)[1]*dim(echam.clim$data)[2],
@@ -494,7 +575,7 @@ for (cyr in syr2:eyr) {
     } else {
       echam.clim<-convert_to_2_seasons(echam.clim,source="echam")
     }    
-
+    
     echam.clim$names <- rep(echam.clim$names,6)
     
     if (landcorr) {
@@ -602,7 +683,7 @@ for (cyr in syr2:eyr) {
         twentycr_vali=T
         print("20cr is true")
       }
-    
+      
       if (every2grid) {
         if (ncep_vali) {load(paste(dataextdir,"vali_data/ncep/ncep_allvar_",syr_ncep,"-",eyr_ncep,"_2ndgrid.Rdata",sep=""))
         } else if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,"_2ndgrid.Rdata",sep=""))
@@ -628,60 +709,60 @@ for (cyr in syr2:eyr) {
         valiall <- twentycr.all
         valiall$data <- valiall$data[,,1]
       } else { vali = F }
-    
-    # 2.2 Choose which variables want to use from the data set
-    if (tps_only) {
-      tpspos2 <- c(which(valiall$names=='temp2'), which(valiall$names=='precip'), 
-                   which(valiall$names=='slp'))
-      valiall$data <- valiall$data[tpspos2,]
-      valiall$names <- valiall$names[tpspos2]
-    }
-    if (fasttest) {
-      mulc <- 4 # choose every 4th grid box
-      loi <- seq(1:length(valiall$lon))
-      lai <- seq(1:length(valiall$lat))
-      di <- seq(1:dim(valiall$data)[1])
-      ni <- seq(1:length(valiall$names))
-      loi <- loi[seq(ceiling(mulc/2),length(loi),mulc)]
-      lai <- lai[seq(ceiling(mulc/2), length(lai),mulc)]
-      di <- di[seq(ceiling(mulc/2), length(di),mulc)]
-      ni <- ni[seq(ceiling(mulc/2), length(ni),mulc)]
-      valiall$lon <- valiall$lon[loi]
-      valiall$lat <- valiall$lat[lai]
-      valiall$data <- valiall$data[di,,]
-      valiall$names <- valiall$names[ni]
-    }
-    
-    # 2.3 Cut out the 24 months around current year 
-    valiall.allts=valiall
-
+      
+      # 2.2 Choose which variables want to use from the data set
+      if (tps_only) {
+        tpspos2 <- c(which(valiall$names=='temp2'), which(valiall$names=='precip'), 
+                     which(valiall$names=='slp'))
+        valiall$data <- valiall$data[tpspos2,]
+        valiall$names <- valiall$names[tpspos2]
+      }
+      if (fasttest) {
+        mulc <- 4 # choose every 4th grid box
+        loi <- seq(1:length(valiall$lon))
+        lai <- seq(1:length(valiall$lat))
+        di <- seq(1:dim(valiall$data)[1])
+        ni <- seq(1:length(valiall$names))
+        loi <- loi[seq(ceiling(mulc/2),length(loi),mulc)]
+        lai <- lai[seq(ceiling(mulc/2), length(lai),mulc)]
+        di <- di[seq(ceiling(mulc/2), length(di),mulc)]
+        ni <- ni[seq(ceiling(mulc/2), length(ni),mulc)]
+        valiall$lon <- valiall$lon[loi]
+        valiall$lat <- valiall$lat[lai]
+        valiall$data <- valiall$data[di,,]
+        valiall$names <- valiall$names[ni]
+      }
+      
+      # 2.3 Cut out the 24 months around current year 
+      valiall.allts=valiall
+      
       ti=which(floor(valiall$time)==(cyr-1) | floor(valiall$time)==cyr) 
       sts=ti[1]
       ets=ti[length(ti)]
       valiall$data=valiall$data[,sts:ets]
       valiall$time=valiall$time[sts:ets]
-
-    
-    # 2.4 Convert it to 2 season per year
-    if (!recon_vali) {
-      tmp21 <- array(valiall$data,c(dim(valiall$data)[1]*dim(valiall$data)[2]))
-      tmp22 <- tmp21[((9*dim(valiall$data)[1]+1):(dim(tmp21)[1]-(3*dim(valiall$data)[1])))] 
-      valiall$data <- array(tmp22,c(dim(tmp22)[1]/(((dim(valiall$data)[2]/12)-1)*2),
-                                    (((dim(valiall$data)[2]/12)-1)*2))) # reconvert to 2 seasons per year
-      valiall$time <- seq((floor(valiall$time[1])+1),
-                          (floor(valiall$time[length(valiall$time)])+0.5),0.5) 
-      valiall$names <- rep(valiall$names,6) 
-      valiall$lon <- rep(valiall$lon,6) 
-      valiall$lat <- rep(valiall$lat,6) 
-      rm(tmp21);rm(tmp22)
-    }
-    if (recon_vali) {
-      # only keep winter and summer season from luterbacher and co and remove spring and autumn
-      pos <- sort(c(agrep('.042',as.character(valiall$time)), agrep('.542',as.character(valiall$time))))
-      valiall$time <- round(valiall$time[pos],digits=1)
-      valiall$data <- valiall$data[,pos]      
-    }
-    
+      
+      
+      # 2.4 Convert it to 2 season per year
+      if (!recon_vali) {
+        tmp21 <- array(valiall$data,c(dim(valiall$data)[1]*dim(valiall$data)[2]))
+        tmp22 <- tmp21[((9*dim(valiall$data)[1]+1):(dim(tmp21)[1]-(3*dim(valiall$data)[1])))] 
+        valiall$data <- array(tmp22,c(dim(tmp22)[1]/(((dim(valiall$data)[2]/12)-1)*2),
+                                      (((dim(valiall$data)[2]/12)-1)*2))) # reconvert to 2 seasons per year
+        valiall$time <- seq((floor(valiall$time[1])+1),
+                            (floor(valiall$time[length(valiall$time)])+0.5),0.5) 
+        valiall$names <- rep(valiall$names,6) 
+        valiall$lon <- rep(valiall$lon,6) 
+        valiall$lat <- rep(valiall$lat,6) 
+        rm(tmp21);rm(tmp22)
+      }
+      if (recon_vali) {
+        # only keep winter and summer season from luterbacher and co and remove spring and autumn
+        pos <- sort(c(agrep('.042',as.character(valiall$time)), agrep('.542',as.character(valiall$time))))
+        valiall$time <- round(valiall$time[pos],digits=1)
+        valiall$data <- valiall$data[,pos]      
+      }
+      
       # 2.5 Warning message
       # if (sum(c(ncep_vali,cru_vali,recon_vali))>1) {
       #   print("WARNING: more than 1 validation data set selected!")
@@ -718,9 +799,9 @@ for (cyr in syr2:eyr) {
   # 3.1 Loading proxy data
   if (real_proxies){
     if (!generate_PROXIESnew) {
-    load(paste0(dataextdir,"assimil_data/rdata_files/real_proxies_",fsyr,"-",feyr,".Rdata")) 
+      load(paste0(dataextdir,"assimil_data/rdata_files/real_proxies_",fsyr,"-",feyr,".Rdata")) 
     } else {
-    load(paste0("../data/proxies/real_proxies_",fsyr,"-",feyr,".Rdata"))
+      load(paste0("../data/proxies/real_proxies_",fsyr,"-",feyr,".Rdata"))
     }
     
     # 3.2 Screen the proxy data
@@ -1507,6 +1588,9 @@ for (cyr in syr2:eyr) {
       analysis <- echam
       # take anomalies
       analysis$data <- echam$data - as.vector(echam$ensmean)
+      if (cov_inflate){
+        analysis$data= analysis$data * inflate_fac
+      }
       if (covarclim>0 & covarclim<=100) { 
         ananomallts = echanomallts
         ananomallts$data <- echanomallts$data - as.vector(echanomallts$ensmean)
@@ -1562,20 +1646,33 @@ for (cyr in syr2:eyr) {
           if (!is.na(wgt[1])){ # for shape_wgt = ellipse there is no dist
             for (i in 1:ntim){
               if (!is.na(calibrate$data[j,i])) {
+                # if (cov_inflate){
+                #   analysis$data[,i,] = analysis$data[,i,] * inflate_fac
+                # }
                 x2tmp <- analysis$data[,i,] # entire state vector at time step i, all members
                 x2 <- x2tmp[h.i,,drop=F] # state vector at time step i and h.i, all members
-                PH <- (analysis$data[,i,] %*% t(x2) / (nens - 1) * wgt) %*% t(H)
+                if(mixed_loc){ # changed for the B exps: first combining and than localizing
+                  PH <- (analysis$data[,i,] %*% t(x2) / (nens - 1)) # %*% t(H)
+                } else { # original
+                  PH <- (analysis$data[,i,] %*% t(x2) / (nens - 1) * wgt) %*% t(H)
+                }
                 if (covarclim>0 & covarclim<100) { 
                   x2climtmp <- ananomallts$data[,i,] 
                   x2clim <- x2climtmp[h.i,,drop=F] 
-                  if (PHclim_loc) {
-                    PHclim <- (ananomallts$data[,i,] %*% t(x2clim) / 
-                                 ((dim(ananomallts$data)[3]) - 1) * wgt_PHclim) %*% t(H)
+                  if (mixed_loc) {
+                    PHclim <- (ananomallts$data[,i,] %*% t(x2clim) / ((dim(ananomallts$data)[3]) - 1) ) #  %*% t(H)
+                    PH <- (PH*(1-(covarclim/100))) + (PHclim*(covarclim/100))
+                    PH <- (PH * wgt_PHclim) %*% t(H)
                   } else {
-                    PHclim <- (ananomallts$data[,i,] %*% t(x2clim) / 
-                                 ((dim(ananomallts$data)[3]) - 1) ) %*% t(H)
+                    if (PHclim_loc) {
+                      PHclim <- (ananomallts$data[,i,] %*% t(x2clim) /
+                                   ((dim(ananomallts$data)[3]) - 1) * wgt_PHclim) %*% t(H)
+                    } else {
+                      PHclim <- (ananomallts$data[,i,] %*% t(x2clim) /
+                                   ((dim(ananomallts$data)[3]) - 1) ) %*% t(H)
+                    }
+                    PH = (PH*(1-(covarclim/100))) + (PHclim*(covarclim/100))
                   }
-                  PH <- (PH*(1-(covarclim/100))) + (PHclim*(covarclim/100))
                 } else if (covarclim==100) {
                   x2climtmp <- ananomallts$data[,i,] 
                   x2clim <- x2climtmp[h.i,,drop=F] 
@@ -1612,7 +1709,7 @@ for (cyr in syr2:eyr) {
                 analysis$data[,i,] <- analysis$data[,i,] - Ktilde %*% H %*% analysis$data[h.i,i,]
                 if (update_PHclim){
                   ananomallts$ensmean[,i] <- ananomallts$ensmean[,i] + K[,1] * (calibrate$data[j,i] -
-                                                                            H %*% ananomallts$ensmean[h.i,i])
+                                                                                  H %*% ananomallts$ensmean[h.i,i])
                   ananomallts$data[,i,] <- ananomallts$data[,i,] - Ktilde %*% H %*% ananomallts$data[h.i,i,]
                 }
               }
@@ -1644,7 +1741,7 @@ for (cyr in syr2:eyr) {
       if (!landcorr) {
         analysis$data <- analysis$data + as.vector(analysis$ensmean)
         if (save_ananomallts == T) {
-        ananomallts$data <- ananomallts$data + as.vector(ananomallts$ensmean) 
+          ananomallts$data <- ananomallts$data + as.vector(ananomallts$ensmean) 
         }
         if (anomaly_assim){
           analysis.anom <- analysis
@@ -1902,3 +1999,5 @@ for (cyr in syr2:eyr) {
 
 warnings()
 #quit(save='no')
+
+

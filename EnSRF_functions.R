@@ -3053,7 +3053,7 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$en
                         addcontours=F, contvarname='gph500', conttype='data', contcol='black',
                         contlev=levs, addvectors=F, vecnames=NULL, #vectortype='data',
                         veccol='black', veclen=0.03, vecscale=0.3, vecwd=0.75, every_x_vec=4,
-                        wcol='black', zonalmean=F, zmvarname='gph500', colorbar=T,NHseason,plotname,paper,diff_map=FALSE){
+                        wcol='black', zonalmean=F, zmvarname='gph500', colorbar=T,NHseason,plotname,paper,diff_map=FALSE, valimask=FALSE){
 
    oldpar <- par(no.readonly=TRUE)
   if (monthly_out & s.plot==12 & length(ti)==24){
@@ -3239,6 +3239,11 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$en
       #           axes=F, xlab='', ylab='')      
       plot(0, type='n', xlim=lonlim, ylim=latlim,
            axes=F, xlab='', ylab='')
+      if (valimask == T & (varname=="temp2" | varname=="precip" | varname =="slp")) {
+        dvali = apply(validate$ensmean[validate$names==varname,], 1, mean)
+        dvali = which(is.na(dvali))
+        points(validate$lon[dvali],validate$lat[dvali],pch=15,col="gray93",cex=cex.pt)
+      }
       li <- as.numeric(cut(plotdata[,i], breaks=levs))
       points(x$lon, x$lat, pch=15, col=cols[li], cex=cex.pt)
       if (!is.null(colnames)) {

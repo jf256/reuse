@@ -1,5 +1,5 @@
 # expname = "test"
-expname="EKF400_v1.3_merged_covarclim100_ncovar250_changing_update_PHclim_loc_inst" # EKF400_v1.3_merged_only_inst_with_temp_loc
+expname="EKF400_v1.3_merged_covarclim50_ncovar250_changing_update_PHclim_noloc_inst" # EKF400_v1.3_merged_only_inst_with_temp_loc
 
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
@@ -239,15 +239,18 @@ if (generate_PROXIESnew){
 # To use a bigger ensemble for the background
 no_forc_big_ens= F      # use all years as one big ensemble regardless of forcing like LMR
                         # ONLY works with next option load_71yr_anom=T
-covarclim=100             # set 50 or 100 [%] how much echam climatology covariance should be used
+covarclim=50             # set 50 or 100 [%] how much echam climatology covariance should be used
                             # default=0, i.e. current year covar from ECHAM ensemble
+cov_inflate = F         # inflate the PB matrix
+inflate_fac = 1.02      # the factor of covariance inflation
 # Only used if no_forx_big_ens=T or covarclim>0
 state = "changing"        # can be "static" or "changing" (static = the same big ens used for all year, changing = it is recalculated for every year)
 n_covar=250             # set sample size for covar calc or for no_forc LMR like experiment, e.g. 250 or 500
-PHclim_loc = T          # whether we want to localize the PHclim, only works if covarclim > 0
-PHclim_lvec_factor = 1  # if PHclim_loc=T, we can use eg. 2times the distances as in the 30 ensemble member, at the moment only works for shape_wgt= "circle"
+PHclim_loc = F          # whether we want to localize the PHclim, only works if covarclim > 0
+PHclim_lvec_factor = 2  # if PHclim_loc=T, we can use eg. 2times the distances as in the 30 ensemble member, at the moment only works for shape_wgt= "circle"
+mixed_loc = F           # first combining Pb and Pclim then localizing
 update_PHclim = T       # whether PHclim should be updtaed assimilating observation-by-observation
-save_ananomallts = T    # in the covarclim exps if we update the climatology part -> whether to save the "climatological" analysis or not
+save_ananomallts = F    # in the covarclim exps if we update the climatology part -> whether to save the "climatological" analysis or not
 
 # Calculate decorr length -> was done already
 calc_decorr_dist=F      # calculate decorrelation distance for each variable from ECHAM to set L

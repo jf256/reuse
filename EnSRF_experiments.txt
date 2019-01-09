@@ -1,0 +1,174 @@
+This file serves as an overview of all experiments (e.g. date, explanation, name).
+With this it should be easier to find plots, data etc. from former experiments.
+################ EXPERIMENTS STILL TODO: ##################
+
+
+"mon_from_seas"               # can we get monthly res from seasonal proxies, 
+                              # maybe idealized pseudoproxy experiment
+"EKF400_v1.4_new_error"       # run with new error covar estimates from Luca 
+"PAGES_2_0_full"              # complete PAGES proxy database version 2.0
+"PAGES_2_0_screened"          # screened version of PAGES DB 2.0, just good asian rec.
+"all_data_2017"               # include ISTI, Petra's TRW and more docu and ... data
+"proxies_only_pval99_no_forc_big_ens_changing_ncovar100" 	# TPS, PETRA, PAGES, NTREND
+"proxies_only_pval99_no_forc_big_ens_changing_ncovar500"	# TPS, PETRA, PAGES, NTREND
+"proxies_only_pval99_no_forc_big_ens_changing_ncovar1000"	# TPS, PETRA, PAGES, NTREND
+
+
+############### OTHER THINGS TO DO: ########################
+"Check Indices calculation, especially the last few (DIMI, PAO, ITCZ), which also were taken from Stefans Reanalysis (Not quite the same)"
+"Improve plot_echam4 function: Some plots still only work with plot_echam (1)"
+"Add a Switch to plot_echam4, such that can be chosen in advance whether the plot shall be saved or shown in the graphics device of Rstudio"
+"To visualise yearly output a solution is also needed for plot_echam4: Maybe just duplicate the yearly output to pretend like there were two seasons?"
+
+
+
+
+
+################ DONE: ###################
+"proxies_only_ntrend_pages_petra_tps_tree_only"
+date: June 2018
+Remade experiment with newest version: combined tree proxies
+
+"proxies_only_ntrend_pages_tps_ **tree_only **tree_coral"
+date: June 2018
+With vs without coral data.
+
+"proxies_only_pval99_no_forc_big_ens_changing_ncovar30"
+date: June 2018
+Ntrend, Pages, Petras tree data screened by 99% confidence, no forcings with 30 random ens members (changing every year)
+
+"proxies_only_average_per_grid_"
+date: May 2018
+Makes averages of the tree widths within one echam gridcell. Then calculates regression. (Pages, ntrend and petras data are used)
+
+"proxies_only_trw_petra_tps_aic_pval"
+date: May 2018
+First chooses the best subperiod as growthperiod of the tree with the AIC value. Then calculates regression and only takes significant ones
+
+"proxies_only_trw_petra_tps_fullmodel_pval90 **95 **99"
+date: April/May 2018
+Screening the trees: only take significant regression models (pvalue of f statistic > alpha = 0.1, 0.05, 0.01)
+
+"proxies_only_PETRA ***_NTREND ****_PAGES"
+date: April 2018
+Same as pages vs. ntrend, but with even more trees in petra's data
+
+"proxies_only_NTREND_var_residu4"
+date: March 2018
+Give the trees more weight by dividing the residuals of the regression model by 2 or 4 or 10
+
+"proxies_only_PAGES_vs_NTREND"
+date: February 2018
+Compared Pages trw with ntrend trw (whether it's better to let experts choose the trees or use all possible trees)
+
+
+"EKF400_v1.3_full_res"        # same but tps only and EVERY grid cell, 1901-2004
+"EKF400_v1.3_no_forc_30_ens" # use all years as one big 30 member ensemble regardless of forcing, 1901-2004
+"EKF400_v1.3_no_forc_100_ens" # use all years as one big 100 member ensemble regardless of forcing, 1901-2004
+"EKF400_v1.3_no_forc_500_ens" # use all years as one big 500 member ensemble regardless of forcing, 1901-2004
+"clim_covar_25_NO_loc_250mem" # echam covar 75% current year 25% climatology
+                                 # but clim. calc. from n=200 instead of 500; code version 1.3
+"EKF400_v1.3_corr_echam_clim" # echam climatology had wrong dates, 35 years shift
+                                 # validation data had bug, full period
+"clim_covar_75_NO_loc"        # echam covar 25% current year 75% climatology
+"clim_covar_75_NO_with"       # code version 1.2
+"clim_covar_25_NO_loc"        # echam covar 75% current year 25% climatology
+"clim_covar_25_with_loc"      # code version 1.2
+"clim_covar_50_NO_loc_250mem" # echam covar 50% current year 50% climatology
+                                 # but clim. calc. from n=200 instead of 500
+                                 # REPEAT: obviously something wrong (see spread recuction)
+"clim_covar_50_NO_loc"        # echam covar 50% current year 50% climatology
+"clim_covar_50_with_loc"      # run with version 1.1???
+"clim_covar_100_with_loc"     # echam covar 0% current year 100% climatology
+"clim_covar_100_NO_loc"       # run with version 1.1???
+
+"EKF400_v1.2_corr_inst_screen"  # outlier screening of instr. data corrected,
+                                   # now 71-yr window instead of current year only
+                                   # proper vali data, too. Hopefully! NO!!!
+"EKF400_v1.1_correct_71yr_anom" # corrected 71-yr anomaly in assim data 08-2017
+
+
+
+################# NOTES ##########################
+How to delete branches from github locally and remotely with bash:
+
+go to directory reuse_git (where your git file is: cd /user......)
+
+git remote prune origin -n  # lists deleted branch on github
+git remote prune origin	    # deletes it (remote)
+
+git fetch -p && git branch -vv | awk '/: gone]/{print $1}' | xargs git branch    # deletes branch (local) evtl add branchname after branch
+
+Experiments/Runs:
+ 2017-07-27 climcal4/scratch4 1600-2005 with corrected 71-year anom. input data
+   DETAILS THAT WERE SOLVED:
+   - ti=which(floor(realprox.allts$time)>=(cyr-35) &
+       floor(realprox.allts$time)<=(cyr+35))
+     has probably no effect because proxy data are already cut in time before if code is 
+     run for short periods (syr to eyr). I.e. all my results are with assimilated ~20-year 
+     anomalies instead of the desired 70-year anomalies
+   - check syr and eyr in "mean(vtmp[j,,i])"
+   - calibrate.allts AND proxies.allts COMMENTED AS NOT NEEDED AND ALL DATA COVER DIFF. PERIODS
+   - pspline package commented on climcal4 because not available for installed r version
+   - check difference between old and new version!!!
+
+ 2017-07-31 climcal4/scratch4 1941-1970 check error covar from climatology
+   instead of current year only to have less spurious correlation that were due to 
+   small 30 member ensemble. 
+ - 50% and 100% error covar from climatology
+ - WITH and WITHOUT localization
+ - Now very 7th field from 1600-1900 period and 30 member ens.
+   which roughly equals a 500 member ensemble
+ - run tps_only because super slow otherwise (1 year in ~2 days)
+
+ Planned Experiments
+ 2. - Paleodata only, NO instr. (after adding N-TREND, PAGES CORALS and more hist. DOCUMENTS)
+ 3. - all year as one big ensemble (Hakim style)
+ 4. - 60 ens. mem. vs 30 mem.
+ 5. - estimate obs. err. (see below)
+ 6. - check if assim. data out of ens. spread!
+ 7. - check proposal!
+
+ - change to 12-months state vector to assimilate corals???
+ - or use n-trend instead of pages, 
+ - or somehow only corals from pages as ice cores do not help
+ FAVORIT: N-TREND, PAGES CORALS and more hist. DOCUMENTS
+
+ estimate observation errors using "Simultaneous estimation of covariance inflation and 
+ observation errors within an ensemble Kalman filter"
+ Hong Li, Eugenia Kalnay and Takemasa Miyoshi
+
+ change every2grid  to lowres, i.e. interpolation
+ library(akima)
+ interpp(x=x-coor_verctor,y=y-coor_vector,z=z-values,xo=x_out-coor_vector,yo=y_out-coor_vector)
+
+FIX:
+ strange no of input data 1641-1643  
+ [37,] 1639     0   30   164   35  129
+ [38,] 1640     0   30   164   35  129
+ [39,] 1641  1668   30    50   19   31
+ [40,] 1642  1668   30    50   19   31
+ [41,] 1643  1668   30    50   19   31
+ [42,] 1644     0   30   164   35  129
+ [43,] 1645     0   30   164   35  129
+
+ why do mxd input data drop around 1650?
+
+ JONAS IDEEN:
+ instr. mitteln, aber fehler nicht reduzieren
+ proxies und instr. assimilieren damit wenn einzelne monate NAs haben 
+ immner noch proxy infos eingehen
+
+ Olivia Nov. 2015: 
+ Z500 and temp. anom. at same place = radiation is cause
+ Z500 and temp. anom. shifted = advection is cause
+ precip anom. in % instead of mm, otherwise just tropics visible
+
+ current code in R only without Fortran!!!
+ ATTENTION: to use the faster fortran EnSRF routine execute on the command line:
+ R CMD SHLIB EnSRF.f95 uncomment/comment related code in EnSRF_functions.R
+ R --arch=x86_64 CMD SHLIB EnSRF.f95 # to compile EnSRF.f95 on 64bit MAC
+
+
+
+

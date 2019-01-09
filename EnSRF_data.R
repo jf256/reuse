@@ -16,9 +16,8 @@ rm(list=ls())
 # enter syr ane eyr manually
 
 
-syr=2001
-eyr=2002
-
+syr=1900
+eyr=1990
 
 # read syr and eyr from Rscript parameters entered in bash and 
 # if existing overwrite manually entered years 
@@ -40,8 +39,9 @@ if (user=="veronika") {
   workdir='/scratch3/joerg/projects/reuse/reuse_git/'
 } else if (user == "nevin"){
   workdir = '/scratch3/nevin/reuse_climcal/reuse_git/'
-} else {
+} else{
   stop("Unknown user!")
+  
 }
 dataextdir='/mnt/climstor/giub/EKF400/'
 dataintdir=paste0(workdir,'../data/')
@@ -76,53 +76,58 @@ source('EnSRF_generate.R')
 ##########################################################################################
 if (sixmonstatevector) {syr2=syr+1} else {syr2=syr}
 for (cyr in syr2:eyr) {
+  print(expname)
   print(cyr)
   write(cyr,file=paste0('../log/',logfn),append=T)
-  if (cyr > 1659) {
+  if (cyr > 1659&(yuri_temp|yuri_slp|ghcn_temp|isti_instead_ghcn|ghcn_prec)) {
+    #Nevin June2018: I added this control sequence instead of the "proxies_only" in the experiment name. Like that: at least one of the instrumental
+    #datasets has to be true in the switches such that instrumental = T here. Otherwhise there was an error when only proxies were used.
     instrumental=T        # all instrumental stations 
   } else {
     instrumental=F
   }
-  if (cyr < 1960) {        
-    real_proxies=T         # Proxy data experiment (regression NOT H operator)
+
+  if (TRW|MXD|SCHWEINGR|PAGES|NTREND|TRW_PETRA) {        
+    real_proxies=T         # Proxy data experiment (regression NOT H operator) 
   } else {
     real_proxies=F
   }
-  if (cyr > 1853) {
-    docum=F                 # read documentary based data
+  if (cyr <= 1853&import_luca) {
+    docum=T                 # read documentary based data
   } else {
-    docum=T
+    docum=F
   }
   
-  if (substring(expname,1,12)=="proxies_only") { ### this is for experiments where only proxies are used
-    docum=F
-    instrumental=F
-    real_proxies=T
-  }
+  # if (substring(expname,1,12)=="proxies_only") { ### Luca: this is for experiments where only proxies are used otherwhise there is an error
+  #   docum=F
+  #   instrumental=F
+  #   real_proxies=T
+  # }
   # next line not included yet: 
-  if (cyr < 1902) {        # if we don't use reconvali, the eyr here should be changed (Error in valiall : object 'valiall' not found) -> but then instead of the eyr we should use cyr
-    vali=F                 # switch off prepplot if no vali data selected
+  if (cyr > min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)]) & cyr<=max(c(eyr_cru,eyr_twentycr,eyr_recon)[c(vali_cru, vali_twentycr, vali_recon)])) {        # if we don't use reconvali, the eyr here should be changed (Error in valiall : object 'valiall' not found) -> but then instead of the eyr we should use cyr
+    vali=T                 # switch off prepplot if no vali data selected
   } else {
-    vali=T
+    vali=F
   }
-  if ((cyr > 1901) & (eyr < 2006)) {
+  if ((cyr > syr_cru) & (cyr <=eyr_cru) & vali_cru) {
     cru_vali=T             # monthly CRU TS3 temp, precip and HADSLP2 gridded instrumentals (1901-2004)
-    #  ind_recon=T            # Stefan's reconstructed indices until 1948 and NCAR reanalysis later added to CRU and NCEP
+    #  ind_recon=T            # Stefan's reconstructed indices until 1948 and NCAR reanalysis later added to CRU
   } else {
     cru_vali=F 
     #  ind_recon=F
   }
-  if ((cyr > 1901) & (eyr < 2004)) {
+  if ((cyr > syr_twentycr) & (cyr <=eyr_twentycr) & vali_twentycr) {
     twentycr_vali=T             
   } else {
     twentycr_vali=F 
   }
   
-  #if ((syr < 1901) & (eyr > 1749)) {
-  #  recon_vali=T           # seasonal luterbacher, pauling, kuettel recons (1750-1999)
-  #} else {
-  recon_vali=F
-  #}
+  if ((cyr > syr_recon) & (cyr <=eyr_recon) & vali_recon) {
+    recon_vali=T           # seasonal luterbacher, pauling, kuettel recons (1750-1999)
+  } else {
+    recon_vali=F
+  }
+
   print(paste0("instr:",instrumental, "; proxies:",real_proxies, "; documentary:",docum, 
                "; validation data:",vali,"; CRU:",cru_vali,"; 20cr:",twentycr_vali,"; Recon:",recon_vali))
   write(paste("instr:",instrumental, "; proxies:",real_proxies, "; documentary:",docum, 
@@ -200,27 +205,28 @@ for (cyr in syr2:eyr) {
   # just leave temp precip slp in state vector
   if (tps_only) {
     tpspos <- c(which(echam$names=='temp2'), which(echam$names=='precip'),
-                which(echam$names=='slp'), which(echam$names=='bias'))
+                which(echam$names=='slp'))
     echam$data <- echam$data[tpspos,,]
     echam$ensmean <- echam$ensmean[tpspos,]
     echam$names <- echam$names[tpspos]
     if (anomaly_assim){
-      tpspos <- c(which(echam_anom$names=='temp2'), which(echam_anom$names=='precip'),
-                  which(echam_anom$names=='slp'), which(echam_anom$names=='bias'))
+      # tpspos <- c(which(echam_anom$names=='temp2'), which(echam_anom$names=='precip'),
+      #             which(echam_anom$names=='slp'))
+      tpspos <- which(echam_anom$names=='temp2'|echam_anom$names=='precip'|echam_anom$names=='slp')
       echam_anom$data <- echam_anom$data[tpspos,,]
       echam_anom$ensmean <- echam_anom$ensmean[tpspos,]
       echam_anom$names <- echam_anom$names[tpspos]
-      if (state == "changing" & covarclim>0) {
-        tpspos <- c(which(echanomallts$names=='temp2'), which(echanomallts$names=='precip'),
-                    which(echanomallts$names=='slp'), which(echanomallts$names=='bias'))
-        echanomallts$data <- echanomallts$data[tpspos,,]
-        echanomallts$ensmean <- echanomallts$ensmean[tpspos,]
-        echanomallts$names <- echanomallts$names[tpspos]
+      if(state=="static" & ((covarclim>0 | no_forc_big_ens))){
+        if(no_forc_big_ens){
+          echam_anom$lat<-echam_anom$lat[tpspos]
+          echam_anom$lon<-echam_anom$lon[tpspos]
+        }else if(covarclim>0){
+          echanomallts$lon<-echanomallts$lon[tpspos]
+          echanomallts$lat<-echanomallts$lat[tpspos]
+        }
       }
-      if (state == "static" & no_forc_big_ens ) {
-        tpspos <- c(which(echam_clim$names=='temp2'), which(echam_clim$names=='precip'),
-                    which(echam_clim$names=='slp'), which(echam_clim$names=='bias'))
-      }
+      tpspos<-c(which(echam_clim$names=='temp2'), which(echam_clim$names=='precip'),
+                which(echam_clim$names=='slp'))
       echam_clim$data <- echam_clim$data[tpspos,,]
       echam_clim$ensmean <- echam_clim$ensmean[tpspos,]
       echam_clim$names <- echam_clim$names[tpspos]
@@ -288,33 +294,23 @@ for (cyr in syr2:eyr) {
     }
   }
   if (anomaly_assim){
-    # new echam_clim made by veronika have correct units, 
-    # hence comment following corrections
+    # new echam_clim made by veronika have correct units
     # error where echam_anom and echam_clim were generated initially: 
     # no unit correction happened, thus here
-    echam_anom$data[echam_anom$names=='precip',,] <- 
-      echam_anom$data[echam_anom$names=='precip',,] * 3600 * 24 * 30
-    echam_anom$ensmean[echam_anom$names=='precip',] <- 
-      echam_anom$ensmean[echam_anom$names=='precip',] * 3600 * 24 * 30
-    echam_anom$data[echam_anom$names=='slp',,] <- echam_anom$data[echam_anom$names=='slp',,]/100
-    echam_anom$ensmean[echam_anom$names=='slp',] <- echam_anom$ensmean[echam_anom$names=='slp',]/100
-    echam.anom <- echam_anom
-    if (state =="changing" & (covarclim > 0) | no_forc_big_ens) {
-      if (no_forc_big_ens) {
-        echam_anom$data[echam_anom$names=='precip',,] <- 
-          echam_anom$data[echam_anom$names=='precip',,] * 3600 * 24 * 30
-        echam_anom$ensmean[echam_anom$names=='precip',] <- 
-          echam_anom$ensmean[echam_anom$names=='precip',] * 3600 * 24 * 30
+    if (!(state =="static" & no_forc_big_ens)) {
+        echam_anom$data[echam_anom$names=='precip',,] <- echam_anom$data[echam_anom$names=='precip',,] * 3600 * 24 * 30
+        echam_anom$ensmean[echam_anom$names=='precip',] <- echam_anom$ensmean[echam_anom$names=='precip',] * 3600 * 24 * 30
         echam_anom$data[echam_anom$names=='slp',,] <- echam_anom$data[echam_anom$names=='slp',,]/100
         echam_anom$ensmean[echam_anom$names=='slp',] <- echam_anom$ensmean[echam_anom$names=='slp',]/100
         echam.anom <- echam_anom
-      } else if (covarclim > 0) {
-        echanomallts$data[echanomallts$names=='precip',,] <- echanomallts$data[echanomallts$names=='precip',,] * 3600 * 24 * 30
-        echanomallts$ensmean[echanomallts$names=='precip',] <- echanomallts$ensmean[echanomallts$names=='precip',] * 3600 * 24 * 30
-        echanomallts$data[echanomallts$names=='slp',,] <- echanomallts$data[echanomallts$names=='slp',,]/100
-        echanomallts$ensmean[echanomallts$names=='slp',] <- echanomallts$ensmean[echanomallts$names=='slp',]/100
-        echam.anom <- echam_anom
-      }
+        if (state=="changing" & covarclim > 0) {
+          echanomallts$data[echanomallts$names=='precip',,] <- echanomallts$data[echanomallts$names=='precip',,] * 3600 * 24 * 30
+          echanomallts$ensmean[echanomallts$names=='precip',] <- echanomallts$ensmean[echanomallts$names=='precip',] * 3600 * 24 * 30
+          echanomallts$data[echanomallts$names=='slp',,] <- echanomallts$data[echanomallts$names=='slp',,]/100
+          echanomallts$ensmean[echanomallts$names=='slp',] <- echanomallts$ensmean[echanomallts$names=='slp',]/100
+        }
+    }else{
+      echam.anom<-echam_anom
     }
     if (no_forc_big_ens) {
       echam_clim$data = array(echam_clim$data, c(dim(echam_clim$data),1))  
@@ -561,9 +557,9 @@ for (cyr in syr2:eyr) {
                                        dim(echam.clim$data)[3]))
       tmp62 <- tmp61[((9*dim(echam.clim$data)[1]+1):(dim(tmp61)[1])),] # cut from oct till dec
       tmp63 <- tmp61[(1:(9*dim(echam.clim$data)[1])),] # from jan till sept
-      tmp64 <- rbind(tmp62,tmp63)
-      echam.clim$data <- array(tmp64,c(dim(tmp64)[1]/(((dim(echam.clim$data)[2]/12))*2),
-                                       (((dim(echam.clim$data)[2]/12))*2),dim(tmp64)[2])) 
+      tmp64 <- c(tmp62,tmp63)
+      echam.clim$data <- array(tmp64,c(length(tmp64)/(((dim(echam.clim$data)[2]/12))*2),
+                                       (((dim(echam.clim$data)[2]/12))*2),dim(echam.clim$data)[3])) 
       tmp71 <- array(echam.clim$ensmean,c(dim(echam.clim$ensmean)[1]*dim(echam.clim$ensmean)[2]))
       tmp72 <- tmp71[((9*dim(echam.clim$ensmean)[1]+1):(dim(tmp71)[1]))] # cut oct syr to sep eyr
       tmp73 <- tmp71[(1:(9*dim(echam.clim$ensmean)[1]))]
@@ -572,6 +568,9 @@ for (cyr in syr2:eyr) {
                                           (((dim(echam.clim$ensmean)[2]/12))*2)))  
       echam.clim$time <-  c(cyr,cyr+0.5) # what shall be the year???
       rm(tmp71);rm(tmp72);rm(tmp73);rm(tmp74)
+      if(state=="static"){
+        echam.anom$time<-c(cyr,cyr+0.5)
+      }
     } else {
       echam.clim<-convert_to_2_seasons(echam.clim,source="echam")
     }    
@@ -599,12 +598,17 @@ for (cyr in syr2:eyr) {
   # convert lon, lat, names sixmonstatevector data format
   # ACHTUNG: only 11 vars withOUT stream function included so far
   if (sixmonstatevector) {
-    one_var_dim = length(echam$lon)
-    numvar <- length(unique(echam$names)) 
-    echam$lon <-  c(rep(echam$lon, (numvar*6)))
-    echam$lat <- c(rep(echam$lat, (numvar*6)))
-    echam$names <- c(rep(echam$names, 6))
-    echam <- echam[c('data', 'ensmean', 'lon', 'lat', 'height', 'lsm.i', 'time', 'names')]
+    if(!(state=="static" & no_forc_big_ens)){
+      one_var_dim<-length(echam$lon)
+      numvar <- length(unique(echam$names)) 
+      echam$lon <-  c(rep(echam$lon, (numvar*6)))
+      echam$lat <- c(rep(echam$lat, (numvar*6)))
+      echam$names <- c(rep(echam$names, 6))
+      echam <- echam[c('data', 'ensmean', 'lon', 'lat', 'height', 'lsm.i', 'time', 'names')]
+    }else{
+      one_var_dim<-length(echam$lon)/6
+      numvar <- length(unique(echam$names)) 
+    }
     if (state =="changing" & (covarclim > 0)) {
       echanomallts$lon <-  c(rep(echanomallts$lon, (numvar*6)))
       echanomallts$lat <- c(rep(echanomallts$lat, (numvar*6)))
@@ -662,20 +666,16 @@ for (cyr in syr2:eyr) {
     l=0
     ## this part enables experiments with multiple vali data sets. valiname is a variable with all the vali data sets  
     ## set to true. The for loop adds the validata set to a list. 
-    valiname = c("cru_vali","ncep_vali","recon_vali","twentycr_vali")[c(cru_vali,ncep_vali,recon_vali,twentycr_vali)] 
+    valiname = c("cru_vali","recon_vali","twentycr_vali")[c(cru_vali,recon_vali,twentycr_vali)] 
     for (v in valiname) {
       l=l+1
       print(v)
       cru_vali=F
-      ncep_vali=F
       recon_vali=F
       twentycr_vali=F
       if (v=="cru_vali"){
         cru_vali=T
         print("cru is true")
-      } else if (v=="ncep_vali"){
-        ncep_vali=T
-        print("ncep is true")
       } else if (v=="recon_vali"){
         recon_vali=T
         print("recon is true")
@@ -685,13 +685,11 @@ for (cyr in syr2:eyr) {
       }
       
       if (every2grid) {
-        if (ncep_vali) {load(paste(dataextdir,"vali_data/ncep/ncep_allvar_",syr_ncep,"-",eyr_ncep,"_2ndgrid.Rdata",sep=""))
-        } else if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,"_2ndgrid.Rdata",sep=""))
+        if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,"_2ndgrid.Rdata",sep=""))
         } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid.Rdata",sep=""))
-        } else if (twentycr_vali){load(paste0(twentycrpath,"twentycr_allvar_1901-2004_2ndgrid.Rdata"))}
+        } else if (twentycr_vali){load(paste0(twentycrpath,"twentycr_allvar_",syr_twentycr,"-",eyr_twentycr,"_2ndgrid.Rdata"))}
       } else {
-        if (ncep_vali) {load(paste(dataextdir,"vali_data/ncep/ncep_allvar_",syr_ncep,"-",eyr_ncep,".Rdata",sep=""))
-        } else if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,".Rdata",sep=""))
+        if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,".Rdata",sep=""))
         } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,".Rdata",sep=""))} 
       }
       # if (ind_recon) {
@@ -700,8 +698,6 @@ for (cyr in syr2:eyr) {
       if (cru_vali) {
         valiall <- cruall
         valiall$data <- valiall$data[,,1]
-      } else if (ncep_vali) {
-        valiall <- ncepall
       } else if (recon_vali) {
         valiall <- reconall
         valiall$data <- valiall$data[,,1]
@@ -709,33 +705,34 @@ for (cyr in syr2:eyr) {
         valiall <- twentycr.all
         valiall$data <- valiall$data[,,1]
       } else { vali = F }
-      
-      # 2.2 Choose which variables want to use from the data set
-      if (tps_only) {
-        tpspos2 <- c(which(valiall$names=='temp2'), which(valiall$names=='precip'), 
-                     which(valiall$names=='slp'))
-        valiall$data <- valiall$data[tpspos2,]
-        valiall$names <- valiall$names[tpspos2]
-      }
-      if (fasttest) {
-        mulc <- 4 # choose every 4th grid box
-        loi <- seq(1:length(valiall$lon))
-        lai <- seq(1:length(valiall$lat))
-        di <- seq(1:dim(valiall$data)[1])
-        ni <- seq(1:length(valiall$names))
-        loi <- loi[seq(ceiling(mulc/2),length(loi),mulc)]
-        lai <- lai[seq(ceiling(mulc/2), length(lai),mulc)]
-        di <- di[seq(ceiling(mulc/2), length(di),mulc)]
-        ni <- ni[seq(ceiling(mulc/2), length(ni),mulc)]
-        valiall$lon <- valiall$lon[loi]
-        valiall$lat <- valiall$lat[lai]
-        valiall$data <- valiall$data[di,,]
-        valiall$names <- valiall$names[ni]
-      }
-      
-      # 2.3 Cut out the 24 months around current year 
-      valiall.allts=valiall
-      
+    
+    # 2.2 Choose which variables want to use from the data set
+    if (tps_only) {
+
+      tpspos2 <- c(which(valiall$names=='temp2'), which(valiall$names=='precip'), 
+                   which(valiall$names=='slp'))
+      valiall$data <- valiall$data[tpspos2,]
+      valiall$names <- valiall$names[tpspos2]
+    } 
+    if (fasttest) {
+      mulc <- 4 # choose every 4th grid box
+      loi <- seq(1:length(valiall$lon))
+      lai <- seq(1:length(valiall$lat))
+      di <- seq(1:dim(valiall$data)[1])
+      ni <- seq(1:length(valiall$names))
+      loi <- loi[seq(ceiling(mulc/2),length(loi),mulc)]
+      lai <- lai[seq(ceiling(mulc/2), length(lai),mulc)]
+      di <- di[seq(ceiling(mulc/2), length(di),mulc)]
+      ni <- ni[seq(ceiling(mulc/2), length(ni),mulc)]
+      valiall$lon <- valiall$lon[loi]
+      valiall$lat <- valiall$lat[lai]
+      valiall$data <- valiall$data[di,,]
+      valiall$names <- valiall$names[ni]
+    }
+    
+    # 2.3 Cut out the 24 months around current year 
+    valiall.allts=valiall
+
       ti=which(floor(valiall$time)==(cyr-1) | floor(valiall$time)==cyr) 
       sts=ti[1]
       ets=ti[length(ti)]
@@ -764,12 +761,12 @@ for (cyr in syr2:eyr) {
       }
       
       # 2.5 Warning message
-      # if (sum(c(ncep_vali,cru_vali,recon_vali))>1) {
+      # if (sum(c(cru_vali,recon_vali))>1) {
       #   print("WARNING: more than 1 validation data set selected!")
       #   write("WARNING: more than 1 validation data set selected!",
       #         file=paste0('../log/',logfn),append=T)
       # } else {
-      #   write(paste("ncep_vali:",ncep_vali,"; cru_vali:",cru_vali,"; recon_vali:",recon_vali),
+      #   write(paste("cru_vali:",cru_vali,"; recon_vali:",recon_vali),
       #         file=paste0('../log/',logfn),append=T)
       # }
       # 
@@ -778,7 +775,6 @@ for (cyr in syr2:eyr) {
       validate[[paste(v)]]$ensmean <- validate[[paste(v)]]$data
     }
     if ("cru_vali"%in%valiname) cru_vali=T
-    if ("ncep_vali"%in%valiname) ncep_vali=T
     if ("recon_vali"%in%valiname) recon_vali=T
     if ("twentycr_vali"%in%valiname) twentycr_vali=T
   }
@@ -1569,7 +1565,7 @@ for (cyr in syr2:eyr) {
       if ((real_proxies) & ((instrumental) | (docum))) { 
         Rcal <- c(temp2=0.9, precip=50, slp=10)[calibrate$names]
         #        if (avg_prox_per_grid) {Rcal <- Rcal*(1/calibrate$numavg)}
-        Rcal[calibrate$names=="prox"] <- realprox$var_residu 
+        Rcal[calibrate$names=="prox"] <- realprox$var_residu
         # previously used residuals/2 for 1. paper version to give proxies more weight
         # better delete "/2"
         # probably should have given instrumentals more error instead!
@@ -1608,9 +1604,9 @@ for (cyr in syr2:eyr) {
       i=1 
       # compute loop over obs first to minimize repetition of computation (e.g. H and weights)
       for (j in 1:nprox){
-        if (j %% 100 == 0) {
-          print(paste('Assimilating observation', j))
-        }
+        #if (j %% 100 == 0) {
+        #  print(paste('Assimilating observation', j))
+        #}
         ## assume proxy location in state vector is known
         ## otherwise specify / compute h.i and reduced-size H here
         hisna <- is.na(H.i[j,])

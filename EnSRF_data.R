@@ -33,12 +33,12 @@ print(paste('User:',user))
 if (user=="veronika") {
   # workdir('/scratch/veronika/rerun/r_code')
   workdir ='/scratch3/veronika/reuse/reuse_git/' # where are the scripts from github
-} else if (user=="lucaf") {
-  workdir='/scratch3/lucaf/reuse/reuse_git/'
+#} else if (user=="lucaf") {
+#  workdir='/scratch3/lucaf/reuse/reuse_git/'
 } else if (user=="joerg") {
-  workdir='/scratch3/joerg/projects/reuse/reuse_git/'
-} else if (user == "nevin"){
-  workdir = '/scratch3/nevin/reuse_climcal/reuse_git/'
+  workdir='/scratch3/joerg/projects/reuse/git/'
+#} else if (user == "nevin"){
+#  workdir = '/scratch3/nevin/reuse_climcal/reuse_git/'
 } else{
   stop("Unknown user!")
   
@@ -50,14 +50,14 @@ setwd(workdir)
 source('EnSRF_switches.R')
 source('EnSRF_functions.R')
 
-dir.create(paste0("../data/analysis/",expname))
+dir.create(paste0("../data/analysis/EKF400_",version,'_',expname))
 # create logfile
-logfn <- paste0(expname,'_',syr,'-',eyr,'_',format(Sys.time(),"%Y%m%d_%H%M"),'.log')
+logfn <- paste0("EKF400_",version,'_',expname,'_',syr,'-',eyr,'_',format(Sys.time(),"%Y%m%d_%H%M"),'.log')
 write(c(user),file=paste0('../log/',logfn),append=F)
 if (loo) {dir.create(paste0("../data/loo/",expname))}
 
 # it can be useful to save how the switches were set
-con <- file(paste0(workdir,"../data/analysis/",expname,"/switches_",format(Sys.time(),"%Y%m%d_%H%M"),".log"))
+con <- file(paste0(workdir,"../data/analysis/EKF400_",version,'_',expname,"/switches_",format(Sys.time(),"%Y%m%d_%H%M"),".log"))
 sink(con, append=TRUE)
 sink(con, append=TRUE, type="message")
 # This will echo all input and not truncate 150+ character lines...
@@ -142,7 +142,7 @@ for (cyr in syr2:eyr) {
   ##########################################################################################
   # 1. Echam Part
   # 1.1 Loading echam, echam_anom, echam_clim, landcorrected_anom, landcorrected_clim
-  # 1.1.2 Load/creat bigger ensemble size 
+  # 1.1.2 Load/create bigger ensemble size 
   # 1.2 Choose which variables want to use from the model
   # 1.3 Calc echam st. dev. for each grid point and month over ens memb. to scale docu data
   # 1.4 Calculate decorrelation distance
@@ -794,7 +794,7 @@ for (cyr in syr2:eyr) {
   
   # 3.1 Loading proxy data
   if (real_proxies){
-    if (!generate_PROXIESnew) {
+    if (!generate_PROXIES) {
       load(paste0(dataextdir,"assimil_data/rdata_files/real_proxies_",fsyr,"-",feyr,".Rdata")) 
     } else {
       load(paste0("../data/proxies/real_proxies_",fsyr,"-",feyr,".Rdata"))
@@ -1175,7 +1175,7 @@ for (cyr in syr2:eyr) {
     }
     
     # 5.4.2 First proxy per echam grid box
-    if (first_prox_per_grid) {
+    if (first_obs_per_grid) {
       res <- firstproxres
       newgrid <- echam
       newgrid$data <- NULL
@@ -1215,13 +1215,13 @@ for (cyr in syr2:eyr) {
       }
       
       if (real_proxies) {
-        print("DON'T USE FIRST_PROX_PER_GRID IF YOU WANT TO INCLUDE REAL PROXY DATA AND 
+        print("DON'T USE FIRST_OBS_PER_GRID IF YOU WANT TO INCLUDE REAL PROXY DATA AND 
               INSTRUMENTALS AT THE SAME TIME")
       }  
       }
     
     # 5.4.3 Average more than one proxy per echam grid box 
-    if (avg_prox_per_grid) {
+    if (avg_obs_per_grid) {
       # average data in same grid box and count number of avg. series as error estimate
       # separate temp, precip, slp
       # makes no sense for realprox: proxies would need to be calibrated before building 
@@ -1420,7 +1420,7 @@ for (cyr in syr2:eyr) {
       inst$sour <- rep(inst$sour,6)
       inst$lon <- rep(inst$lon,6)
       inst$lat <- rep(inst$lat,6)
-      if (avg_prox_per_grid) {
+      if (avg_obs_per_grid) {
         inst$numavg <- rep(inst$numavg,6)
       }
     }
@@ -1433,7 +1433,7 @@ for (cyr in syr2:eyr) {
     if (real_proxies) {
       tmpmr <- matrix(NA,nrow=length(inst$lon),ncol=ncol(realprox$mr))
       tmpres <- rep(NA,length(realprox$var_residu))
-      if (avg_prox_per_grid) {
+      if (avg_obs_per_grid) {
         tmpnum1 <- inst$numavg
         tmpnum2 <- rep(1,length(realprox$lon))
       } else {
@@ -1571,12 +1571,12 @@ for (cyr in syr2:eyr) {
         # probably should have given instrumentals more error instead!
         Rcal[calibrate$sour=="doc"] <- 0.25 # equals 0.5 std. dev.
       } else if ((real_proxies) & (!instrumental) & (!docum)) { 
-        Rcal <- realprox$var_residu
+        Rcal <- realprox$var_residu #/ 10 # devision to make proxy error smaller and update larger
         Rcal[which(is.na(Rcal))] <- 0
       } else if (((instrumental) | (docum)) & (!real_proxies)) { 
         Rcal <- c(temp2=0.9, precip=50, slp=10)[calibrate$names]
         Rcal[calibrate$sour=="doc"] <- 0.25 # equals 0.5 std. dev.
-        #        if (avg_prox_per_grid) {Rcal <- Rcal*(1/calibrate$numavg)}
+        #        if (avg_obs_per_grid) {Rcal <- Rcal*(1/calibrate$numavg)}
         #      # set squared error R for precip measurements to 25% of data value
         #      # R <- abs(calibrate$data*0.25)
       }
@@ -1700,13 +1700,15 @@ for (cyr in syr2:eyr) {
                 HPHR <- as.vector(H %*% PH[h.i,] + Rcal[j])
                 K <- PH / HPHR
                 Ktilde <- K / (1 + sqrt(Rcal[j]/HPHR))
-                analysis$ensmean[,i] <- analysis$ensmean[,i] + K[,1] * (calibrate$data[j,i] -
+                analysis$ensmean[,i] <- analysis$ensmean[,i] + K[,1] * as.vector(calibrate$data[j,i] -
                                                                           H %*% analysis$ensmean[h.i,i])
                 analysis$data[,i,] <- analysis$data[,i,] - Ktilde %*% H %*% analysis$data[h.i,i,]
-                if (update_PHclim){
-                  ananomallts$ensmean[,i] <- ananomallts$ensmean[,i] + K[,1] * (calibrate$data[j,i] -
+                if (covarclim>0 & covarclim<100) { 
+                  if (update_PHclim){
+                    ananomallts$ensmean[,i] <- ananomallts$ensmean[,i] + K[,1] * as.vector(calibrate$data[j,i] -
                                                                                   H %*% ananomallts$ensmean[h.i,i])
-                  ananomallts$data[,i,] <- ananomallts$data[,i,] - Ktilde %*% H %*% ananomallts$data[h.i,i,]
+                    ananomallts$data[,i,] <- ananomallts$data[,i,] - Ktilde %*% H %*% ananomallts$data[h.i,i,]
+                  }
                 }
               }
             }
@@ -1765,33 +1767,33 @@ for (cyr in syr2:eyr) {
           if (every2grid){
             if(save_ananomallts == T) {
               save(analysis.anom,analysis.abs,echam.anom,echam.abs,validate,calibrate, ananomallts, 
-                   file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
+                   file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
             } else {
               save(analysis.anom,analysis.abs,echam.anom,echam.abs,validate,calibrate, 
-                   file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
+                   file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
             }
           } else {
             save(analysis.anom,analysis.abs,echam.anom,echam.abs,validate,calibrate,
-                 file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'.Rdata'))
+                 file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'.Rdata'))
           }
         } else {
           if (every2grid){    
             save(analysis.anom,analysis.abs,echam.anom,echam.abs,calibrate,
-                 file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
+                 file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
           } else {
             save(analysis.anom,analysis.abs,echam.anom,echam.abs,calibrate,
-                 file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'.Rdata'))
+                 file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'.Rdata'))
           }
         }
       } else {
         if (vali) {
           save(analysis.anom,analysis.abs,echam.anom,echam.abs,landcorrected.anom,
                landcorrected.clim,validate,calibrate,
-               file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
+               file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
         } else {
           save(analysis.anom,analysis.abs,echam.anom,echam.abs,landcorrected.anom,
                landcorrected.clim,calibrate,
-               file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
+               file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
         }   
       }
       if (loo) { # leave one out validation
@@ -1862,7 +1864,7 @@ for (cyr in syr2:eyr) {
                     HPHR <- as.vector(H %*% PH[h.i,] + looRcal[j])
                     K <- PH / HPHR
                     Ktilde <- K / (1 + sqrt(looRcal[j]/HPHR))
-                    looanalysis$ensmean[,i] <- looanalysis$ensmean[,i] + K[,1] * (loocalibrate$data[j,i] -
+                    looanalysis$ensmean[,i] <- looanalysis$ensmean[,i] + K[,1] * as.vector(loocalibrate$data[j,i] -
                                                                                     H %*% looanalysis$ensmean[h.i,i])
                     looanalysis$data[,i,] <- looanalysis$data[,i,] - Ktilde %*% H %*% 
                       looanalysis$data[h.i,i,]
@@ -1930,7 +1932,7 @@ for (cyr in syr2:eyr) {
           }
         } # end of loo loop
         save(looensmeanres,loodatares,
-             file=paste0(dataintdir,'loo/',expname,'/loo_results_',cyr,'.Rdata'))
+             file=paste0(dataintdir,'loo/EKF400_',version,'_',expname,'/loo_results_',cyr,'.Rdata'))
         # 
         #         # quick plots to check loo
         #         #cyr=1811
@@ -1973,18 +1975,18 @@ for (cyr in syr2:eyr) {
       if (vali) {
         if (every2grid){
           save(analysis,echam,validate,calibrate, #calibrate.allts,
-               file=paste0('../data/analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
+               file=paste0('../data/analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
         } else {
           save(analysis,echam,validate,calibrate, #calibrate.allts,
-               file=paste0('../data/analysis/',expname,'/analysis_',cyr,'.Rdata'))
+               file=paste0('../data/analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'.Rdata'))
         }
       } else {
         if (every2grid){
           save(analysis,echam,calibrate, #calibrate.allts,
-               file=paste0('../data/analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
+               file=paste0('../data/analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
         } else {  
           save(analysis,echam,calibrate, #calibrate.allts,
-               file=paste0('../data/analysis/',expname,'/analysis_',cyr,'.Rdata'))
+               file=paste0('../data/analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'.Rdata'))
         }
       }
     }

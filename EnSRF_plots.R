@@ -24,12 +24,13 @@
 rm(list=ls())
 
 # syrtot and eyrtot are only used for the total indices time series (e.g. ENH.temp2, Global temp2 etc)
-syrtot=1901 #set to the same syr and eyr of the prepplots script (default 1602)
+syrtot=1902 #set to the same syr and eyr of the prepplots script (default 1602)
 eyrtot=1990 #(default 2000) 
 
 syr=1902 #validation period: syr>=1902, eyr<2004. Syr should be the later of the two 1902 and syr in prepplots
 eyr=1990
 
+# already set in switches
 station_yr=1905 # specific year to plot the station locations (syr>=station_yr<=eyr)
 
 user <- system("echo $USER",intern=T)
@@ -38,11 +39,7 @@ if (user=="veronika") {
   # workdir('/scratch/veronika/rerun/r_code')
   workdir ='/scratch3/veronika/reuse/reuse_git/' # where are the scripts from github
 } else if (user=="joerg") {
-  workdir='/scratch3/joerg/projects/reuse/reuse_git/'
-} else if (user=="lucaf") {
-  workdir='/scratch3/lucaf/reuse/reuse_git/'
-} else if (user == "nevin"){
-  workdir = '/scratch3/nevin/reuse_climcal/reuse_git/'
+  workdir='/scratch3/joerg/projects/reuse/git/'
 } else {
   stop("Unknown user!")
   
@@ -58,30 +55,30 @@ source('EnSRF_functions.R')
 
 
 if (monthly_out) {
-  if(calc_prepplot){
-    dir.create(paste0("../data/prepplot/",expname))
-    dir.create(paste0("../data/prepplot/",expname,'/prepplot_monthly/'))
-  }
-  prepplotdir=paste0("../data/prepplot/",expname,'/prepplot_monthly/')
+  # if(calc_prepplot){
+  #   dir.create(paste0("../data/prepplot/EKF400_",version,"_",expname))
+  #   dir.create(paste0("../data/prepplot/EKF400_",version,"_",expname,"/prepplot_monthly/"))
+  # }
+  prepplotdir=paste0("../data/prepplot/EKF400_",version,"_",expname,"/prepplot_monthly/")
   nseas=12
   s.plot=12
 } else {
-  if(calc_prepplot){
-    dir.create(paste0("../data/prepplot/",expname))
-    dir.create(paste0("../data/prepplot/",expname,'/prepplot_seasonal/'))
-  }
-  prepplotdir=paste0("../data/prepplot/",expname,'/prepplot_seasonal/') 
+  # if(calc_prepplot){
+  #   dir.create(paste0("../data/prepplot/",expname))
+  #   dir.create(paste0("../data/prepplot/",expname,'/prepplot_seasonal/'))
+  # }
+  prepplotdir=paste0("../data/prepplot/EKF400_",version,"_",expname,"/prepplot_seasonal/") 
   nseas=2
   s.plot=2
 }
-figpath=paste0('../figures/',expname,'_',syr,'-',eyr) #format(Sys.time(), "%Y%m%d_%H-%M_")
+figpath=paste0('../figures/EKF400_',version,'_',expname,'_',syr,'-',eyr) #format(Sys.time(), "%Y%m%d_%H-%M_")
 dir.create(figpath)
 
-if (monthly_out){
-  s.plot <- 12
-}else {
-  s.plot <- 2
-}
+# if (monthly_out){
+#   s.plot <- 12
+# }else {
+#   s.plot <- 2
+# }
 
 pnames <- paste(c('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'), ')', sep='')
 
@@ -99,7 +96,7 @@ if (countseries) {
   nmxd <- ntrw <- nprox <- ndoc <-ninstslp <-ninsttemp <- ninst <- rep(NA,length(syr:eyr))
   i <- 1
   for (cyr in syr:eyr) {
-    print(cyr)
+    #print(cyr)
     if (every2grid) {
       load(file=paste0(prepplotdir,'analysis_',cyr,'_2ndgrid.Rdata')) 
     } else {
@@ -160,23 +157,23 @@ for (v in validation_set){
   # loop over all validation datasets in validation_set, specified in the SWITCHES script.
   if (every2grid) {
     if (monthly_out) {
-      load(file=paste0("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                        syr,"-",eyr,"_monthly_2ndgrid.Rdata"))
-      load(file=paste0("../data/image/",expname,"/indices_tot_",syrtot,"-",eyrtot,"_monthly_2ndgrid.Rdata"))
+      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_monthly_2ndgrid.Rdata"))
     } else {
-      load(file=paste0("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                        syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
-      load(file=paste0("../data/image/",expname,"/indices_tot_",syrtot,"-",eyrtot,"_seasonal_2ndgrid.Rdata"))
+      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_seasonal_2ndgrid.Rdata"))
     }  
   } else {
     if (monthly_out) {
-      load(file=paste("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+      load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                       syr,"-",eyr,"_monthly.Rdata",sep=""))
-      load(file=paste0("../data/image/",expname,"/indices_tot_",syrtot,"-",eyrtot,"_monthly.Rdata"))
+      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_monthly.Rdata"))
     } else {
-      load(file=paste("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+      load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                       syr,"-",eyr,"_seasonal.Rdata",sep=""))
-      load(file=paste0("../data/image/",expname,"/indices_tot_",syrtot,"-",eyrtot,"_seasonal.Rdata"))
+      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_seasonal.Rdata"))
     }
   }
   validate.init <- validate
@@ -305,6 +302,80 @@ for (v in validation_set){
          xlab='year',ylab=paste(ind,'[°C]'), main=paste(wdow,'year running mean'))
     lines(vind.tot$time, vind.run, col="blue")
     lines(aind.tot$time, aind.run, col="red")
+    legend("bottomleft", c(valilegend, 'CCC400', "EFK400"),col=c("blue", "black", "red"),
+           lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='transparent',
+           box.col='transparent', cex=1)
+    dev.off()
+  }
+  
+  # same but with anomalies
+  vind.anom.tot$names<-indices
+  for(ind in inds){
+    pdf(paste(figpath,'/timeseries_',v,'_',ind,'_anom.pdf',sep=''), width=15, height=4.5, paper='special')
+    
+    winter<-seq(1,length(eind.anom.tot$time),by=2)
+    summer<-seq(2,length(eind.anom.tot$time), by=2)
+    
+    valiwinter<-seq(1,length(vind.anom.tot$time),by=2)
+    valisummer<-seq(2,length(vind.anom.tot$time),by=2)
+    
+    ylimmin<-min(cbind(c(vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),valiwinter],rep(NA,syr-syrtot)), eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),winter],
+                       aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),winter]),na.rm=T)-1
+    
+    ylimmax<-max(cbind(c(vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),valiwinter],rep(NA,syr-syrtot)), eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),winter],
+                       aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),winter]),na.rm=T)+1
+    
+    par(oma=c(0,0,0,0),mar=c(4,4,2,0.5),mfrow=c(1,2))
+    plot(eind.anom.tot$time[winter],eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),winter], ylim=c(ylimmin,ylimmax),ty='l',col="black",main="Oct.-Mar.",
+         xlab='year',ylab=paste(ind,'[°C]'))
+    polygon(c(eind.anom.tot$time[winter],rev(eind.anom.tot$time[winter])),c(apply(eind.anom.tot$data[which(eind.anom.tot$names==ind),winter,],1,max),
+                                                                  rev(apply(eind.anom.tot$data[which(eind.anom.tot$names==ind),winter,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
+    
+    
+    lines(aind.anom.tot$time[winter],aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),winter],col="red")
+    polygon(c(aind.anom.tot$time[winter],rev(aind.anom.tot$time[winter])),c(apply(aind.anom.tot$data[which(aind.anom.tot$names==ind),winter,],1,max),
+                                                                  rev(apply(aind.anom.tot$data[which(aind.anom.tot$names==ind),winter,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
+    lines(vind.anom.tot$time[valiwinter], vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),valiwinter],col="blue")
+    legend("bottomleft", c(valilegend, 'CCC400', "EFK400"),col=c("blue", "black", "red"),
+           lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='transparent',
+           box.col='transparent', cex=1)
+    
+    ylimmin<-min(cbind(c(vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),valisummer],rep(NA,syr-syrtot)), eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),summer],
+                       aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),summer]),na.rm=T)-1
+    
+    ylimmax<-max(cbind(c(vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),valisummer],rep(NA,syr-syrtot)), eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),summer],
+                       aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),summer]),na.rm=T)+1
+    
+    plot(eind.anom.tot$time[winter],eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),summer], ylim=c(ylimmin,ylimmax),ty='l',col="black",main="Apr.-Sept.",
+         xlab='year',ylab='')
+    polygon(c(eind.anom.tot$time[summer],rev(eind.anom.tot$time[winter])),c(apply(eind.anom.tot$data[which(eind.anom.tot$names==ind),summer,],1,max),
+                                                                  rev(apply(eind.anom.tot$data[which(eind.anom.tot$names==ind),summer,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
+    
+    
+    lines(aind.anom.tot$time[winter],aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),summer],col="red")
+    polygon(c(aind.anom.tot$time[winter],rev(aind.anom.tot$time[winter])),c(apply(aind.anom.tot$data[which(aind.anom.tot$names==ind),summer,],1,max),
+                                                                  rev(apply(aind.anom.tot$data[which(aind.anom.tot$names==ind),summer,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
+    lines(vind.anom.tot$time[valiwinter], vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),valisummer],col="blue")
+    dev.off()
+    
+    
+    # indices timeserie whole periode smoothed by runningmean wdow = window of running mean
+    wdow<-11
+    vind.run<-runmean(vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),], 2*wdow,endrule="NA")
+    aind.run<-runmean(aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),], 2*wdow,endrule="NA")
+    eind.run<-runmean(eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),], 2*wdow,endrule="NA")
+    
+    ylimmin<-min(rbind(vind.run, eind.run,
+                       aind.run),na.rm=T)-1
+    
+    ylimmax<-max(rbind(vind.run, eind.run,
+                       aind.run),na.rm=T)+1
+    
+    pdf(paste(figpath,'/timeseries_',v,'_',ind,'_anom_smoothed.pdf',sep=''), width=15, height=4.5, paper='special')
+    plot(eind.anom.tot$time,eind.run, ylim=c(ylimmin,ylimmax),ty='l',col="black",
+         xlab='year',ylab=paste(ind,'[°C]'), main=paste(wdow,'year running mean'))
+    lines(vind.anom.tot$time, vind.run, col="blue")
+    lines(aind.anom.tot$time, aind.run, col="red")
     legend("bottomleft", c(valilegend, 'CCC400', "EFK400"),col=c("blue", "black", "red"),
            lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='transparent',
            box.col='transparent', cex=1)
@@ -600,7 +671,7 @@ for (v in validation_set){
   update$data <- array(upd,c(dim(upd)[1],1,dim(upd)[2]))
   update$ensmean <- array(update$data,dim=c(dim(update$data)[1],dim(update$data)[3]))
   tmax=round(max(abs(update$ensmean[which(update$names=="temp2"),])),digits=2)
-  slpmax=round(max(abs(update$ensmean[which(update$names=="slp"),])),digits=1)
+  slpmax=round(max(abs(update$ensmean[which(update$names=="slp"),])),digits=2)
   prmax=round(max(abs(update$ensmean[which(update$names=="precip"),])),digits=1)
   if (monthly_out) {
     plot_echam4(update, varname='temp2', cex.pt=1.3, names=pnames[1:dim(update$data)[3]], type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('avg_upd_temp_summer.pdf'), paper='special')
@@ -624,7 +695,7 @@ for (v in validation_set){
     plot_echam4(update, varname='slp', cex.pt=1.3, names=pnames[1:dim(update$data)[3]] , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('avg_upd_slp_summer.pdf'), paper='special')
     plot_echam4(update, varname='slp', cex.pt=1.3, names=pnames[1:dim(update$data)[3]] , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('avg_upd_slp_winter.pdf'), paper='special')
   } else {
-    plot_echam4(update, varname='slp', cex.pt=1.3,lev=round(slpmax/9*c(-Inf,-7.5:-0.5,0.5:7.5,Inf),digits=2), names=pnames[1:dim(update$data)[3]], type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('avg_upd_slp.pdf'), paper='special')
+    plot_echam4(update, varname='slp', cex.pt=1.3,lev=round(slpmax/9*c(-Inf,-7.5:-0.5,0.5:7.5,Inf),digits=3), names=pnames[1:dim(update$data)[3]], type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('avg_upd_slp.pdf'), paper='special')
   }
   rm(upd,update)
   ###############################################################
@@ -970,8 +1041,8 @@ for (v in validation_set){
     
     ###################################################################################
     #Fig.: rmse diff
-    vmax<-max(rmse.diff$ensmean[which(rmse.diff$names==vari)],na.rm=T)
-    vmin<-min(rmse.diff$ensmean[which(rmse.diff$names==vari)],na.rm=T)
+    vmax<-max(rmse.diff$ensmean[which(rmse.diff$names==vari),],na.rm=T)
+    vmin<-min(rmse.diff$ensmean[which(rmse.diff$names==vari),],na.rm=T)
     vmaxmax<-max(vmax,-1*vmin)
     levs<-c(-Inf,signif(seq(-vmaxmax,vmaxmax,by=2*vmaxmax/9),2),Inf)
     if (monthly_out){
@@ -983,8 +1054,8 @@ for (v in validation_set){
     
     ###################################################################################
     #Fig.: rmse.anom diff
-    vmax<-max(rmse.anom.diff$ensmean[which(rmse.anom.diff$names==vari)],na.rm=T)
-    vmin<-min(rmse.anom.diff$ensmean[which(rmse.anom.diff$names==vari)],na.rm=T)
+    vmax<-max(rmse.anom.diff$ensmean[which(rmse.anom.diff$names==vari),],na.rm=T)
+    vmin<-min(rmse.anom.diff$ensmean[which(rmse.anom.diff$names==vari),],na.rm=T)
     vmaxmax<-max(vmax,-1*vmin)
     levs<-c(-Inf,signif(seq(-vmaxmax,vmaxmax,by=2*vmaxmax/9),2),Inf)
     if (monthly_out){
@@ -1329,11 +1400,9 @@ for (v in validation_set){
   ##### figs.15: Continuous Ranked Probability Score Maps  ######
   ###############################################################
   
-  # pdf(paste(figpath,'CRPS_new.pdf',sep='/'), width=9, height=6, paper='special')
-  
-  
-  ### plot CRPS score difference ech-ana (positive values are good) with plot_echam: Temp
+    ### plot CRPS score difference ech-ana (positive values are good) with plot_echam: Temp
   if(CRPS){
+    pdf(paste(figpath,'CRPS_new.pdf',sep='/'), width=9, height=6, paper='special')
     crps <- crps.ech-crps.ana
     crps.tot <- echam
     crps.tot$ensmean <- crps
@@ -1359,16 +1428,14 @@ for (v in validation_set){
     }else{
       plot_echam4(crps.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('crps_anom_echam_anal-',v,'_precip.pdf'), paper='special')
     }
-    
+    dev.off()
   }
-  dev.off()
-}
 
 # plot(density(RE.anom$ensmean[which(RE.anom$names  == varname),i],na.rm=T,weights=area_wgt[!is.na(RE.anom$ensmean[which(RE.anom$names  == varname),i])]))
 
 
-validate <- validate.init
-
+  validate <- validate.init
+} #end validation_set for loop
   
   #############################################################################
   
@@ -1454,6 +1521,5 @@ validate <- validate.init
   # dev.off()
   # }
   
-  validate <- validate.init  
-} #end validation_set for loop
+
 

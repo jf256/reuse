@@ -2,7 +2,9 @@
 ################################ EnSRF_switches.R ####################################
 ######################################################################################
 
-expname="proxies_only_pval99_no_forc_big_ens_changing_ncovar30"
+
+expname="PAGES_tree_prox_only_avg_per_grid"
+
 
 #####################################################################################
 # general switches 
@@ -21,7 +23,7 @@ eyr_twentycr=2004
 
 #!!!ATTENTION: sixmonstatevector year starts in October of previous year (cyr-1)
 sixmonstatevector=T    # 6 months of data in state vector for real proxy multiple 
-# regression approach. ATTENTION: monthly has to be TRUE
+                       # regression approach. ATTENTION: monthly has to be TRUE
 if (sixmonstatevector) {
   s <- 2 # only 2 seasons to calculate but still monthly results in long state vector
 } else {
@@ -39,16 +41,19 @@ nmem=30        # number of ensemble members
 #####################################################################################
 
 # load or generate data from scratch
+# generate MODEL data in .Rdata format
 generate_ECHAM=F                # if TRUE -> orig. echam data is read
-generate_ECHAM_1901_70=F        # ECHAM data for bias calc with real_prox data 
 generate_ECHAM_103=F            # ECHAM ens. mem. 103 with corrected land use forcing
 generate_ECHAM_covar=F          # generate_ECHAM all time step array long-term covariance")
 generate_ECHAM_anom=F           # read echam anom, clim and sd from cdo
 
 # ATTENTION if echam=T the proxy/instr. data have to be generated, too
 
-generate_NCEP=F                 # generate NCEP/NCAR reanalysis for independent verification
+# old switches, not working anymore
+#generate_ECHAM_1901_70=F        # ECHAM data for bias calc with real_prox data 
+#generate_NCEP=F                 # generate NCEP/NCAR reanalysis for independent verification
 
+# generate VALIDATION data in .Rdata format
 # next line not included yet: 
 generate_20CR=F                 # generate 20CR reanalysis for independent verification
 
@@ -56,16 +61,19 @@ generate_CRUALLVAR=F            # if FALSE -> cru_allvar.Rdata
 generate_HadCRU4=F              # HadCRU ens. SD for instr. uncertainty and error-spread ratio
 generate_LUTPAULKUT=F           # gridded seasonal recons (1750-1999)
 generate_ind_recon=F            # read Stefan's indices 1900-2000 from .txt to .RData
+
+# generate INPUT/ASSIMILATION data in .Rdata format
 # use scripts in data_yuri to generate .Rdata files 
 generate_t_yuri=F               # if TRUE -> yuri's temp. data collection including HISTALP is read
 generate_slp_yuri=F             # if TRUE -> yuri's slp data collection is read
 generate_GHCN=F                 # if TRUE -> orig. GHCN stat. data is read; 
 generate_GHCN_precip=F          # if FALSE -> ghcn.Rdata 
 generate_DOCUM=F                # if TRUE -> yuri's docu. data collection is read 
-generate_PROXIES=F
-generate_PAGES = F              # using the screened PAGES proxy dataset
-generate_NTREND = F
-generate_PSEUDO=F               # PSEUDO PROXY EXPERIMENT: Set pseudo_prox to T further down (approx Line 145)
+# do we still need next 3 lines? why after generate_proxies in EnSRF_generate?
+generate_PAGES=F                # using the screened PAGES proxy dataset
+                    # CODE from Roni missing to convert csv to RData 
+generate_NTREND=F   # CODE from Roni missing to convert csv to RData 
+generate_PSEUDO=F               # DAPS PSEUDO PROXY EXPERIMENT: Set pseudo_prox to T further down (approx Line 145)
 
 
 # At the moment: any combination of read.these should be possible
@@ -76,9 +84,9 @@ generate_PSEUDO=F               # PSEUDO PROXY EXPERIMENT: Set pseudo_prox to T 
 #                  die colnames nicht Sinn!!!!! Zb Zeile:
 #                  Weil in Pages sind es nicht dieselben
 
-generate_PROXIESnew=T
+generate_PROXIES=T
 
-if (generate_PROXIESnew==T) {
+if (generate_PROXIES==T) {
   # You can choose any combination of months and variable (T&P) for regression_months.
   # Then you can choose for each source whether it to be included or not. 
   # The resulting realprox$mr is a matrix of dimension [1:x,1:25], where x depends on your chosen sources.
@@ -88,21 +96,21 @@ if (generate_PROXIESnew==T) {
   # PAGES_tree data also consists of location on the SH: if for ex. t4 (is chosen), it takes t10 (t4+6) 
   # for any locations with lat<0. 
   
-  regression_months = c('t.first', 't.second','t.third','t.fourth','t.fifth','t.sixth')
+  regression_months = c('t.first', 't.second','t.third','t.fourth','t.fifth','t.sixth') #'p.first', 'p.second','p.third','p.fourth','p.fifth','p.sixth'
   
   #### PROXIES ####
-  TRW=F
-  MXD=F
-  SCHWEINGR=F
-  PAGES=T
-  NTREND=T
-  TRW_PETRA=T
+  TRW=F          # 35 best TRW records from Petra's collection
+  MXD=F          # additional MXD, not gridded Schweizgruber data
+  SCHWEINGR=F    # Schweingruber/Briffa MXD grid
+  PAGES=T        # PAGESdata base version 2 from 01/2018
+  NTREND=F       # NTREND best tree data version 2018 (identical with 2015 paper)
+  TRW_PETRA=F    # all TRW series from ITRDB and recalibrated by Petra
   #################
   
-  pages_lm_fit = "CRU"          # can be CRU or GISS to calculate the reg coeff-s
+  lm_fit_data = "CRU"          # can be CRU or GISS to calculate the reg coeff-s
   type = c("tree")              # only works with tree and coral (and both indiviually as well)
 } 
-# END if generate_PROXIESnew
+# END if generate_PROXIES
 
 
 # Nevin: May 2018 
@@ -117,13 +125,14 @@ AIC=F                           # calculates linear regression models for differ
 # Example T1-T6 AIC = 9, T2-T4 AIC=-1 (all combinations are respected)
 # => smallest AIC => best model=> if not significant => tree excluded
 
-PVALUE=T                        # calculates only the full regression model and only keeps the significant ones (pval>alpha)
+PVALUE=F                        # calculates only the full regression model and only keeps the significant ones (pval>alpha)
 alpha=0.01                      # Significance level default: 0.05 or 0.01
 
-avg_realprox_per_grid=F         # if more than one tree is situated in one Echam-Gridcell an average of all treeringwidth is calculated 
-# before makeing the regression model. Because of the independet loading of the different datasets 
-# (ntrend, pages, petra), the average is only calculated taken from trees of the same dataset
-#->if all 3 datasets are used it can occur, that still 3 avaeraged trees are in one gridbox.
+avg_realprox_per_grid=T         # if more than one tree is situated in one Echam-Gridcell an average 
+# of all treeringwidth is calculated before makeing the regression model. Because of the independed 
+# loading of the different datasets (ntrend, pages, petra), the average is only calculated taken 
+# from trees of the same dataset ->if all 3 datasets are used it can occur, that still 3 averaged 
+# trees are in one gridbox.
 
 ########
 
@@ -136,46 +145,43 @@ ghcn_prec=F
 
 #### Documentary Data ####
 
-import_luca=F                   # new docu data 
+import_luca=F                   # old and new docu data 
 
 #### Proxy Data ####
-trw_only=F                      # Petra's TRW only
+trw_only=F                      # Petra's 35 best TRW only
 mxd_only=F                      # Use only MXD tree ring proxies, NOT Petra's TRW
 schweingr_only=F                # Use Schweingruber MXD grid only
 pseudo_prox=F                   # Pseudo Proxies for generate_PSEUDO
 
 # all available data selected above are automatically switched on when available in EnSRF_data
 
-if (generate_PROXIESnew){
-  if ((generate_PAGES & PAGES) | (generate_NTREND & NTREND) | (generate_PROXIES & generate_PROXIESnew) |
-      (trw_only) | (mxd_only) | (schweingr_only)){
+if (generate_PROXIES){
+  if ((generate_PAGES & PAGES) | (generate_NTREND & NTREND) | (trw_only) | (mxd_only) | (schweingr_only)){
     stop("WARNING! These switches should not be set to TRUE simultaneously: 
-         
-         generate_PROXIES & generate_PROXIESnew 
          generate_PAGES   & PAGES
-         generate_NTRED   & NTREND
-         trw_only         & generate_PROXIESnew
-         mxd_only         & generate_PROXIESnew
-         schweingr_only   & generate_PROXIESnew
+         generate_NTREND  & NTREND
+         generate_PROXIES & trw_only
+         generate_PROXIES & mxd_only
+         generate_PROXIES & schweingr_only
          ")
-  }
+    }
   }
 
 #################
 # To use a bigger ensemble for the background
 no_forc_big_ens= F      # use all years as one big ensemble regardless of forcing like LMR
                         # ONLY works with next option load_71yr_anom=T
-covarclim=50             # set 50 or 100 [%] how much echam climatology covariance should be used
+covarclim=0             # set 50 or 100 [%] how much echam climatology covariance should be used
                             # default=0, i.e. current year covar from ECHAM ensemble
 cov_inflate = F         # inflate the PB matrix
-inflate_fac = 1.02      # the factor of covariance inflation
-# Only used if no_forx_big_ens=T or covarclim>0
-state = "changing"        # can be "static" or "changing" (static = the same big ens used for all year, changing = it is recalculated for every year)
-n_covar=250             # set sample size for covar calc or for no_forc LMR like experiment, e.g. 250 or 500
+inflate_fac = 1.02       # the factor of covariance inflation
+# Only used if no_forc_big_ens=T or covarclim>0
+state = "changing"      # can be "static" or "changing" (static = the same big ens used for all year, changing = it is recalculated for every year)
+n_covar=100             # set sample size for covar calc or for no_forc LMR like experiment, e.g. 250 or 500
 PHclim_loc = F          # whether we want to localize the PHclim, only works if covarclim > 0
 PHclim_lvec_factor = 2  # if PHclim_loc=T, we can use eg. 2times the distances as in the 30 ensemble member, at the moment only works for shape_wgt= "circle"
 mixed_loc = F           # first combining Pb and Pclim then localizing
-update_PHclim = T       # whether PHclim should be updtaed assimilating observation-by-observation
+update_PHclim = F       # whether PHclim should be updated assimilating observation-by-observation
 save_ananomallts = F    # in the covarclim exps if we update the climatology part -> whether to save the "climatological" analysis or not
 
 
@@ -223,10 +229,11 @@ if (loc) {
   l_dist_v850=999999
   l_dist_v200=999999
   l_dist_omega500=999999
-  l_dist_t850=999999
+  l_dist_t500=999999
+  # l_dist_t850=999999 # see above
   l_dist_ind=999999 
 }
-shape_wgt = "circle"            # can be "circle" or "ellipse" depends on how we want to do the localization
+shape_wgt = "circle"          # can be "circle" or "ellipse" depends on how we want to do the localization
 # default is "circle"
 
 
@@ -234,12 +241,12 @@ shape_wgt = "circle"            # can be "circle" or "ellipse" depends on how we
 landcorr = F                  # use simulation WITHOUT land use bug if TRUE
 
 # how to treat multiple input series in same grid box
-first_prox_per_grid=F           # first proxy per echam grid box ATTENTION: only this 
-# or second next option (avg_prox_per_grid) can be TRUE
+first_obs_per_grid=F  # first observations per echam grid box ATTENTION: only this 
+                       # or second next option (avg_prox_per_grid) can be TRUE
   firstproxres=10      # grid resolution for instr. stations (5 = echamgrid/5)
-avg_prox_per_grid=T    # average more than one proxy per echam grid box 
+avg_obs_per_grid=F    # average more than one observation per echam grid box 
                        # and calc proxy vs echam correlation
-ins_tim_loc = F        # whether the instrumental obs-s should be localized in time or not
+ins_tim_loc = T        # whether the instrumental obs-s should be localized in time or not
 instmaskprox=F         # remove proxy data from grid boxes that have instr. data
 reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
@@ -267,18 +274,19 @@ if (no_stream & tps_only) {
 
 
 # other options
-scaleprox=T                     # scale standardized docu and prox data the echam variance at location
+scaleprox=T                     # scale standardized docu to echam variance at location
+                                # not necessary for proxy data because of regression model
 anomaly_assim=T                 # work with anomalies to avoid reg. const in state vector
 # nseas <- 12                   # year with 12 months
 check_dist=F                    # test for ideal cut-off distance of spatial correlations
 #H_non_lin=F                    # new H operator that also allows non-linear functions
 ana.enssize=F
-NCEP_SOCOL=F
+#NCEP_SOCOL=F
 
 # choose validation data set:
 # (all three can be selected simultaneously)
 vali_cru=T
-vali_twentycr=F
+vali_twentycr=T
 vali_recon=F
 #####################################################################################
 
@@ -291,38 +299,37 @@ vali_recon=F
 #####################################################################################
 # prepare plot switches
 #####################################################################################
-monthly_out = F                 # if sixmonstatevector=T output is backtransformed to seasonal 
-yearly_out=F
+monthly_out=F                 # if sixmonstatevector=T output is backtransformed to seasonal 
+yearly_out=F                    # if both false, plots seasonal averages are calculated
 # average or monthly data if monthly_out=T 
 calc_prepplot=T                 # save half year averages calc from monthly data into /prepplot folder
-write_coor=F                  # write ascii files with assimilated stations and data per ts
+load_indices=T                  # if TRUE: indices are combined to allts variables for whole period 
+                                # (e.g. also for 1604-2004) and saved into image folder for TS-plots
+# run next option "load_prepplot" for entire validation period, usually 
+# 1902-2003, because it creates time series
+load_prepplot=T                 # if calc_prepplot has been run, load_prepplot can be used
+# saves image and only needs to be run once, afterward set "load_image=T" 
+load_image=T                    # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
 
+write_coor=F                    # write ascii files with assimilated stations and data per ts
 # maybe change files names for new EKF400 version "1.0" to "1.1"
 # write_netcdf requires to run calc_prepplot before 
-# best set load_prepplot=F
-
+# best set load_prepplot=F and load_image=F
 write_netcdf=F                  # write entire EKF400 to NetCDF files
 version="v1.3"                  # set version number for netcdf file name
 # v1.1 at DKRZ is experiment 1.2 here!
-
 if (!monthly_out & write_netcdf) {
   write_netcdf=F
   print('ACHTUNG: write_netcdf set to FALSE because monthly_out=F')
 }
-
-# run next option "load_prepplot" for entire validation period, usually 
-# 1902-2003, because it creates time series
-load_prepplot=T                 # ATTENTION check if folder prepplot on scratch contains monthly or seasonal data!
-# saves image and only needs to be run once, afterward set "load_image=T" 
 statyr=1905                     # 1941 1850/69 year, when station network is kept constant
-load_indices=T                  # if TRUE: indices are combined to allts variables for whole period (e.g. also for 1604-2004) and saved into image folder for TS-plots
-load_image=T                    # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
+
 calc_vali_stat=T                # calculate validation statistics after preparation (set "load_image=T")
-CRPS = T                        # calculate Continuous Ranked Probability Score
+CRPS=F                          # calculate Continuous Ranked Probability Score
 vali_plots=F                    # source EnSRF_plots.R script 
-ind_ECHAM=T                     # delete/comment code in prepplot script and then delete switches here
+ind_ECHAM=F                     # delete/comment code in prepplot script and then delete switches here
 ind_recon=F                     # delete/comment code in prepplot script and then delete switches here
-ind_anom=F                      # calculate indices from anomaly data
+ind_anom=T                      # calculate indices from anomaly data
 
 #####################################################################################
 

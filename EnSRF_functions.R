@@ -1,6 +1,8 @@
-# set direcotries
+# to update all libraries after an R update uncomment the following line
+#update.packages(ask = FALSE)
+
+# set directories
 echmaskpath <- paste0(dataextdir,'echam/')
-#echmaskpath <- paste0(dataintdir,'echam/')
 echpath <- paste0(dataextdir,'echam/1600-2005/')
 echallvarpath <- paste0(dataextdir,'echam_nc_allvar7/')
 # echallvarpath <-"/scratch3/veronika/60_members_1941-1970" # for 60_ensm
@@ -9,20 +11,16 @@ echanompath <- paste0(dataextdir,'echam_anom/')
 echclimpath <- paste0(dataextdir,'echam_clim/')
 # echclimpath <- "/scratch3/veronika/60_members_1941-1970/clim" # for 60_ensm
 echsdpath <- paste0(dataextdir,'echam_sd/')
-crupath <- paste0(dataintdir,'cru/')
-gisspath = '/scratch/veronika/PAGES/climdata/giss/' # can be copied to climstore
-#cru4path <- paste0(dataintdir,'cru4/')
-reconpath <- paste0(dataintdir,'recon/')
-erapath <- paste0(dataintdir,'era/')
-ghcntemppath <- paste0(workdir,'../instr/ghcn/temp_v3/')
-ghcnprecippath <- paste0(workdir,'../instr/ghcn/precip_v2/')
-histalppath <- paste0(dataintdir,'instr/histalp/')
-proxypath <- paste0(dataextdir,'assimil_data/proxies/petra/')
+crupath <- paste0(dataextdir,'vali_data/cru/')
+gisspath = paste0(dataextdir,'vali_data/giss/')
+ghcntemppath <- paste0(dataextdir,'../assim_data/ghcn/temp_v3/')
+ghcnprecippath <- paste0(dataextdir,'../assim_data/ghcn/precip_v2/')
+#histalppath <- paste0(dataintdir,'instr/histalp/')
+petrapath <- paste0(dataextdir,'assimil_data/proxies/petra/')
 mxdpath <- paste0(dataextdir,'assimil_data/proxies/mxd/')
-pagespath = '/scratch3/veronika/reuse/'
-ntrendpath = '/scratch3/veronika/reuse/'
+pagespath = paste0(dataextdir,'assimil_data/proxies/PAGES/PAGES_DB_extraction_201801/')
+ntrendpath = paste0(dataextdir,'assimil_data/proxies/NTREND/')
 schweingrpath <- paste0(dataextdir,'assimil_data/proxies/schweingr/')
-nceppath <- paste0(dataintdir,'reanalysis/ncep/')
 twentycrpath <- paste0(dataextdir,'vali_data/20cr/')
 indicespath <- paste0(dataextdir,'vali_data/indices/')
 
@@ -48,6 +46,7 @@ indicespath <- paste0(dataextdir,'vali_data/indices/')
 # install.packages("cowplot")
 # install.packages("RColorBrewer")      
 # install.packages("geosphere")
+# install.packages("lubridate")
 suppressMessages(library(akima))         # for interpolation
 suppressMessages(library(maps))
 suppressMessages(library(mapdata))
@@ -1072,7 +1071,8 @@ read_proxy2 <- function(syr,eyr){
 # PATHES SHOULD BE MAKE MORE GENERAL!!!
 read_pages = function(fsyr,feyr,archivetype, validate) {
   # load(paste0(paste0(workdir,'/../pages_proxies.RData', sep='')))
-  load("/scratch3/veronika/reuse/pages_proxies.RData")
+  # load("/scratch3/veronika/reuse/pages_proxies.RData")
+  load(paste0(dataextdir,"assimil_data/proxies/PAGES/pages_proxies_roni_2018_01.RData"))
   
   if(archivetype == "tree") {
     if(exists("mrNH")){rm(mrNH)}
@@ -1613,7 +1613,7 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
 # NH: from May till August as in the paper of Anchukaitis et al, 2017
 # Maybe we could use the whole half year
 read_ntrend = function(fsyr,feyr, validate) {
-  load(paste0(paste0(workdir,'/../ntrend_proxies.RData', sep='')))
+  load(paste0(paste0(ntrendpath,'ntrend_proxies.RData', sep='')))
   mylist.names = c("data","time","lon","lat","archivetype","elevation","parameter")
   ntrend = setNames(vector("list", length(mylist.names)), mylist.names)
   ti <- which((ntrend_proxies$year >= fsyr) & (ntrend_proxies$year <= feyr))
@@ -1788,7 +1788,7 @@ read_ntrend = function(fsyr,feyr, validate) {
 
 
 read_trw_petra<-function(fsyr, feyr, validate){
-  load(paste0('/scratch3/nevin/reuse/trw_petra.RData'))
+  load(paste0(petrapath,'trw_petra.RData'))
   na_tree<-rep(NA,2761)
   tree_petra<-list(data=matrix(rep(NA,(feyr-fsyr+1)*2761),(feyr-fsyr+1),2761),time=rep(NA,(feyr-fsyr+1)),lon=na_tree,lat=na_tree,elevation=na_tree, mr=matrix(rep(NA,2761*13),2761,13))
   ti<-which((trw_petra[,,1]$time.n.chronos[,1] >= fsyr) & (trw_petra[,,1]$time.n.chronos[,1] <= feyr))
@@ -1803,15 +1803,11 @@ read_trw_petra<-function(fsyr, feyr, validate){
   }
   tree_petra$time<-trw_petra[,,1]$time.n.chronos[ti,1]
   tree_petra$data[which(is.nan(tree_petra$data),arr.ind = T)]<-NA
-  
   start_yr = which(tree_petra$time == "1901")
   end_yr = which(tree_petra$time == "1970")
   tree_petra_1901_1970<-list(data=matrix(rep(NA,70*2761),70,2761),time=rep(NA,70))
   tree_petra_1901_1970$data<-tree_petra$data[start_yr:end_yr,]
   tree_petra_1901_1970$time<-tree_petra$time[start_yr:end_yr]
-  
-  
-  
   if (validate == "CRU") {
     nc=nc_open(paste(crupath,'/cru_allvar_abs_1901-2004.nc',sep=''), write=F)
     t1=ncvar_get(nc, "temp2") # for CRU temp
@@ -6513,30 +6509,30 @@ setup_read_pages<- function(type){
   
   if (any(!is.na(match(type, "tree"))) & all(is.na(match(type, "coral"))) ) {
     print("generate_PAGES_tree")
-    p_tree = read_pages(fsyr,feyr, archivetype ="tree", validate=pages_lm_fit)
+    p_tree = read_pages(fsyr,feyr, archivetype ="tree", validate=lm_fit_data)
     pagesprox = p_tree
-    save(pagesprox, file=paste0(workdir,"../pages_tree_",fsyr,"-",feyr,"_",pages_lm_fit,".Rdata"))
+    save(pagesprox, file=paste0(workdir,"../data/pages/pages_tree_",fsyr,"-",feyr,"_",lm_fit_data,".Rdata"))
   } 
   if (any(!is.na(match(type, "coral"))) & all(is.na(match(type, "tree"))) ) {
     print("generate_PAGES_coral")
-    p_coral = read_pages(fsyr,feyr, archivetype ="coral",validate=pages_lm_fit)
+    p_coral = read_pages(fsyr,feyr, archivetype ="coral",validate=lm_fit_data)
     pagesprox = p_coral
-    save(pagesprox, file=paste0(workdir,"../pages_coral_",fsyr,"-",feyr,"_",pages_lm_fit,".Rdata"))
+    save(pagesprox, file=paste0(workdir,"../data/pages/pages_coral_",fsyr,"-",feyr,"_",lm_fit_data,".Rdata"))
   } 
   if (any(!is.na(match(type, "documents")))) {
     print("generate_PAGES_docu")
-    p_docu = read_pages(fsyr,feyr, archivetype ="documents",validate=pages_lm_fit) # validate doesnt matter
-    save(p_docu, file=paste0(workdir,"../pages_docu_",fsyr,"-",feyr,".Rdata"))
+    p_docu = read_pages(fsyr,feyr, archivetype ="documents",validate=lm_fit_data) # validate doesnt matter
+    save(p_docu, file=paste0(workdir,"../data/pages/pages_docu_",fsyr,"-",feyr,".Rdata"))
   } 
   if (any(!is.na(match(type, "instrumental")))) {
     print("generate_PAGES_inst")
-    p_inst = read_pages(fsyr,feyr, archivetype ="instrumental", validate=pages_lm_fit) # validate doesnt matter
-    save(p_inst, file=paste0(workdir,"../pages_inst_",fsyr,"-",feyr,".Rdata"))
+    p_inst = read_pages(fsyr,feyr, archivetype ="instrumental", validate=lm_fit_data) # validate doesnt matter
+    save(p_inst, file=paste0(workdir,"../data/pages/pages_inst_",fsyr,"-",feyr,".Rdata"))
   } 
   if (any(!is.na(match(type, "tree"))) & any(!is.na(match(type, "coral"))) )  {
     print("generate_PAGES_tree_&_coral")
-    p_tree = read_pages(fsyr,feyr, archivetype ="tree", validate=pages_lm_fit)
-    p_coral = read_pages(fsyr,feyr, archivetype ="coral", validate=pages_lm_fit)
+    p_tree = read_pages(fsyr,feyr, archivetype ="tree", validate=lm_fit_data)
+    p_coral = read_pages(fsyr,feyr, archivetype ="coral", validate=lm_fit_data)
     pagesprox <- list()
     pagesprox$data <- cbind(p_tree$data, p_coral$data)
     pagesprox$lon <- c(p_tree$lon, p_coral$lon)
@@ -6544,7 +6540,7 @@ setup_read_pages<- function(type){
     pagesprox$time <-p_tree$time
     pagesprox$mr <- rbind(p_tree$mr, p_coral$mr) 
     pagesprox$var_residu <- c(p_tree$var_residu, p_coral$var_residu)
-    save(pagesprox, file=paste0(workdir,"../pages_tree_&_coral_",fsyr,"-",feyr,"_",pages_lm_fit,".Rdata"))
+    save(pagesprox, file=paste0(workdir,"../data/pages/pages_tree_&_coral_",fsyr,"-",feyr,"_",lm_fit_data,".Rdata"))
   }
   return(pagesprox)
 }
@@ -7324,11 +7320,8 @@ calc_indices<-function(dataset, setname){
   }else if (setname=="cru_vali"){
     monthly_out<-get("monthly_out")
     #load validation indices
-    if(monthly_out & !tps_only){
-      load(file=paste('../data/indices/indices_recon_1900-2000_monthly.Rdata'))
-      
-    }else if (!tps_only){
-      load(file=paste('../data/indices/indices_recon_1900-2000_monthly.Rdata'))
+    load(file=paste0(dataextdir,'vali_data/indices/indices_recon_1900-2000_monthly.Rdata'))
+    if (!monthly_out & !tps_only){
       indseasonal<-matrix(0,6,200)
       for(i in 1:200){indseasonal[,i]<-apply(indall[,((i-1)*6+10):((i-1)*6+15)],1,mean, na.rm = T)}
       indall<-indseasonal
@@ -7657,12 +7650,12 @@ background_matrix = function (state,n_covar, ech) {
 
 calc_avg_realprox_per_grid<-function(stat){
   if (every2grid){
-    load(file=paste0('../data/analysis/proxies_only_trw_petra_tps_pval99/analysis_1905_2ndgrid.Rdata'))
+    load(file=paste0(dataextdir,'echam_sd/echam_sd_2000-2001_2ndgrid.Rdata'))
   } else {  
     rm(validate,analysis,echam)
-    load(file=paste0('../data/analysis/proxies_only_trw_petra_tps_pval99/analysis_1905.Rdata'))
+    load(file=paste0(dataextdir,'echam_sd/echam_sd_2000-2001.Rdata'))
   }
-  echam<-echam.abs
+  echam<-echam_sd
   dlist=NA
   for(i in 1:length(stat$lon)){
     plon <- stat$lon[i]
@@ -7680,35 +7673,52 @@ calc_avg_realprox_per_grid<-function(stat){
       dlist[i]=NA
     }
   }
-  stat.avg=rep(NA,12) 
+  stat.avg=rep(NA,dim(stat$data)[1]) 
   stat.numavg=NA
   stat.lon=NA
   stat.lat=NA
+  stat.archivetype=NA
+  stat.parameter=NA
   stat.names=NA
   for(i in unique(dlist)[(!is.na(unique(dlist)))]){
     no=which(dlist==i)
     mask=as.logical(dlist==i)
     mask[is.na(mask)]=FALSE
     if (length(stat$data[1,mask])>1) {
-      stat.avg=rbind(stat.avg,apply(stat$data[,mask],1,mean,na.rm=T))
-      stat.numavg=rbind(stat.numavg,(dim(stat$data[,mask])[2]))
-      stat.lon=rbind(stat.lon,mean(stat$lon[mask],na.rm=T))
-      stat.lat=rbind(stat.lat,mean(stat$lat[mask],na.rm=T))
-      stat.names=rbind(stat.names,stat$names[mask][1])
+      stat.avg=cbind(stat.avg,apply(stat$data[,mask],1,mean,na.rm=T))
+      stat.numavg=c(stat.numavg,(dim(stat$data[,mask])[2]))
+      stat.lon=c(stat.lon,mean(stat$lon[mask],na.rm=T))
+      stat.lat=c(stat.lat,mean(stat$lat[mask],na.rm=T))
+      if ("archivetype" %in% attributes(stat)$names) {
+        stat.archivetype=c(stat.archivetype,stat$archivetype[mask][1])}
+      if ("parameter" %in% attributes(stat)$names) {
+        stat.parameter=c(stat.parameter,stat$parameter[mask][1])}
+      if ("names" %in% attributes(stat)$names) {
+        stat.names=c(stat.names,stat$names[mask][1])}
     } else {
-      stat.avg=rbind(stat.avg,stat$data[,mask])
-      stat.numavg=rbind(stat.numavg,1)
-      stat.lon=rbind(stat.lon,stat$lon[mask])
-      stat.lat=rbind(stat.lat,stat$lat[mask])
-      stat.names=rbind(stat.names,stat$names[mask])
+      stat.avg=cbind(stat.avg,stat$data[,mask])
+      stat.numavg=c(stat.numavg,1)
+      stat.lon=c(stat.lon,stat$lon[mask])
+      stat.lat=c(stat.lat,stat$lat[mask])
+      if ("archivetype" %in% attributes(stat)$names) {
+        stat.archivetype=c(stat.archivetype,stat$archivetype[mask])}
+      if ("parameter" %in% attributes(stat)$names) {
+        stat.parameter=c(stat.parameter,stat$parameter[mask])}
+      if ("names" %in% attributes(stat)$names) {
+        stat.names=c(stat.names,stat$names[mask])}
     }
     stat.avg[stat.avg=='NaN']=NA
   }
   stat$lon <- stat.lon[2:length(stat.lon)]
   stat$lat <- stat.lat[2:length(stat.lat)]
-  stat$data <- t(stat.avg[2:dim(stat.avg)[1],])
+  stat$data <- stat.avg[,2:dim(stat.avg)[2]]
   stat$numavg <- stat.numavg[2:length(stat.numavg)]
-  stat$names <- stat.names[2:length(stat.names)]
+  if ("archivetype" %in% attributes(stat)$names) {
+    stat$archivetype <- stat.archivetype[2:length(stat.archivetype)]}
+  if ("parameter" %in% attributes(stat)$names) {
+    stat$parameter <- stat.parameter[2:length(stat.parameter)]}
+  if ("names" %in% attributes(stat)$names) {
+    stat$names <- stat.names[2:length(stat.names)]}
   stat$ensmean <- NULL
   return(stat)
 }

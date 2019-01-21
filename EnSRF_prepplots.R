@@ -14,7 +14,7 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
-syr=1901 #1902 #1941
+syr=1902 #1902 #1941
 eyr=1990 #2003 #1970
 
 
@@ -33,15 +33,13 @@ if (user=="veronika") {
   # workdir('/scratch/veronika/rerun/r_code')
   workdir ='/scratch3/veronika/reuse/reuse_git/' # where are the scripts from github
 } else if (user=="joerg") {
-  workdir='/scratch3/joerg/projects/reuse/reuse_git/'
-} else if (user=="lucaf") {
-  
-  workdir='/scratch3/lucaf/reuse/reuse_git/'
-} else if (user == "nevin"){
-  workdir = '/scratch3/nevin/reuse_climcal/reuse_git/'
+  workdir='/scratch3/joerg/projects/reuse/git/'
+#} else if (user=="lucaf") {
+#  workdir='/scratch3/lucaf/reuse/reuse_git/'
+#} else if (user == "nevin"){
+#  workdir = '/scratch3/nevin/reuse_climcal/reuse_git/'
 } else {
   stop("Unknown user!")
-  
 }
 dataextdir='/mnt/climstor/giub/EKF400/'
 dataintdir=paste0(workdir,'../data/')
@@ -52,21 +50,21 @@ source('EnSRF_functions.R')
 
 if (monthly_out) {
   if(calc_prepplot){
-    dir.create(paste0("../data/prepplot/",expname))
-    dir.create(paste0("../data/prepplot/",expname,'/prepplot_monthly/'))
+    dir.create(paste0("../data/prepplot/EKF400_",version,"_",expname))
+    dir.create(paste0("../data/prepplot/EKF400_",version,"_",expname,'/prepplot_monthly/'))
   }
-  prepplotdir=paste0("../data/prepplot/",expname,'/prepplot_monthly/')
+  prepplotdir=paste0("../data/prepplot/EKF400_",version,"_",expname,'/prepplot_monthly/')
   nseas=12
 } else {
   if(calc_prepplot){
-    dir.create(paste0("../data/prepplot/",expname))
-    dir.create(paste0("../data/prepplot/",expname,'/prepplot_seasonal/'))
+    dir.create(paste0("../data/prepplot/EKF400_",version,"_",expname))
+    dir.create(paste0("../data/prepplot/EKF400_",version,"_",expname,'/prepplot_seasonal/'))
   }
-  prepplotdir=paste0("../data/prepplot/",expname,'/prepplot_seasonal/') 
+  prepplotdir=paste0("../data/prepplot/EKF400_",version,"_",expname,'/prepplot_seasonal/') 
   nseas=2
 }
-if (load_prepplot) {dir.create(paste0("../data/image/",expname))}
-dir.create(paste0('../data/indices/',expname))
+if (load_prepplot) {dir.create(paste0("../data/image/EKF400_",version,"_",expname))}
+dir.create(paste0('../data/indices/EKF400_",version,"_',expname))
 
 if (ind_anom) {
   if (land_only) {
@@ -106,6 +104,7 @@ print(filenameext)
 ptm1 <- proc.time()
 
 if (calc_prepplot) {
+  print('calc_prepplot')
   # Reads yearly data (output of data script) and changes them to either monthly (abs, oct-sept) or seasonal (means, oct-mar, apr-sept).  Furthermore the indices (compare clac_indices in functions) are calculated,
   # tps_only can be set to T, even when it was set to F before in the data script: like that the complete data is shortened to tps. 
   # In the end the processed data is again saved for each year.
@@ -134,13 +133,13 @@ if (calc_prepplot) {
       recon_vali=F
     }
     print(cyr)
-    print(paste("recon_vali=",recon_vali))
-    print(paste("vali=",vali))
+    #print(paste("recon_vali=",recon_vali))
+    #print(paste("vali=",vali))
     if (every2grid){
-      load(file=paste0('../data/analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
+      load(file=paste0('../data/analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
     } else {  
       rm(validate,analysis,echam)
-      load(file=paste0('../data/analysis/',expname,'/analysis_',cyr,'.Rdata'))
+      load(file=paste0('../data/analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'.Rdata'))
     }
     if (tps_only&length(unique(echam.abs$names))!=3) {
       echam.abs<-convert_to_tps_only(echam.abs)
@@ -156,7 +155,7 @@ if (calc_prepplot) {
         l=0
         for (v in valiname){  ## for multiple vali data sets
           l=l+1
-          print(v)
+          #print(v)
           
           validate<-validate_init[[v]]
           validate<-convert_to_tps_only(validate)
@@ -189,6 +188,7 @@ if (calc_prepplot) {
       }
     }
     if (write_coor) {
+      #print('write_coor')
       # proxy data coordinates at each time step
       lonlat_year=list()
       for (t in 1:length(calibrate$time)) {
@@ -209,9 +209,9 @@ if (calc_prepplot) {
     
     # convert data back to old format for plotting and analysis
     if (sixmonstatevector) {
-      print('convert 6-months state vector')
+      #print('convert 6-months state vector')
       if (monthly_out) {
-        print(paste('seasons =',s))
+        #print(paste('seasons =',s))
         s=12 # set back to 12 months for plotting
         
         
@@ -230,7 +230,7 @@ if (calc_prepplot) {
             l=0
             for (v in valiname){  ## for multiple vali data sets
               l=l+1
-              print(v)
+              #print(v)
               
               validate<-validate_init[[v]]
               validate<-convert_to_monthly(validate)
@@ -242,7 +242,7 @@ if (calc_prepplot) {
         }
       } else { # seasonal output, probably summer/winter averages
         s=length(season)
-        print(paste('seasons =',s))
+        #print(paste('seasons =',s))
         etmp <- array(echam$data,c((dim(echam$data)[1]/6),6,dim(echam$data)[2],
                                    dim(echam$data)[3]))
         echam$data <- array(NA,c(dim(etmp)[1],dim(etmp)[3:4]))
@@ -329,7 +329,7 @@ if (calc_prepplot) {
             l=0
             for (v in valiname){  ## for multiple vali data sets
               l=l+1
-              print(v)
+              #print(v)
               
               validate<-validate_init[[v]]
               
@@ -352,7 +352,7 @@ if (calc_prepplot) {
         }
       }
     }
-    print("transformed 6-mon state vector")
+    #print("transformed 6-mon state vector")
     
     
     
@@ -424,7 +424,7 @@ if (calc_prepplot) {
         l=0
         for (v in valiname){  ## for multiple vali data sets
           l=l+1
-          print(v)
+          #print(v)
           
           validate2<-validate2_init[[v]]
           nrepv <- length(unique(validate2$names))
@@ -472,9 +472,9 @@ if (calc_prepplot) {
     
     # save annual file
     # if (vali) {
-    #   save(aind,eind,vind, file=paste0('../data/indices/',expname,'/indices',filenameext,cyr,'.Rdata'))
+    #   save(aind,eind,vind, file=paste0('../data/indices/EKF400_',version,'_,expname,'/indices',filenameext,cyr,'.Rdata'))
     # } else {
-    #   save(aind,eind, file=paste0('../data/indices/',expname,'/indices',filenameext,cyr,'.Rdata'))
+    #   save(aind,eind, file=paste0('../data/indices/EKF400_',version,'_',expname,'/indices',filenameext,cyr,'.Rdata'))
     # }
     
     
@@ -491,23 +491,17 @@ if (calc_prepplot) {
         l=0
         for (v in valiname){  ## for multiple vali data sets
           l=l+1
-          print(v)
-          
+          #print(v)
           validate<-validate_init[[v]]
-          
-          print(paste("dim validate data:",paste(nrow(validate$data),ncol(validate$data))))
-          
+          #print(paste("dim validate data:",paste(nrow(validate$data),ncol(validate$data))))
           validate_all[[l]] <-validate
-          
         }
-        
         names(validate_all)<-valiname
         validate <- validate_all
-        
         save(analysis,analysis.anom,echam,echam.anom,validate,calibrate,vind,eind,aind,aind.anom,eind.anom,
              file=paste0(prepplotdir,'analysis_',cyr,'_2ndgrid.Rdata'))
       } else {
-        print(paste("dim validate data:",paste(nrow(validate$data),ncol(validate$data))))
+        #print(paste("dim validate data:",paste(nrow(validate$data),ncol(validate$data))))
         save(analysis,analysis.anom,echam,echam.anom,validate,calibrate,vind,eind,aind,aind.anom,eind.anom,
              file=paste0(prepplotdir,'analysis_',cyr,'.Rdata'))
         #save(analysis,analysis.anom,ana_ind,echam,echam.anom,ech_ind,validate,vali_ind,calibrate,
@@ -530,16 +524,18 @@ if (calc_prepplot) {
   # tps_only is set to F here because if it was T before it's not needed anymore from now on
   # set tps_only = T manually if in load_prepplot the not-tps-data should be discarded
   tps_only=F
-  rm(echam.abs2,echam2.abs,echam2.anom,analysis.anom2,echam.anom2,analysis.abs2,analysis2.abs,analysis2.anom,validate2,validate2_all,validate2_init,vind_all,validate_all,validate_init)
+  rm(echam.abs2,echam2.abs,echam2.anom,analysis.anom2,echam.anom2,analysis.abs2,analysis2.abs,
+     analysis2.anom,validate2,validate2_all,validate2_init,vind_all,validate_all,validate_init)
 } #end calc_prepplot
 
 
 # loads yearly saved indices and merges timesteps (for whole period e.g. 1600-2004 should not generate to huge files)
 if (load_indices){
+  print('load_indices')
   allvindts<-list()
   
   for (cyr in syr:(eyr)) {
-    print(paste('year',cyr))
+    #print(paste('year',cyr))
     if (cyr >= min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)]) & cyr<=max(c(eyr_cru,eyr_twentycr,eyr_recon)[c(vali_cru, vali_twentycr, vali_recon)])) {        # if we don't use reconvali, the eyr here should be changed (Error in valiall : object 'valiall' not found) -> but then instead of the eyr we should use cyr
       vali=T                 # switch off prepplot if no vali data selected
     } else {
@@ -563,8 +559,8 @@ if (load_indices){
     } else {
       recon_vali=F
     }
-    print(paste("recon_vali=",recon_vali))
-    print(paste("vali=",vali))
+    #print(paste("recon_vali=",recon_vali))
+    #print(paste("vali=",vali))
     
     if (every2grid) {
       load(file=paste0(prepplotdir,'analysis_',cyr,'_2ndgrid.Rdata')) 
@@ -586,7 +582,7 @@ if (load_indices){
         l=0
         for (v in valiname){  ## for multiple vali data sets
           l=l+1
-          print(v)
+          #print(v)
           
           vind<-vind_init[[v]]
           vind<-convert_to_tps_only(vind)
@@ -661,7 +657,7 @@ if (load_indices){
       l=0
       for (v in valiname){  ## for multiple vali data sets
         l=l+1
-        print(v)
+        #print(v)
         
         vind<-vind_init[[v]]
         
@@ -698,15 +694,12 @@ if (load_indices){
       vind.allts_init<-vind.allts
       vind_all<-list()
       vind.allts_all<- list()
-      
       l=0
       for (v in valiname){  ## for multiple vali data sets
         l=l+1
-        print(v)
-        
+        #print(v)
         vind<-vind_init[[v]]
         vind.allts<-vind.allts_init[[v]]
-        
         vind.allts$data=cbind(vind.allts$data,vind$data)
         vind.allts$ensmean=cbind(vind.allts$ensmean,vind$ensmean)
         if(monthly_out){
@@ -739,16 +732,16 @@ if (load_indices){
   aind.anom.tot<-aind.anom.allts
   if (every2grid) {
     if (monthly_out) {
-      save(aind.tot, vind.tot, eind.tot,aind.anom.tot,eind.anom.tot, file=paste0("../data/image/",expname,"/indices_tot_",syr,"-",eyr,"_monthly_2ndgrid.Rdata"))
+      save(aind.tot, vind.tot, eind.tot,aind.anom.tot,eind.anom.tot, file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syr,"-",eyr,"_monthly_2ndgrid.Rdata"))
       
     } else {
-      save(aind.tot, vind.tot, eind.tot,aind.anom.tot,eind.anom.tot, file=paste0("../data/image/",expname,"/indices_tot_",syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
+      save(aind.tot, vind.tot, eind.tot,aind.anom.tot,eind.anom.tot, file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
     }  
   } else {
     if (monthly_out) {
-      save(aind.tot, vind.tot, eind.tot,aind.anom.tot,eind.anom.tot, file=paste0("../data/image/",expname,"/indices_tot_",syr,"-",eyr,"_monthly.Rdata"))
+      save(aind.tot, vind.tot, eind.tot,aind.anom.tot,eind.anom.tot, file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syr,"-",eyr,"_monthly.Rdata"))
     } else {
-      save(aind.tot, vind.tot, eind.tot,aind.anom.tot,eind.anom.tot, file=paste0("../data/image/",expname,"/indices_tot_",syr,"-",eyr,"_seasonal.Rdata"))
+      save(aind.tot, vind.tot, eind.tot,aind.anom.tot,eind.anom.tot, file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syr,"-",eyr,"_seasonal.Rdata"))
     }
   }
   rm(eind, eind.tot, aind, aind.tot, vind, vind.tot, allvindts, vind.allts, eind.allts, aind.allts,aind.anom.tot,eind.anom.tot)
@@ -757,18 +750,18 @@ if (load_indices){
 
 if (write_netcdf) {
   print("write_netcdf")
-  dir.create(paste0(dataintdir,"netcdf/",version,"/CCC400_ensmean")) # maybe could call it prepplot_netcdf could have subfolder monthy or seasonal
+  dir.create(paste0(dataintdir,"netcdf/",version,"/CCC400_ensmean")) 
   dir.create(paste0(dataintdir,"netcdf/",version,"/CCC400_ens_mem"))
   dir.create(paste0(dataintdir,"netcdf/",version,"/EKF400_ensmean"))
   dir.create(paste0(dataintdir,"netcdf/",version,"/EKF400_ens_mem"))
   # load stat data network for specific year
-  stat_yr=1904
-  if (every2grid){
-    load(paste0(prepplotdir,'/analysis_',stat_yr,'_2ndgrid.Rdata'))
-  }else{
-    load(paste0(prepplotdir,'/analysis_',stat_yr,'.Rdata'))
-  }
-  cali <- calibrate
+  # stat_yr=1904
+  # if (every2grid){
+  #   load(paste0(prepplotdir,'/analysis_',stat_yr,'_2ndgrid.Rdata'))
+  # }else{
+  #   load(paste0(prepplotdir,'/analysis_',stat_yr,'.Rdata'))
+  # }
+  # cali <- calibrate
   for (cyr in syr:eyr) {
     print(paste('year',cyr))
     
@@ -1027,14 +1020,18 @@ if (write_netcdf) {
 } # end write_netcdf
 
 
-# loads saved data (yearly) from calc_prepplot part and merges the timesteps for the validation period, such that the statistics can be calculated. 
+# loads saved data (yearly) from calc_prepplot part and merges the timesteps for the validation period, 
+# such that the statistics can be calculated. 
 # Again tps_only can be set to T here even when it was set to F before: like that the complete data is shortened to tps.
 # If you have run calc_prepplot successfully a subperiod can be chosen and run from load_prepplot. 
-# After this part calibrate.anom and validate.anom are calculated and all the data is stored in an image file.
+# After this part validate.anom are calculated and all the data is stored in an image file.
+# calibrate.anom is NOT needed because we always use anomaly_assim=T, i.e. calibrate are already anomalies
 # (If someone wants to change months to jan-dec look at write_netcdf-part)
 # this part serves as a preparation for the validation statistics 
-if (load_prepplot){  
-  # allvalits variable predefined here (beneath) to enable different periods of validation datasets: e.g. 20cr starts in 1850 and cru starts
+if (load_prepplot){ 
+  print('load_prepplot')
+  # allvalits variable predefined here (beneath) to enable different periods of validation datasets: 
+  #   e.g. 20cr starts in 1850 and cru starts
   # in 1901: if syr = 1899 for the first two years validate only contains 20cr and from 1901 it also contains as well cru.
   # (works for vind.allts as well)
   allvalits<-list()
@@ -1042,7 +1039,7 @@ if (load_prepplot){
     syr<-min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)])+1
   }
   for (cyr in syr:(eyr)) {
-    print(paste('year',cyr))
+    #print(paste('year',cyr))
     if (cyr > min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)]) & cyr<=max(c(eyr_cru,eyr_twentycr,eyr_recon)[c(vali_cru, vali_twentycr, vali_recon)])) {        # if we don't use reconvali, the eyr here should be changed (Error in valiall : object 'valiall' not found) -> but then instead of the eyr we should use cyr
       vali=T                 # switch off prepplot if no vali data selected
     } else {
@@ -1066,8 +1063,8 @@ if (load_prepplot){
     } else {
       recon_vali=F
     }
-    print(paste("recon_vali=",recon_vali))
-    print(paste("vali=",vali))
+    #print(paste("recon_vali=",recon_vali))
+    #print(paste("vali=",vali))
     
     if (every2grid) {
       load(file=paste0(prepplotdir,'analysis_',cyr,'_2ndgrid.Rdata')) 
@@ -1091,16 +1088,13 @@ if (load_prepplot){
         validate_all <- list()
         vind_init <- vind
         vind_all <- list()
-        
         l=0
         for (v in valiname){  ## for multiple vali data sets
           l=l+1
-          print(v)
-          
+          #print(v)
           validate<-validate_init[[v]]
           validate<-convert_to_tps_only(validate)
           validate_all[[l]] <-validate
-          
           vind<-vind_init[[v]]
           vind<-convert_to_tps_only(vind)
           vind_all[[l]]<-vind
@@ -1278,10 +1272,9 @@ if (load_prepplot){
         eind.anom.allts$time=c(eind.anom.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
       }
       
-      if (substring(expname,1,12)=="proxies_only") {
-
+      if (all(calibrate$sour=="prox")) {
         pos <- which(calibrate$sour=="prox")
-      }else{
+      } else {
         pos <- which(calibrate$sour=="inst")
       }
       if (length(pos)==0){
@@ -1311,7 +1304,8 @@ if (load_prepplot){
     
     # adapted by Nevin: 
     # looks complicated but only combines the yearly data into allts variables
-    # control flows are complicated because of possible different time periods of validation sets which are combined together into one list (called validate and vind)
+    # control flows are complicated because of possible different time periods of validation 
+    # sets which are combined together into one list (called validate and vind)
     # only tested for CRU and 20CR combined
     
     
@@ -1329,19 +1323,16 @@ if (load_prepplot){
         validate.allts_init <- validate
         vind.allts_init<-vind
       }
-      
       validate_all <- list()
       validate.allts_all <- list()
       vind_all<-list()
       vind.allts_all<- list()
-      
       l=0
       for (v in valiname){  ## for multiple vali data sets
         l=l+1
-        print(v)
+        #print(v)
         validate<-validate_init[[v]]
         vind<-vind_init[[v]]
-        
         # if one vali set already runs and a new one starts now it checks here if v is the new one or not.
         if (v %in% names(allvalits)){
           validate.allts <- validate.allts_init[[v]]
@@ -1390,16 +1381,14 @@ if (load_prepplot){
       vind.allts_init<-vind.allts
       vind_all<-list()
       vind.allts_all<- list()
-      
       l=0
       for (v in valiname){  ## for multiple vali data sets
         l=l+1
-        print(v)
+        #print(v)
         validate<-validate_init[[v]]
         validate.allts <- validate.allts_init[[v]]
         vind<-vind_init[[v]]
         vind.allts<-vind.allts_init[[v]]
-        
         validate.allts$data=cbind(validate.allts$data,validate$data)
         validate.allts$ensmean=cbind(validate.allts$ensmean,validate$ensmean)
         validate.allts$time=c(validate.allts$time,validate$time)
@@ -1428,145 +1417,135 @@ if (load_prepplot){
     # stores validate.allts into allvalits for the next year to check then whether the validation set already was running in the previous year
     allvalits<-validate.allts
   }
-}# end load_prepplot
-
-# following part until save.image belongs to load_prepplot
-echam <- echam.allts
-eind<-eind.allts
-echam.anom <- echam.anom.allts
-eind.anom<-eind.anom.allts
-#ech_ind <- ech_ind.allts
-# rm(ech_ind.allts)
-rm(echam.allts,echam.anom.allts, eind.allts)
-analysis <- analysis.allts
-aind<-aind.allts
-analysis.anom <- analysis.anom.allts
-aind.anom<-aind.anom.allts
-#ana_ind <- ana_ind.allts
-# rm(ana_ind.allts)
-
-rm(analysis.allts,analysis.anom.allts,aind.allts,aind.anom.allts,eind.anom.allts)
-
-calibrate <- calibrate.allts
-if (vali) {
-  validate <- validate.allts
-  vind<-vind.allts
-  #  vali_ind <- vali_ind.allts
-  # rm(vali_ind.allts)
-  rm(validate.allts, vind.allts)
-}
-print("calc time for a year")
-
-# calc validate.anom, validate.clim, calibrate.clim, calibrate.anom, vind.anom
-if (vali) {
-  valiname = names(validate)
-  validate_init <- validate
-  validate_all <- list()
-  validate.clim_all <- list()
-  validate.anom_all <- list()
-  l=0
-  for (v in valiname){  ## for multiple vali data sets
+  
+  
+  # following part until save.image belongs to load_prepplot
+  echam <- echam.allts
+  eind<-eind.allts
+  echam.anom <- echam.anom.allts
+  eind.anom<-eind.anom.allts
+  #ech_ind <- ech_ind.allts
+  # rm(ech_ind.allts)
+  rm(echam.allts,echam.anom.allts, eind.allts)
+  analysis <- analysis.allts
+  aind<-aind.allts
+  analysis.anom <- analysis.anom.allts
+  aind.anom<-aind.anom.allts
+  #ana_ind <- ana_ind.allts
+  # rm(ana_ind.allts)
+  
+  rm(analysis.allts,analysis.anom.allts,aind.allts,aind.anom.allts,eind.anom.allts)
+  
+  calibrate <- calibrate.allts
+  if (vali) {
+    validate <- validate.allts
+    vind<-vind.allts
+    #  vali_ind <- vali_ind.allts
+    # rm(vali_ind.allts)
+    rm(validate.allts, vind.allts)
+  }
+  #print("calc time for a year")
+  
+  # calc validate.anom, validate.clim, calibrate.clim, calibrate.anom, vind.anom
+  if (vali) {
+    valiname = names(validate)
+    validate_init <- validate
+    validate_all <- list()
+    validate.clim_all <- list()
+    validate.anom_all <- list()
+    l=0
+    for (v in valiname){  ## for multiple vali data sets
+      l=l+1
+      #print(v)
+      validate<-validate_init[[v]]
+      validate.clim <- validate
+      validate.clim$data <- apply(array(validate$data, c(nrow(validate$data), s, ncol(validate$data)/s)), 1:2, mean, na.rm=T)
+      validate.clim$ensmean<-apply(array(validate$ensmean, c(nrow(validate$ensmean), s, ncol(validate$ensmean)/s)), 1:2, mean, na.rm=T)
+      validate.anom <- validate
+      validate.anom$data <- array(validate$data - as.vector(validate.clim$data), c(nrow(validate$data), ncol(validate$data)))
+      validate.anom$ensmean <- array(validate$ensmean - as.vector(validate.clim$ensmean), c(nrow(validate$ensmean), ncol(validate$ensmean)))
+      validate_all[[l]] <-validate
+      validate.clim_all[[l]] <- validate.clim
+      validate.anom_all[[l]] <- validate.anom
+    }
+    names(validate_all)<-valiname
+    validate <- validate_all
+    names(validate.clim_all)<- valiname
+    validate.clim <- validate.clim_all
+    names(validate.anom_all)<- valiname
+    validate.anom <- validate.anom_all
+  }
+  
+  if (!anomaly_assim) {
+    calibrate.clim <- calibrate
+    calibrate.clim$data <- apply(array(calibrate$data, c(nrow(calibrate$data), 2, ncol(calibrate$data)/2)), 1:2, mean, na.rm=T)
+    calibrate.anom <- calibrate
+    calibrate.anom$data <- array(calibrate$data - as.vector(calibrate.clim$data), c(nrow(calibrate$data), ncol(calibrate$data)))
+  }
+  valiname = names(validate.anom)
+  validate.anom_init <- validate.anom
+  vind.anom_all <- list()
+  vind.anom<-list()
+  vind.anom.tot<-list()
+  vanom.yrly<-list()
+  l=1
+  for (v in valiname){
+    validate.anom<-validate.anom_init[[v]]
+    validate.anom$data<-array(validate.anom$data,c(dim(validate.anom$data)[1],s,dim(validate.anom$data)[2]/s))
+    validate.anom$ensmean<-array(validate.anom$ensmean,c(dim(validate.anom$ensmean)[1],s,dim(validate.anom$ensmean)[2]/s))
+    validate.anom$time<-array(validate.anom$time,c(s,length(validate.anom$time)/s))
+    valitmp<-validate.anom
+    for (i in 1:dim(validate.anom$time)[2]){
+      valitmp$data<-validate.anom$data[,,i]
+      valitmp$ensmean<-validate.anom$ensmean[,,i]
+      valitmp$lon<-validate.anom$lon
+      valitmp$lat<-validate.anom$lat
+      valitmp$time<-validate.anom$time[,i]
+      valitmp$names<-validate.anom$names
+      vanom.yrly[[i]]<-valitmp
+    }
+    vind.anom_all<-lapply(vanom.yrly,calc_indices,setname=v)
+    vindtmp<-vind.anom_all[[1]]
+    vindtmp$time<-validate.anom$time[,1]
+    for(i in 2:length(vind.anom_all)){
+      vindtmp$data<-cbind(vindtmp$data,vind.anom_all[[i]]$data)
+      vindtmp$ensmean<-cbind(vindtmp$ensmean,vind.anom_all[[i]]$ensmean)
+      vindtmp$time<-c(vindtmp$time,validate.anom$time[,i])
+    }
+    if (!tps_only) {
+      vind.clim<-apply(vindtmp$data[35:40,],1,mean)
+      vindtmp$data[35:40]<-vindtmp$data[35:40,]-vind.clim
+      vindtmp$ensmean[35:40]<-vindtmp$ensmean[35:40,]-vind.clim 
+    }
+    vind.anom[[l]]<-vindtmp
+    vind.anom.tot[[l]]<-vindtmp
     l=l+1
-    print(v)
-    
-    validate<-validate_init[[v]]
-    
-    
-    validate.clim <- validate
-    validate.clim$data <- apply(array(validate$data, c(nrow(validate$data), s, ncol(validate$data)/s)), 1:2, mean, na.rm=T)
-    validate.clim$ensmean<-apply(array(validate$ensmean, c(nrow(validate$ensmean), s, ncol(validate$ensmean)/s)), 1:2, mean, na.rm=T)
-    validate.anom <- validate
-    validate.anom$data <- array(validate$data - as.vector(validate.clim$data), c(nrow(validate$data), ncol(validate$data)))
-    validate.anom$ensmean <- array(validate$ensmean - as.vector(validate.clim$ensmean), c(nrow(validate$ensmean), ncol(validate$ensmean)))
-    
-    
-    
-    validate_all[[l]] <-validate
-    validate.clim_all[[l]] <- validate.clim
-    validate.anom_all[[l]] <- validate.anom
-    
   }
+  validate.anom<-validate.anom_init
+  names(vind.anom)<-valiname
+  names(vind.anom.tot)<-valiname
+  #print("calc anomalies")
+  rm(v,valiname,validate_all,validate_init,validate.allts_all,validate.allts_init,validate.anom_all,validate.clim_all,validate.anom_init,vind.anom_all,vanom.yrly)
   
-  names(validate_all)<-valiname
-  validate <- validate_all
-  names(validate.clim_all)<- valiname
-  validate.clim <- validate.clim_all
-  names(validate.anom_all)<- valiname
-  validate.anom <- validate.anom_all
-}
-
-calibrate.clim <- calibrate
-calibrate.clim$data <- apply(array(calibrate$data, c(nrow(calibrate$data), 2, ncol(calibrate$data)/2)), 1:2, mean, na.rm=T)
-calibrate.anom <- calibrate
-calibrate.anom$data <- array(calibrate$data - as.vector(calibrate.clim$data), c(nrow(calibrate$data), ncol(calibrate$data)))
-
-valiname = names(validate.anom)
-validate.anom_init <- validate.anom
-vind.anom_all <- list()
-vind.anom<-list()
-vind.anom.tot<-list()
-vanom.yrly<-list()
-l=1
-for (v in valiname){
-  validate.anom<-validate.anom_init[[v]]
-  validate.anom$data<-array(validate.anom$data,c(dim(validate.anom$data)[1],s,dim(validate.anom$data)[2]/s))
-  validate.anom$ensmean<-array(validate.anom$ensmean,c(dim(validate.anom$ensmean)[1],s,dim(validate.anom$ensmean)[2]/s))
-  validate.anom$time<-array(validate.anom$time,c(s,length(validate.anom$time)/s))
-  valitmp<-validate.anom
-  for (i in 1:dim(validate.anom$time)[2]){
-    valitmp$data<-validate.anom$data[,,i]
-    valitmp$ensmean<-validate.anom$ensmean[,,i]
-    valitmp$lon<-validate.anom$lon
-    valitmp$lat<-validate.anom$lat
-    valitmp$time<-validate.anom$time[,i]
-    valitmp$names<-validate.anom$names
-    vanom.yrly[[i]]<-valitmp
-  }
-  vind.anom_all<-lapply(vanom.yrly,calc_indices,setname=v)
-  vindtmp<-vind.anom_all[[1]]
-  vindtmp$time<-validate.anom$time[,1]
-  for(i in 2:length(vind.anom_all)){
-    vindtmp$data<-cbind(vindtmp$data,vind.anom_all[[i]]$data)
-    vindtmp$ensmean<-cbind(vindtmp$ensmean,vind.anom_all[[i]]$ensmean)
-    vindtmp$time<-c(vindtmp$time,validate.anom$time[,i])
-  }
-  vind.clim<-apply(vindtmp$data[35:40,],1,mean)
-  vindtmp$date[35:40]<-vindtmp$data[35:40,]-vind.clim
-  vindtmp$ensmean[35:40]<-vindtmp$ensmean[35:40,]-vind.clim
-  vind.anom[[l]]<-vindtmp
-  vind.anom.tot[[l]]<-vindtmp
-  
-  l=l+1
-}
-validate.anom<-validate.anom_init
-names(vind.anom)<-valiname
-names(vind.anom.tot)<-valiname
-
-
-print("calc anomalies")
-
-rm(v,valiname,validate_all,validate_init,validate.allts_all,validate.allts_init,validate.anom_all,validate.clim_all,validate.anom_init,vind.anom_all,vanom.yrly)
-
-if (every2grid) {
-  if (monthly_out) {
-    save.image(file=paste0("../data/image/",expname,"/prepplot_validation_image_",
-                           syr,"-",eyr,"_monthly_2ndgrid.Rdata"))  
+  if (every2grid) {
+    if (monthly_out) {
+      save.image(file=paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
+                             syr,"-",eyr,"_monthly_2ndgrid.Rdata"))  
+    } else {
+      save.image(file=paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
+                             syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
+    }  
   } else {
-    save.image(file=paste0("../data/image/",expname,"/prepplot_validation_image_",
-                           syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
-  }  
-} else {
-  if (monthly_out) {
-    save.image(file=paste("../data/image/",expname,"/prepplot_validation_image_",
-                          syr,"-",eyr,"_monthly.Rdata",sep=""))
-  } else {
-    save.image(file=paste("../data/image/",expname,"/prepplot_validation_image_",
-                          syr,"-",eyr,"_seasonal.Rdata",sep=""))
+    if (monthly_out) {
+      save.image(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
+                            syr,"-",eyr,"_monthly.Rdata",sep=""))
+    } else {
+      save.image(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
+                            syr,"-",eyr,"_seasonal.Rdata",sep=""))
+    }
   }
-}
-
-print(proc.time() - ptm1)
-
+  print(proc.time() - ptm1)
+}# end load_prepplot
 
 
 
@@ -1585,27 +1564,28 @@ print(proc.time() - ptm1)
 # complete validate (all data sets) are saved. 
 # ------------------------------------------------------------------------------
 if (load_image){
+  print('load_image and calc_vali_stat')
   if(syr<=min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)])){
     syr<-min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)])+1
   }
   if (every2grid) {
     if (monthly_out) {
       
-      load(file=paste("../data/image/",expname,"/prepplot_validation_image_",syr,"-",eyr,
+      load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
                       "_monthly_2ndgrid.Rdata",sep=""))  
       
-      dir.create(paste0("../data/image/",expname,"/prepplot_validation_image_",syr,"-",eyr,
+      dir.create(paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
                         "_monthly_2ndgrid.Rdata"))
     } else {
-      load(file=paste("../data/image/",expname,"/prepplot_validation_image_",syr,"-",eyr,
+      load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
                       "_seasonal_2ndgrid.Rdata",sep=""))
     }  
   } else {
     if (monthly_out) {
-      load(file=paste("../data/image/",expname,"/prepplot_validation_image_",syr,"-",eyr,
+      load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
                       "_monthly.Rdata",sep=""))
     } else {
-      load(file=paste("../data/image/",expname,"/prepplot_validation_image_",syr,"-",eyr,
+      load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
                       "_seasonal.Rdata",sep=""))
     }
   }
@@ -1644,17 +1624,14 @@ if (calc_vali_stat){
   if(yearly_out){
     echam<-convert_to_yearly(echam,s.plot)
     analysis<-convert_to_yearly(analysis,s.plot)
-    
     calibrate<-convert_to_yearly(calibrate,s.plot)
     echam.anom<-convert_to_yearly(echam.anom,s.plot)
     analysis.anom<-convert_to_yearly(analysis.anom,s.plot)
-    
-    calibrate.anom<-convert_to_yearly(calibrate.anom,s.plot)
-    
-    
+    if (!anomaly_assim) {
+      calibrate.anom<-convert_to_yearly(calibrate.anom,s.plot)
+    }
     aind<-convert_to_yearly(aind,s.plot)
     eind<-convert_to_yearly(eind,s.plot)
-    
     validate.allts_all <- list()
     validate.anom.allts_all<-list()
     vind.allts_all<- list()
@@ -1666,7 +1643,7 @@ if (calc_vali_stat){
     l=0
     for (v in valiname){  ## for multiple vali data sets
       l=l+1
-      print(v)
+      #print(v)
       validate<-validate_init[[v]]
       validate.anom<-validate.anom_init[[v]]
       vind<-vind_init[[v]]
@@ -1701,10 +1678,10 @@ if (calc_vali_stat){
     ananomallts.init = ananomallts
   }
   calibrate.init <- calibrate
-  calibrate.anom.init <- calibrate.anom
-  calibrate.clim.init <- calibrate.clim
-  
-  
+  if (!anomaly_assim) {
+    calibrate.anom.init <- calibrate.anom
+    calibrate.clim.init <- calibrate.clim
+  }
   valiname = names(validate)
   validate_init <- validate
   validate.anom_init <- validate.anom
@@ -1712,17 +1689,17 @@ if (calc_vali_stat){
   
   
   for (v in valiname){  ## for multiple vali data sets ## v -> to vname because image is imported where v might be different
-    print(v)
-    
+    #print(v)
     ## the variables below may change throughout the loop so i saved it as .init to load them again here
     echam <- echam.init
     echam.anom <- echam.anom.init
     analysis <- analysis.init
     analysis.anom <- analysis.anom.init
     calibrate <- calibrate.init
-    calibrate.anom <- calibrate.anom.init
-    calibrate.clim <- calibrate.clim.init
-    
+    if (!anomaly_assim) {
+      calibrate.anom <- calibrate.anom.init
+      calibrate.clim <- calibrate.clim.init
+    }
     validate<-validate_init[[v]]
     validate.anom <- validate.anom_init[[v]]
     vind<-vind_init[[v]]
@@ -1903,8 +1880,8 @@ if (calc_vali_stat){
         crps.ech <- crps.ana
         k=0
         for (i in 1:nrow(analysis.anom$data)) {
-          if (i %% 100 == 0) {
-            print(paste('analysis', i))
+          if (i %% 1000 == 0) {
+            print(paste('analysis',i,'of',nrow(analysis.anom$data)))
           }
           dressed.ana <- DressEnsemble(analysis.anom$data[i,,])
           dressed.ech <- DressEnsemble(echam.anom$data[i,,])
@@ -1969,7 +1946,7 @@ if (calc_vali_stat){
       echam.clim.anom.data <- echam.clim.anom$data
       echam.clim.anom.time <- echam.clim.anom$time
       for (i in 1:((ncol(echam.anom$data)/s.plot)-1)) {
-        print(i)
+        #print(i)
         echam.clim.anom.data <- cbind(echam.clim.anom.data,echam.clim.anom$data)
         echam.clim.anom.time <- c(echam.clim.anom.time,echam.clim.anom$time)
       }
@@ -1980,7 +1957,7 @@ if (calc_vali_stat){
       echam.clim.data <- echam.clim$data
       echam.clim.time <- echam.clim$time
       for (i in 1:((ncol(echam$data)/s.plot)-1)) {
-        print(i)
+        #print(i)
         echam.clim.data <- cbind(echam.clim.data,echam.clim$data)
         echam.clim.time <- c(echam.clim.time,echam.clim$time)
       }
@@ -2212,7 +2189,7 @@ if (calc_vali_stat){
         #  if (i %% 100 == 0) {print(i)}
         for (j in 1:dim(analysis.anom$data[,,])[2]) {
           #for (j in 1:dim(analysis.anom$data[,1:160,])[2]) {
-          print(j)
+          #print(j)
           if (is.even(j)) {k=2} else {k=1}
           #if (!is.na(obs_sd[i,k])) {
           #rdat[i,j,] <- rnorm(dim(analysis.anom$data)[3],mean=0,sd=obs_sd[i,k])
@@ -2244,119 +2221,116 @@ if (calc_vali_stat){
         #                         validate.anom$names=="temp2"),1:160])), table) 
       }
     }
-    
-    # correlation of observation errors
-    # 1. difference between obs and analysis ensemble mean at obs. locations 
-    # run for 1901-1979 period to have non-changing instr obs network
-    calibrate$lon <- as.vector(calibrate$lon[,1])
-    calibrate$lat <- as.vector(calibrate$lat[,1])
-    calibrate$sour <- as.vector(calibrate$sour[,1])
-    calibrate$names <- as.vector(calibrate$names[,1])
-    calibrate.anom$lon <- as.vector(calibrate.anom$lon[,1])
-    calibrate.anom$lat <- as.vector(calibrate.anom$lat[,1])
-    calibrate.anom$sour <- as.vector(calibrate.anom$sour[,1])
-    calibrate.anom$names <- as.vector(calibrate.anom$names[,1])
-    
-    #obserr <- diff_fun(analysis.anom,calibrate.anom,seas=s.plot)
-    #pos <- !is.na(apply(obserr$ensmean,1,sum))
-    # compute_H <- function(stations, echam, threshold=700){
-    #   H <- array(0, c(nrow(stations$data), nrow(echam$data)))
-    #   for (i in seq(stations$lon)){
-    #     dist <- compute_dist(echam$lon, echam$lat, stations$lon[i], stations$lat[i])
-    #     H[i, which.min(dist)] <- if (min(dist) < threshold) 1 else 0
+    # 
+    # # correlation of observation errors
+    # # 1. difference between obs and analysis ensemble mean at obs. locations 
+    # # run for 1901-1979 period to have non-changing instr obs network
+    # calibrate$lon <- as.vector(calibrate$lon[,1])
+    # calibrate$lat <- as.vector(calibrate$lat[,1])
+    # calibrate$sour <- as.vector(calibrate$sour[,1])
+    # calibrate$names <- as.vector(calibrate$names[,1])
+    # calibrate.anom$lon <- as.vector(calibrate.anom$lon[,1])
+    # calibrate.anom$lat <- as.vector(calibrate.anom$lat[,1])
+    # calibrate.anom$sour <- as.vector(calibrate.anom$sour[,1])
+    # calibrate.anom$names <- as.vector(calibrate.anom$names[,1])
+    # 
+    # #obserr <- diff_fun(analysis.anom,calibrate.anom,seas=s.plot)
+    # #pos <- !is.na(apply(obserr$ensmean,1,sum))
+    # # compute_H <- function(stations, echam, threshold=700){
+    # #   H <- array(0, c(nrow(stations$data), nrow(echam$data)))
+    # #   for (i in seq(stations$lon)){
+    # #     dist <- compute_dist(echam$lon, echam$lat, stations$lon[i], stations$lat[i])
+    # #     H[i, which.min(dist)] <- if (min(dist) < threshold) 1 else 0
+    # #   }
+    # #   H
+    # # }
+    # ### following code is for experiments where only proxies are used
+    # if (all(calibrate$sour=="prox")) { 
+    #   stat=calibrate.anom
+    #   stat$data=stat$data[which(stat$sour=="inst"),]
+    #   stat$lon=stat$lon[which(stat$sour=="inst")]
+    #   stat$lat=stat$lat[which(stat$sour=="inst")]
+    #   stat$names=stat$names[which(stat$sour=="inst")]
+    #   stat$sour=stat$sour[which(stat$sour=="inst")]
+    #   ctmp <- array(stat$data,c((dim(stat$data)[1]/6),6,
+    #                             dim(stat$data)[2]))  
+    #   stat$data <- apply(ctmp,c(1,3),mean,na.rm=T)
+    #   stat$names <- stat$names[1:dim(stat$data)[1]] 
+    #   stat$lon <- stat$lon[1:dim(stat$data)[1]]
+    #   stat$lat <- stat$lat[1:dim(stat$data)[1]]
+    #   
+    #   dlist=NA
+    #   for(i in 1:length(stat$lon)){
+    #     plon <- stat$lon[i]
+    #     plat <- stat$lat[i]
+    #     clon <- rep(validate.anom$lon[1:length(validate.anom$lsm.i)],3)
+    #     clat <- rep(validate.anom$lat[1:length(validate.anom$lsm.i)],3)
+    #     k=which(abs(clon-plon+0.001)==min(abs(clon-plon+0.001))) 
+    #     # +0.001 to avoid find 2 locations with same distance
+    #     l=which(abs(clat-plat)==min(abs(clat-plat))) 
+    #     m=k[which(match(k,l)>0)]
+    #     if (length(m) > 0) {
+    #       if (stat$names[i]=="temp2") {
+    #         dlist[i]=m[1]
+    #       } else if (stat$names[i]=="slp") {
+    #         dlist[i]=m[3]  
+    #       }
+    #     } else {
+    #       dlist[i]=NA
+    #     }
     #   }
-    #   H
+    #   
+    #   #gpos <- getgridboxnum(calibrate.anom,analysis.anom)
+    #   obserr <- matrix(NA,nrow=length(dlist),ncol=ncol(validate.anom$ensmean))
+    #   for (i in 1:length(dlist)) {
+    #     m <- dlist[i]
+    #     obserr[i,] <- validate.anom$ensmean[m,]-stat$data[i,] 
+    #   }
+    #   # pos=NA
+    #   # for (i in 1:nrow(obserr)) {
+    #   #   if (length(which(!is.na(obserr[i,])))>0) {pos=c(pos,i)}   # >30
+    #   # }
+    #   # pos=pos[-1]
+    #   # obserr2=obserr[pos,]
+    #   cmat <- cor(t(obserr),use="pairwise.complete.obs")   #obserr2
+    #   
     # }
-    if (!substring(expname,1,12)=="proxies_only") { ### this is for experiments where only proxies are used
-      
-      stat=calibrate.anom
-      stat$data=stat$data[which(stat$sour=="inst"),]
-      stat$lon=stat$lon[which(stat$sour=="inst")]
-      stat$lat=stat$lat[which(stat$sour=="inst")]
-      stat$names=stat$names[which(stat$sour=="inst")]
-      stat$sour=stat$sour[which(stat$sour=="inst")]
-      ctmp <- array(stat$data,c((dim(stat$data)[1]/6),6,
-                                dim(stat$data)[2]))  
-      stat$data <- apply(ctmp,c(1,3),mean,na.rm=T)
-      stat$names <- stat$names[1:dim(stat$data)[1]] 
-      stat$lon <- stat$lon[1:dim(stat$data)[1]]
-      stat$lat <- stat$lat[1:dim(stat$data)[1]]
-      
-      dlist=NA
-      for(i in 1:length(stat$lon)){
-        plon <- stat$lon[i]
-        plat <- stat$lat[i]
-        clon <- rep(validate.anom$lon[1:length(validate.anom$lsm.i)],3)
-        clat <- rep(validate.anom$lat[1:length(validate.anom$lsm.i)],3)
-        k=which(abs(clon-plon+0.001)==min(abs(clon-plon+0.001))) 
-        # +0.001 to avoid find 2 locations with same distance
-        l=which(abs(clat-plat)==min(abs(clat-plat))) 
-        m=k[which(match(k,l)>0)]
-        if (length(m) > 0) {
-          if (stat$names[i]=="temp2") {
-            dlist[i]=m[1]
-          } else if (stat$names[i]=="slp") {
-            dlist[i]=m[3]  
-          }
-        } else {
-          dlist[i]=NA
-        }
-      }
-      
-      #gpos <- getgridboxnum(calibrate.anom,analysis.anom)
-      obserr <- matrix(NA,nrow=length(dlist),ncol=ncol(validate.anom$ensmean))
-      for (i in 1:length(dlist)) {
-        m <- dlist[i]
-        obserr[i,] <- validate.anom$ensmean[m,]-stat$data[i,] 
-      }
-      # pos=NA
-      # for (i in 1:nrow(obserr)) {
-      #   if (length(which(!is.na(obserr[i,])))>0) {pos=c(pos,i)}   # >30
-      # }
-      # pos=pos[-1]
-      # obserr2=obserr[pos,]
-      cmat <- cor(t(obserr),use="pairwise.complete.obs")   #obserr2
-      
-    }
-    # there are correlated observations
-    # hist(cmat,breaks=seq(-1,1,0.2))
-    # for (i in 1:nrow(cmat)) {
-    #   print(i)
-    #   print(which(cmat[i,]>0.8))
-    # }
-    # loc=c(194,195,199,232)
-    # plot(obserr[loc[1],],ty='l')
-    # lines(obserr[loc[2],],ty='l',col='red')
-    # lines(obserr[loc[3],],ty='l',col='blue')
-    # lines(obserr[loc[4],],ty='l',col='green')
-    # plot(stat$lon[loc],stat$lat[loc])
-    # cor(obserr[loc[1],],obserr[loc[2],],use="pairwise.complete.obs")
-    # cbind(stat$lon[loc],stat$lat[loc]) 
-    # dlist[loc]
-    # cbind(echam$lon[dlist[loc]],echam$lat[dlist[loc]])
-    # par(mfrow=c(4,1))
-    # plot(stat$data[loc[1],seq(2,40,2)],ty='l')
-    # lines(stat$data[loc[2],seq(2,40,2)],ty='l',col='red')
-    # lines(stat$data[loc[3],seq(2,40,2)],ty='l',col='blue')
-    # lines(stat$data[loc[4],seq(2,40,2)],ty='l',col='green')
-    # plot(validate.anom$ensmean[dlist[loc[1]],seq(2,40,2)],ty='l')
-    # lines(validate.anom$ensmean[dlist[loc[2]],seq(2,40,2)],ty='l',col='red')
-    # lines(validate.anom$ensmean[dlist[loc[3]],seq(2,40,2)],ty='l',col='blue')
-    # lines(validate.anom$ensmean[dlist[loc[4]],seq(2,40,2)],ty='l',col='green')
-    # plot(analysis.anom$ensmean[dlist[loc[1]],seq(2,40,2)],ty='l')
-    # lines(analysis.anom$ensmean[dlist[loc[2]],seq(2,40,2)],ty='l',col='red')
-    # lines(analysis.anom$ensmean[dlist[loc[3]],seq(2,40,2)],ty='l',col='blue')
-    # lines(analysis.anom$ensmean[dlist[loc[4]],seq(2,40,2)],ty='l',col='green')
-    # plot(obserr[loc[1],seq(2,40,2)],ty='l')
-    # lines(obserr[loc[2],seq(2,40,2)],ty='l',col='red')
-    # lines(obserr[loc[3],seq(2,40,2)],ty='l',col='blue')
-    # lines(obserr[loc[4],seq(2,40,2)],ty='l',col='green')
-    
-    
-    
-    print("calc validation statistics")
+    # # there are correlated observations
+    # # hist(cmat,breaks=seq(-1,1,0.2))
+    # # for (i in 1:nrow(cmat)) {
+    # #   print(i)
+    # #   print(which(cmat[i,]>0.8))
+    # # }
+    # # loc=c(194,195,199,232)
+    # # plot(obserr[loc[1],],ty='l')
+    # # lines(obserr[loc[2],],ty='l',col='red')
+    # # lines(obserr[loc[3],],ty='l',col='blue')
+    # # lines(obserr[loc[4],],ty='l',col='green')
+    # # plot(stat$lon[loc],stat$lat[loc])
+    # # cor(obserr[loc[1],],obserr[loc[2],],use="pairwise.complete.obs")
+    # # cbind(stat$lon[loc],stat$lat[loc]) 
+    # # dlist[loc]
+    # # cbind(echam$lon[dlist[loc]],echam$lat[dlist[loc]])
+    # # par(mfrow=c(4,1))
+    # # plot(stat$data[loc[1],seq(2,40,2)],ty='l')
+    # # lines(stat$data[loc[2],seq(2,40,2)],ty='l',col='red')
+    # # lines(stat$data[loc[3],seq(2,40,2)],ty='l',col='blue')
+    # # lines(stat$data[loc[4],seq(2,40,2)],ty='l',col='green')
+    # # plot(validate.anom$ensmean[dlist[loc[1]],seq(2,40,2)],ty='l')
+    # # lines(validate.anom$ensmean[dlist[loc[2]],seq(2,40,2)],ty='l',col='red')
+    # # lines(validate.anom$ensmean[dlist[loc[3]],seq(2,40,2)],ty='l',col='blue')
+    # # lines(validate.anom$ensmean[dlist[loc[4]],seq(2,40,2)],ty='l',col='green')
+    # # plot(analysis.anom$ensmean[dlist[loc[1]],seq(2,40,2)],ty='l')
+    # # lines(analysis.anom$ensmean[dlist[loc[2]],seq(2,40,2)],ty='l',col='red')
+    # # lines(analysis.anom$ensmean[dlist[loc[3]],seq(2,40,2)],ty='l',col='blue')
+    # # lines(analysis.anom$ensmean[dlist[loc[4]],seq(2,40,2)],ty='l',col='green')
+    # # plot(obserr[loc[1],seq(2,40,2)],ty='l')
+    # # lines(obserr[loc[2],seq(2,40,2)],ty='l',col='red')
+    # # lines(obserr[loc[3],seq(2,40,2)],ty='l',col='blue')
+    # # lines(obserr[loc[4],seq(2,40,2)],ty='l',col='green')
+  
+    #print("calculated validation statistics")
     # print(proc.time() - ptm1)
-    
     
     # # compute indices from cut-off distance runs
     # if (check_dist) {
@@ -2402,115 +2376,115 @@ if (calc_vali_stat){
     
     
     
-    
-    # ---------------------------------------------------------------------------------------------
-    # Run EnSRF with varying ensemble size
-    # ------------------------------------------------------------------------------
-    if (ana.enssize){
-      nensn <- seq(5,25,5)
-      calibrate$data <- pdata + dist.arr
-      R <- apply(array(dist.arr, c(nrow(Hcal), 2, ncol(pdata)/2))**2, c(1,2), sum) / (ncol(pdata)/2 - 1)
-      
-      enssize <- list()
-      for (k in 1:5){
-        nens <- nensn[k]
-        outlist <- list()
-        enssize[[k]] <- list()
-        for (anai in 1:10){
-          # select nens ensemble members randomly from simulations 1:29
-          print(paste('Running the ',anai,'-th analysis for ', nensn[k], ' ensemble members', sep=''))
-          nsim <- dim(echam$data)[3]
-          simi <- sample(1:nsim, nens, replace=FALSE)
-          echtmp <- echam
-          echtmp$data <- echam$data[,,simi]
-          echtmp$ensmean <- apply(echam$data, 1:2, mean, na.rm=T)
-          anaens <- EnSRF(echtmp, calibrate, R=R, Hcal=Hcal, weights=d.weights_all)
-          
-          # compute the output statistics
-          outlist[[anai]] <- list()
-          outlist[[anai]]$simi <- simi
-          outlist[[anai]]$echcor <- corr_fun(echtmp, y=validate, seas=2)
-          outlist[[anai]]$anacor <- corr_fun(anaens, y=validate, seas=2)
-          outlist[[anai]]$echbias <- bias_fun(echtmp, y=validate, seas=2)
-          outlist[[anai]]$anabias <- bias_fun(anaens, y=validate, seas=2)
-          outlist[[anai]]$echrmse <- rmse_fun(echtmp, y=validate, seas=2)
-          outlist[[anai]]$anarmse <- rmse_fun(anaens, y=validate, seas=2)
-          outlist[[anai]]$RE <- RE_fun(outlist[[anai]]$anarmse, outlist[[anai]]$echrmse)
-          
-          # compute/extract the derived indices for manuscript
-          etmpind <- list(ensmean=Hind%*%echtmp$ensmean, names=indices)
-          etmpind$data <- array(Hind %*% array(echtmp$data, c(nrow(echtmp$data), length(echtmp$data)/nrow(echtmp$data))), c(nrow(Hind), dim(echtmp$data)[2:3]))
-          atmpind <- list(ensmean=Hind%*%anaens$ensmean, names=indices)
-          atmpind$data <- array(Hind %*% array(anaens$data, c(nrow(anaens$data), length(anaens$data)/nrow(anaens$data))), c(nrow(Hind), dim(anaens$data)[2:3]))
-          vind <- list(data=Hind %*% validate$data, names=indices)
-          
-          # write RE results to enssize
-          ermse.tmp <- rmse_fun(etmpind, vind, seas=2)
-          armse.tmp <- rmse_fun(atmpind, vind, seas=2)
-          enssize[[k]][[anai]] <- RE_fun(armse.tmp, y=ermse.tmp)      
-        }
-        save(outlist, armse.tmp, ermse.tmp, file=paste('data/ensemble_size_', nens, '_', paste(timlim, collapse='-'),'.Rdata', sep=''))
-      }
-      rm(outlist)
-    }
-    
-    
-    # ------------------------------------------------------------------------------
-    # run EnSRF with NCEP/NCAR and SOCOL
-    # ------------------------------------------------------------------------------
-    # set up new pseudo-proxies for NNR
-    if (NCEP_SOCOL){
-      Hnr <- compute_H(proxies.mn, nnr.mn, 1000)
-      nr.prox <- nnr.mn
-      nr.i <- apply(Hnr, 1, function(x) which(x == 1))
-      nr.prox$data <- Hnr %*% nnr.mn$data[,,1]
-      nr.prox$ensmean <- NULL
-      nr.prox$lon <- nnr.mn$lon[nr.i]
-      nr.prox$lat <- nnr.mn$lat[nr.i]
-      Hnr <- compute_H(nr.prox, socol.mn)
-      
-      # alternatively use CRU data for pseudo-proxies
-      Hcru <- compute_H(proxies.mn, cru, threshold=1500)
-      cru.i <- apply(Hcru, 1, function(x) if (any(x == 1)) which(x == 1) else NA)
-      Hnnr <- compute_H(proxies.mn, nnr, threshold=1500)
-      nnr.i <- apply(Hnnr, 1, function(x) which(x == 1))
-      cruprox <- cru.mn
-      cruprox$lon <- cru.mn$lon[cru.i]
-      cruprox$lat <- cru.mn$lat[cru.i]
-      cruprox$data <- cru.mn$data[cru.i,,] - apply(cru.mn$data[cru.i,,], 1, mean, na.rm=T) + apply(nnr.mn$data[nnr.i,,], 1, mean, na.rm=T)
-      Hcru <- compute_H(cruprox, socol.mn)
-      
-      # compute new localization for NNR
-      dist.outer <- array(0, rep(ncol(Hnr), 2))
-      for (i in 1:length(socol.mn$lon)) dist.outer[i,1:length(socol.mn$lon)] <- compute_dist(socol.mn$lon, socol.mn$lat, socol.mn$lon[i], socol.mn$lat[i])
-      d.weights <- corr_function(dist.outer, L=5000)
-      nvar <- nrow(dist.outer) %/% length(socol.mn$lon)
-      d.weights2.nnr <- d.weights
-      d.weights2.nnr[1:(length(socol.mn$lon)*nvar), 1:(length(socol.mn$lon)*nvar)] <-
-        d.weights[rep(1:length(socol.mn$lon), nvar), rep(1:length(socol.mn$lon),nvar)]
-      rm(dist.outer)
-      
-      # ------------------------------------------------------------------------------
-      # run EnSRF with SOCOL and NCEP/NCAR reanalysis
-      # ------------------------------------------------------------------------------
-      ana.mn <- EnSRF(socol.mn, nr.prox, R=rep(0.1, nrow(Hnr)), Hcal=Hnr, weights=d.weights2.nnr)   
-      # ------------------------------------------------------------------------------
-      # compute rmse, corr and bias
-      # ------------------------------------------------------------------------------
-      ana.rmse <- rmse_fun(ana.mn, nnr.mn, seas=2)
-      ana.bias <- bias_fun(ana.mn, nnr.mn, seas=2)
-      ana.corr <- corr_fun(ana.mn, nnr.mn, seas=2)
-      soc.rmse <- rmse_fun(socol.mn, nnr.mn, seas=2)
-      soc.bias <- bias_fun(socol.mn, nnr.mn, seas=2)
-      soc.corr <- corr_fun(socol.mn, nnr.mn, seas=2)
-      ana.RE <- RE_fun(ana.rmse, soc.rmse)
-      
-      rm(echam, calibrate, validate, proxies)
-      rm(socol, nnr)
-      rm(d.weights, d.weights2.nnr, d.weights2, Hval)
-      rm(analysis.mn)
-      rm(ana.dist)
-    }
+    # 
+    # # ---------------------------------------------------------------------------------------------
+    # # Run EnSRF with varying ensemble size
+    # # ------------------------------------------------------------------------------
+    # if (ana.enssize){
+    #   nensn <- seq(5,25,5)
+    #   calibrate$data <- pdata + dist.arr
+    #   R <- apply(array(dist.arr, c(nrow(Hcal), 2, ncol(pdata)/2))**2, c(1,2), sum) / (ncol(pdata)/2 - 1)
+    #   
+    #   enssize <- list()
+    #   for (k in 1:5){
+    #     nens <- nensn[k]
+    #     outlist <- list()
+    #     enssize[[k]] <- list()
+    #     for (anai in 1:10){
+    #       # select nens ensemble members randomly from simulations 1:29
+    #       print(paste('Running the ',anai,'-th analysis for ', nensn[k], ' ensemble members', sep=''))
+    #       nsim <- dim(echam$data)[3]
+    #       simi <- sample(1:nsim, nens, replace=FALSE)
+    #       echtmp <- echam
+    #       echtmp$data <- echam$data[,,simi]
+    #       echtmp$ensmean <- apply(echam$data, 1:2, mean, na.rm=T)
+    #       anaens <- EnSRF(echtmp, calibrate, R=R, Hcal=Hcal, weights=d.weights_all)
+    #       
+    #       # compute the output statistics
+    #       outlist[[anai]] <- list()
+    #       outlist[[anai]]$simi <- simi
+    #       outlist[[anai]]$echcor <- corr_fun(echtmp, y=validate, seas=2)
+    #       outlist[[anai]]$anacor <- corr_fun(anaens, y=validate, seas=2)
+    #       outlist[[anai]]$echbias <- bias_fun(echtmp, y=validate, seas=2)
+    #       outlist[[anai]]$anabias <- bias_fun(anaens, y=validate, seas=2)
+    #       outlist[[anai]]$echrmse <- rmse_fun(echtmp, y=validate, seas=2)
+    #       outlist[[anai]]$anarmse <- rmse_fun(anaens, y=validate, seas=2)
+    #       outlist[[anai]]$RE <- RE_fun(outlist[[anai]]$anarmse, outlist[[anai]]$echrmse)
+    #       
+    #       # compute/extract the derived indices for manuscript
+    #       etmpind <- list(ensmean=Hind%*%echtmp$ensmean, names=indices)
+    #       etmpind$data <- array(Hind %*% array(echtmp$data, c(nrow(echtmp$data), length(echtmp$data)/nrow(echtmp$data))), c(nrow(Hind), dim(echtmp$data)[2:3]))
+    #       atmpind <- list(ensmean=Hind%*%anaens$ensmean, names=indices)
+    #       atmpind$data <- array(Hind %*% array(anaens$data, c(nrow(anaens$data), length(anaens$data)/nrow(anaens$data))), c(nrow(Hind), dim(anaens$data)[2:3]))
+    #       vind <- list(data=Hind %*% validate$data, names=indices)
+    #       
+    #       # write RE results to enssize
+    #       ermse.tmp <- rmse_fun(etmpind, vind, seas=2)
+    #       armse.tmp <- rmse_fun(atmpind, vind, seas=2)
+    #       enssize[[k]][[anai]] <- RE_fun(armse.tmp, y=ermse.tmp)      
+    #     }
+    #     save(outlist, armse.tmp, ermse.tmp, file=paste('data/ensemble_size_', nens, '_', paste(timlim, collapse='-'),'.Rdata', sep=''))
+    #   }
+    #   rm(outlist)
+    # }
+    # 
+    # 
+    # # ------------------------------------------------------------------------------
+    # # run EnSRF with NCEP/NCAR and SOCOL
+    # # ------------------------------------------------------------------------------
+    # # set up new pseudo-proxies for NNR
+    # if (NCEP_SOCOL){
+    #   Hnr <- compute_H(proxies.mn, nnr.mn, 1000)
+    #   nr.prox <- nnr.mn
+    #   nr.i <- apply(Hnr, 1, function(x) which(x == 1))
+    #   nr.prox$data <- Hnr %*% nnr.mn$data[,,1]
+    #   nr.prox$ensmean <- NULL
+    #   nr.prox$lon <- nnr.mn$lon[nr.i]
+    #   nr.prox$lat <- nnr.mn$lat[nr.i]
+    #   Hnr <- compute_H(nr.prox, socol.mn)
+    #   
+    #   # alternatively use CRU data for pseudo-proxies
+    #   Hcru <- compute_H(proxies.mn, cru, threshold=1500)
+    #   cru.i <- apply(Hcru, 1, function(x) if (any(x == 1)) which(x == 1) else NA)
+    #   Hnnr <- compute_H(proxies.mn, nnr, threshold=1500)
+    #   nnr.i <- apply(Hnnr, 1, function(x) which(x == 1))
+    #   cruprox <- cru.mn
+    #   cruprox$lon <- cru.mn$lon[cru.i]
+    #   cruprox$lat <- cru.mn$lat[cru.i]
+    #   cruprox$data <- cru.mn$data[cru.i,,] - apply(cru.mn$data[cru.i,,], 1, mean, na.rm=T) + apply(nnr.mn$data[nnr.i,,], 1, mean, na.rm=T)
+    #   Hcru <- compute_H(cruprox, socol.mn)
+    #   
+    #   # compute new localization for NNR
+    #   dist.outer <- array(0, rep(ncol(Hnr), 2))
+    #   for (i in 1:length(socol.mn$lon)) dist.outer[i,1:length(socol.mn$lon)] <- compute_dist(socol.mn$lon, socol.mn$lat, socol.mn$lon[i], socol.mn$lat[i])
+    #   d.weights <- corr_function(dist.outer, L=5000)
+    #   nvar <- nrow(dist.outer) %/% length(socol.mn$lon)
+    #   d.weights2.nnr <- d.weights
+    #   d.weights2.nnr[1:(length(socol.mn$lon)*nvar), 1:(length(socol.mn$lon)*nvar)] <-
+    #     d.weights[rep(1:length(socol.mn$lon), nvar), rep(1:length(socol.mn$lon),nvar)]
+    #   rm(dist.outer)
+    #   
+    #   # ------------------------------------------------------------------------------
+    #   # run EnSRF with SOCOL and NCEP/NCAR reanalysis
+    #   # ------------------------------------------------------------------------------
+    #   ana.mn <- EnSRF(socol.mn, nr.prox, R=rep(0.1, nrow(Hnr)), Hcal=Hnr, weights=d.weights2.nnr)   
+    #   # ------------------------------------------------------------------------------
+    #   # compute rmse, corr and bias
+    #   # ------------------------------------------------------------------------------
+    #   ana.rmse <- rmse_fun(ana.mn, nnr.mn, seas=2)
+    #   ana.bias <- bias_fun(ana.mn, nnr.mn, seas=2)
+    #   ana.corr <- corr_fun(ana.mn, nnr.mn, seas=2)
+    #   soc.rmse <- rmse_fun(socol.mn, nnr.mn, seas=2)
+    #   soc.bias <- bias_fun(socol.mn, nnr.mn, seas=2)
+    #   soc.corr <- corr_fun(socol.mn, nnr.mn, seas=2)
+    #   ana.RE <- RE_fun(ana.rmse, soc.rmse)
+    #   
+    #   rm(echam, calibrate, validate, proxies)
+    #   rm(socol, nnr)
+    #   rm(d.weights, d.weights2.nnr, d.weights2, Hval)
+    #   rm(analysis.mn)
+    #   rm(ana.dist)
+    # }
     
     validate <- validate_init
     validate.anom <- validate.anom_init
@@ -2520,19 +2494,27 @@ if (calc_vali_stat){
     
     if (every2grid) {
       if (monthly_out) {
-        save.image(file=paste0("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+        save.image(file=paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                                syr,"-",eyr,"_monthly_2ndgrid.Rdata"))  
+        file.remove(paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
+                           syr,"-",eyr,"_monthly_2ndgrid.Rdata"))
       } else {
-        save.image(file=paste0("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+        save.image(file=paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                                syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
+        file.remove(paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
+                            syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
       }  
     } else {
       if (monthly_out) {
-        save.image(file=paste("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+        save.image(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                               syr,"-",eyr,"_monthly.Rdata",sep=""))
+        file.remove(paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
+                           syr,"-",eyr,"_monthly.Rdata",sep=""))
       } else {
-        save.image(file=paste("../data/image/",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+        save.image(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                               syr,"-",eyr,"_seasonal.Rdata",sep=""))
+        file.remove(paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
+                          syr,"-",eyr,"_seasonal.Rdata",sep=""))
       }
     }
   }#end of validate-loop

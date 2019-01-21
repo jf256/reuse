@@ -2,13 +2,50 @@ This file serves as an overview of all experiments (e.g. date, explanation, name
 With this it should be easier to find plots, data etc. from former experiments.
 ################ EXPERIMENTS STILL TODO: ##################
 
+"NTREND_tree_prox_only"              # compare NTREND vs PAGES vs Petra by JF 2019/01
+  # results: same as nevin's version
+  #          only tiny update
+  # possible solutions: increase model error covariance
+  #                     reduce observation error 
+"NTREND_tree_prox_only_0.5timesR"    # half observation error 
+  # results: update only a tiny bit larger, RE is little worse
+"NTREND_tree_prox_only_0.1timesR"    # even smaller obs error experiment
+  # results: really larger update, i.e. system works
+  #          however, corr only little better and RE in centr. Asia worse
+"NTREND_tree_prox_only_1.2inflation" # increase model error covariance by inflation
+  # results: much worse because model spread is mostly inflated more than proxies reduce it
+"PAGES_tree_prox_only"               # compare NTREND vs PAGES vs Petra by JF 2019/01
+  # results: same as nevin's
+  #          generally good skill, but Asia and SW US neg. skill, probably poor or precip proxies
+  #          too much update in regions where many proxies get assimilated, to little in others
+  # possible solutions: average proxy data per grid cell to increase signal to noise ratio
+  #                     more advanced would be a weighted proxy average
+"PAGES_tree_prox_only_avg_per_grid"  # does the first solution
+  # results: than also very few series to assimilate and even seem to have large residuals
+  #          hardly any update due to assimilation
+  
+write out residuals to log file
+index_correlation/RE plots regions + NAO, PNA, etc. (land_only=F?)
+index time series plots regions + NAO, PNA, etc.
+Nevin's screening ansehen!
+20CR screening einbauen
+  
+"Petra_tree_prox_only"               # compare NTREND vs PAGES vs Petra by JF 2019/01
 
-"mon_from_seas"               # can we get monthly res from seasonal proxies, 
-                              # maybe idealized pseudoproxy experiment
-"EKF400_v1.4_new_error"       # run with new error covar estimates from Luca 
-"PAGES_2_0_full"              # complete PAGES proxy database version 2.0
-"PAGES_2_0_screened"          # screened version of PAGES DB 2.0, just good asian rec.
-"all_data_2017"               # include ISTI, Petra's TRW and more docu and ... data
+"DAPS_pseudoprox"                    # make DAPS pseudoproxy experiment
+
+"20CR_qual_contr"                    # introduce quality control/screening of input data as in 20CR
+check Nevin's screening experiments for combing data sets
+new selection based in best proxies in each region, but how many and which order?
+switch 20CR validation on!
+
+
+"mon_from_seas"                      # can we get monthly res from seasonal proxies, 
+                                     # maybe idealized pseudoproxy experiment
+"EKF400_v1.4_new_error"              # run with new error covar estimates from Luca 
+"PAGES_2_0_full"                     # complete PAGES proxy database version 2.0
+"PAGES_2_0_screened"                 # screened version of PAGES DB 2.0, just good asian rec.
+"all_data_2017"                      # include ISTI, Petra's TRW and more docu and ... data
 "proxies_only_pval99_no_forc_big_ens_changing_ncovar100" 	# TPS, PETRA, PAGES, NTREND
 "proxies_only_pval99_no_forc_big_ens_changing_ncovar500"	# TPS, PETRA, PAGES, NTREND
 "proxies_only_pval99_no_forc_big_ens_changing_ncovar1000"	# TPS, PETRA, PAGES, NTREND

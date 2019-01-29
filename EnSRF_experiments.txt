@@ -1,3 +1,35 @@
+########### TODO #########
+Currently working on improvements in proxy only period
+- 20CR type of screening einbauen. does it make sense with proxies and forward model?
+
+- Does precip forward model work? T and TP exp. look the same
+  Yes, precip is only account for in Petra35 but not PAGES nor Petra_full
+  ADD!
+  
+- Add removal of duplicate proxy data, considering from various archives, too
+
+- ADD doc time localization
+
+- index_correlation/RE plots regions + NAO, PNA, etc. (land_only=F?)
+- index time series plots regions + NAO, PNA, etc.
+
+OK- is PAGES year wrong??? because previous PAGES data was Okt-Sep and new file is Apr. to Mar.
+  I (JF) believe it works properly. However PAGES data is treated as temp. sensitive only!
+  and there may be duplicated in PAGES but not recalibrated, at the moment both are assimilated!
+OK- vind.anom missing in prepplot! is it needed?
+OK- assimilation of many records makes it very slow!!!
+OK-  write out residuals to log file
+  already saved in calibrate$var_residu
+OK  should work if ind_ECHAM=T, check and remove switch if it works to always create these plots
+OK- Nevin's screening ansehen!
+OK- try mixed signal  
+OK- 20CR validation testen
+  switched on in current exp., let's see if it works? YES, but much slower!
+OK- are we using full or screened-by-Raphi(FDR) PAGES data and which version number?
+  full version, but I checked FDR screened records now! Still many probably prec sensitive in US SW
+
+
+
 This file serves as an overview of all experiments (e.g. date, explanation, name).
 With this it should be easier to find plots, data etc. from former experiments.
 ################ EXPERIMENTS STILL TODO: ##################
@@ -14,6 +46,7 @@ With this it should be easier to find plots, data etc. from former experiments.
   #          however, corr only little better and RE in centr. Asia worse
 "NTREND_tree_prox_only_1.2inflation" # increase model error covariance by inflation
   # results: much worse because model spread is mostly inflated more than proxies reduce it
+  
 "PAGES_tree_prox_only"               # compare NTREND vs PAGES vs Petra by JF 2019/01
   # results: same as nevin's
   #          generally good skill, but Asia and SW US neg. skill, probably poor or precip proxies
@@ -23,17 +56,50 @@ With this it should be easier to find plots, data etc. from former experiments.
 "PAGES_tree_prox_only_avg_per_grid"  # does the first solution
   # results: than also very few series to assimilate and even seem to have large residuals
   #          hardly any update due to assimilation
-  
-write out residuals to log file
-index_correlation/RE plots regions + NAO, PNA, etc. (land_only=F?)
-index time series plots regions + NAO, PNA, etc.
-Nevin's screening ansehen!
-20CR screening einbauen
+"PAGES_FDR_screened_tree_prox_only"
   
 "Petra_tree_prox_only"               # compare NTREND vs PAGES vs Petra by JF 2019/01
+  # results: correlation overall positiv, less high than NTREND but larger area
+  #          much more spread reduction due to more series. however RE in many regions negative
+"NTREND_PAGES_PETRA_no_screening_T"  # all Tree data from these 3 data sets,
+                                     #assuming proxies are only temp sensitive
+"NTREND_PAGES_PETRA_no_screening_TP" # same but assuming that temp and precip
+                                     # sensitive in reg. model
+"NTREND_PAGES_PETRA_p05_scr_TP"      # 95% conf. that clim sensitive screening
+"NTREND_PAGES_PETRA_p05_scr_AIC_TP"  # same plus AIC screening for best 
+                                     # conseq. months only
+  # results from 4 screening exp.: in temp and precip correlation maps: the more proxies the better,
+  #   screening does not help, no diff between T and TP
+  #   for RE: NTREND jut positive but limited region, PAGES worse, Petra even worse
+  #           all together best but neg. in some regions, p-val screening helps
+"NTREND_PAGES_PETRA_p05_scr_AIC_TP_50c_PbL_Pc2L_100m"  # same plus 50% clim covar, 
+                                                       # 2 times clim local. dist. 100 members
+  # results: corr looks great but RE terrible because to much reduction of spread
+"NTREND_PAGES_PETRA_p001_scr_AIC_TP_50c_PbL_Pc2L_100m"  # same but p-value 0.001
+  # results: corr a bit worse, RE better but close to zero, not sure if RE is right measure?
+"NTREND_50c_PbL_Pc2L_100m"              # same to check if RE is positive with fewer input data
+  # results: 
+  
+"NTREND_PAGES_PETRA_p05_scr_AIC_TP"     # with P working, too. Before only T was used
 
-"DAPS_pseudoprox"                    # make DAPS pseudoproxy experiment
+"NTREND_PAGES_PETRA_p05_scr_AIC_TP_2R"  # with residuals*2 as R to avoid overcorrection 
 
+"NTREND_PAGES_PETRA_p05_scr_AIC_TP_best_per_grid"      # only use one proxy record per grid 
+  # as quality thinning to avoid neg. error to spread ratio that works with temporally
+  # changing proxy network. Use record with lowest residual only
+  
+"NTREND_PETRA_p001_scr_T"     # check assimilation order, best records first 
+"PETRA_NTREND_p001_scr_T"     # check assimilation order, worse records first
+  # results: 
+  
+  
+"DAPS_pseudoprox"                    # make DAPS pseudoproxy experiment with orig JF setup
+  # redo with proper months as monthly instr. data instead of realprox
+  # in this case only our seasonal validation plots are not correct but netcdf export 
+  # for widmann should be fine after cdo yearmean on monthly output
+  # or does season=c(3,9) switch work? guess rather not
+"DAPS_pseudoprox_50c_PbL_Pc2L_100m"  # DAPS experiment Roni's best and fast clim. covariance
+                                     # i.e. 50% clim covar, 2 times clim local. dist. 100 members
 "20CR_qual_contr"                    # introduce quality control/screening of input data as in 20CR
 check Nevin's screening experiments for combing data sets
 new selection based in best proxies in each region, but how many and which order?

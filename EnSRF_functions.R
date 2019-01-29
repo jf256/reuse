@@ -18,7 +18,7 @@ ghcnprecippath <- paste0(dataextdir,'../assim_data/ghcn/precip_v2/')
 #histalppath <- paste0(dataintdir,'instr/histalp/')
 petrapath <- paste0(dataextdir,'assimil_data/proxies/petra/')
 mxdpath <- paste0(dataextdir,'assimil_data/proxies/mxd/')
-pagespath = paste0(dataextdir,'assimil_data/proxies/PAGES/PAGES_DB_extraction_201801/')
+pagespath = paste0(dataextdir,'assimil_data/proxies/PAGES/')
 ntrendpath = paste0(dataextdir,'assimil_data/proxies/NTREND/')
 schweingrpath <- paste0(dataextdir,'assimil_data/proxies/schweingr/')
 twentycrpath <- paste0(dataextdir,'vali_data/20cr/')
@@ -1072,7 +1072,7 @@ read_proxy2 <- function(syr,eyr){
 read_pages = function(fsyr,feyr,archivetype, validate) {
   # load(paste0(paste0(workdir,'/../pages_proxies.RData', sep='')))
   # load("/scratch3/veronika/reuse/pages_proxies.RData")
-  load(paste0(dataextdir,"assimil_data/proxies/PAGES/pages_proxies_roni_2018_01.RData"))
+  load(paste0(pagespath,"pages_proxies_roni_2018_01.RData"))
   
   if(archivetype == "tree") {
     if(exists("mrNH")){rm(mrNH)}
@@ -1173,7 +1173,7 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
             write(paste0(p_tree$lon[i]," , ",p_tree$lat[i]),file=paste0('../log/',logfn),append=T)
             count=count+1
           }
-        }else  {
+        } else {
           if (!exists("mrSH")){
             mrSH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # nr of coeff + intercept
             var_residuSH <- NA
@@ -1183,7 +1183,7 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
             SHdata <- p_tree$data[,i]
             write(paste0(p_tree$lon[i]," , ",p_tree$lat[i]),file=paste0('../log/',logfn),append=T)
             count=count+1
-          }else{
+          } else {
             mrSH <- rbind(mrSH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))
             var_residuSH <- c(var_residuSH,rep(NA,1))
             SHlat <- c(SHlat,p_tree$lat[i])
@@ -1194,7 +1194,7 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
             count=count+1
           }
         }
-      }else{ # we can calculate the regression
+      } else { # we can calculate the regression
         # make variable for each month
         t5 = t3[c(4:(length(t3)-9))]
         t4 = t(array(t5,c(6,length(t5)/6))) #makes half year bunches
@@ -2043,20 +2043,20 @@ read_trw_petra<-function(fsyr, feyr, validate){
 }
 
 read_pseudo<-function(){
-  pseudodata<-as.matrix(read.table('../pseudoproxy_no_gaps.txt'))
-  lonlat<-as.matrix(read.table('../lonlat_no_gaps.txt',header=T))
+  pseudodata<-as.matrix(read.table(paste0(dataextdir,'DAPS_pseudoprox/pseudoproxy_no_gaps.txt')))
+  lonlat<-as.matrix(read.table(paste0(dataextdir,'DAPS_pseudoprox/lonlat_no_gaps.txt'),header=T))
   colnames(lonlat)<-NULL
   rownames(lonlat)<-NULL
   colnames(pseudodata)<-NULL
   pseudolist<-list(data=matrix(rep(NA,117*76),117,76),time=rep(NA,117), lon=rep(NA,76),lat=rep(NA,76))
   pseudotime<-pseudodata[,1]
   pseudodata<-pseudodata[,2:77]
-  pseudolist$data<-pseudodata
+  pseudolist$data<-apply(pseudodata,2,scale)
   pseudolist$time<-pseudotime
   pseudolist$lat<-lonlat[,2]
   pseudolist$lon<-lonlat[,1]
   
-  nc=nc_open(paste(crupath,'/cru_allvar_abs_1901-2004.nc',sep=''), write=F)
+  nc=nc_open(paste0(crupath,'cru_allvar_abs_1901-2004.nc'), write=F)
   t1=ncvar_get(nc, "temp2") # for CRU temp
   t2 <- t1[,,1:1248] # from year 1901 till 1971
   lonlist=ncvar_get(nc, "lon")

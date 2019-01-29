@@ -16,7 +16,7 @@ rm(list=ls())
 # enter syr ane eyr manually
 
 
-syr=1900
+syr=1901
 eyr=1990
 
 # read syr and eyr from Rscript parameters entered in bash and 
@@ -87,7 +87,7 @@ for (cyr in syr2:eyr) {
     instrumental=F
   }
 
-  if (TRW|MXD|SCHWEINGR|PAGES|NTREND|TRW_PETRA) {        
+  if (TRW|MXD|SCHWEINGR|PAGES|NTREND|TRW_PETRA|pseudo_prox) {        
     real_proxies=T         # Proxy data experiment (regression NOT H operator) 
   } else {
     real_proxies=F
@@ -104,14 +104,15 @@ for (cyr in syr2:eyr) {
   #   real_proxies=T
   # }
   # next line not included yet: 
-  if (cyr > min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)]) & cyr<=max(c(eyr_cru,eyr_twentycr,eyr_recon)[c(vali_cru, vali_twentycr, vali_recon)])) {        # if we don't use reconvali, the eyr here should be changed (Error in valiall : object 'valiall' not found) -> but then instead of the eyr we should use cyr
+  if (cyr > min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)]) & 
+      cyr <= max(c(eyr_cru,eyr_twentycr,eyr_recon)[c(vali_cru, vali_twentycr, vali_recon)])) {        # if we don't use reconvali, the eyr here should be changed (Error in valiall : object 'valiall' not found) -> but then instead of the eyr we should use cyr
     vali=T                 # switch off prepplot if no vali data selected
   } else {
     vali=F
   }
   if ((cyr > syr_cru) & (cyr <=eyr_cru) & vali_cru) {
     cru_vali=T             # monthly CRU TS3 temp, precip and HADSLP2 gridded instrumentals (1901-2004)
-    #  ind_recon=T            # Stefan's reconstructed indices until 1948 and NCAR reanalysis later added to CRU
+    #  ind_recon=T         # Stefan's reconstructed indices until 1948 and NCAR reanalysis later added to CRU
   } else {
     cru_vali=F 
     #  ind_recon=F
@@ -183,7 +184,7 @@ for (cyr in syr2:eyr) {
     }
   }
   
-  # 1.1.2 Load/creat bigger ensemble size 
+  # 1.1.2 Load/create bigger ensemble size 
   # covarclim: estimate of the background covariance matrix by blending with the climatology
   # no_forc_big_ens: use in the whole assimilation
   # just use limited number of years (n_covar) to make calculation faster
@@ -210,28 +211,26 @@ for (cyr in syr2:eyr) {
     echam$ensmean <- echam$ensmean[tpspos,]
     echam$names <- echam$names[tpspos]
     if (anomaly_assim){
-      # tpspos <- c(which(echam_anom$names=='temp2'), which(echam_anom$names=='precip'),
-      #             which(echam_anom$names=='slp'))
-      tpspos <- which(echam_anom$names=='temp2'|echam_anom$names=='precip'|echam_anom$names=='slp')
+      tpspos <- c(which(echam_anom$names=='temp2'), which(echam_anom$names=='precip'),
+                  which(echam_anom$names=='slp'))
       echam_anom$data <- echam_anom$data[tpspos,,]
       echam_anom$ensmean <- echam_anom$ensmean[tpspos,]
       echam_anom$names <- echam_anom$names[tpspos]
-      if(state=="static" & ((covarclim>0 | no_forc_big_ens))){
-        if(no_forc_big_ens){
-          echam_anom$lat<-echam_anom$lat[tpspos]
-          echam_anom$lon<-echam_anom$lon[tpspos]
-        }else if(covarclim>0){
-          echanomallts$lon<-echanomallts$lon[tpspos]
-          echanomallts$lat<-echanomallts$lat[tpspos]
-        }
+      if (state == "changing" & covarclim>0) {
+        tpspos <- c(which(echanomallts$names=='temp2'), which(echanomallts$names=='precip'),
+                    which(echanomallts$names=='slp'))
+        echanomallts$data <- echanomallts$data[tpspos,,]
+        echanomallts$ensmean <- echanomallts$ensmean[tpspos,]
+        echanomallts$names <- echanomallts$names[tpspos]
       }
-      tpspos<-c(which(echam_clim$names=='temp2'), which(echam_clim$names=='precip'),
-                which(echam_clim$names=='slp'))
+      tpspos <- c(which(echam_clim$names=='temp2'), which(echam_clim$names=='precip'),
+                  which(echam_clim$names=='slp'))
       echam_clim$data <- echam_clim$data[tpspos,,]
       echam_clim$ensmean <- echam_clim$ensmean[tpspos,]
       echam_clim$names <- echam_clim$names[tpspos]
     }
   }
+  
   if (no_stream) {
     # ACHTUNG stream var has ERROR because the 5/9 levels before/after 1880 have a lat dimension
     tpspos <- c(which(echam$names!='stream'))
@@ -675,13 +674,13 @@ for (cyr in syr2:eyr) {
       twentycr_vali=F
       if (v=="cru_vali"){
         cru_vali=T
-        print("cru is true")
+        #print("cru is true")
       } else if (v=="recon_vali"){
         recon_vali=T
-        print("recon is true")
+        #print("recon is true")
       } else if (v=="twentycr_vali"){
         twentycr_vali=T
-        print("20cr is true")
+        #print("20cr is true")
       }
       
       if (every2grid) {
@@ -1647,7 +1646,7 @@ for (cyr in syr2:eyr) {
                 # }
                 x2tmp <- analysis$data[,i,] # entire state vector at time step i, all members
                 x2 <- x2tmp[h.i,,drop=F] # state vector at time step i and h.i, all members
-                if(mixed_loc){ # changed for the B exps: first combining and than localizing
+                if (mixed_loc) { # changed for the B exps: first combining and than localizing
                   PH <- (analysis$data[,i,] %*% t(x2) / (nens - 1)) # %*% t(H)
                 } else { # original
                   PH <- (analysis$data[,i,] %*% t(x2) / (nens - 1) * wgt) %*% t(H)

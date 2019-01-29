@@ -174,11 +174,11 @@ if (generate_DOCUM){
   source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_AMJJA.R"))
 }
 
-# generate PAGES v2 from Raphi's 2018/01 export see:
-#   /tank/exports/giub/EKF400/assimil_data/proxies/PAGES/read_pages_2018.R Skript from Veronika
+# generate PAGES v2 from Raphi's 2018/01 export (version 1.6.1 from Raphi's data base):
+#   /tank/exports/giub/EKF400/assimil_data/proxies/PAGES/read_pages_2018.R # Skript from Veronika
 
 # generate NTREND
-#   Roni is looking for her script
+#   /tank/exports/giub/EKF400/assimil_data/proxies/NTREND/N-Trend.R        # Skript from Veronika
 
 # generate petra, schweingr, mxd, etc. missing
 
@@ -276,10 +276,15 @@ if (generate_PROXIES){
   save(realprox, file=paste0("../data/proxies/real_proxies_",fsyr,"-",feyr,".Rdata"))
 }
 
-
-if (generate_PSEUDO){
-  print("generate_PSEUDO")
-  pseudoprox<-read_pseudo()
-  realprox<-pseudoprox
-  save(realprox, file=paste0("../data/proxies/real_proxies_",fsyr,"-",feyr,".Rdata"))
+if (pseudo_prox) {
+  if (generate_PSEUDO){
+    print("generate_PSEUDO")
+    pseudoprox<-read_pseudo()
+    realprox<-pseudoprox
+    save(realprox, file=paste0("../data/proxies/DAPS_pseudoproxies_",fsyr,"-",feyr,".Rdata"))
+  } else {
+    # load DAPS pseudo proxies in object called 'realprox'
+    load(file=paste0("../data/proxies/DAPS_pseudoproxies_",fsyr,"-",feyr,".Rdata"))
+  }  
 }
+

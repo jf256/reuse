@@ -18,7 +18,7 @@
 # Figs.13: RootMeanSquareError Maps                            #
 # Figs.14: Validation Indices TS                               #
 # Figs.15: Validation Indices Correlations                     #
-# Figs.16: Plot Distance Weight                                #
+### Figs.16: Plot Distance Weight                                #
 # Appendix: Commented Plot parts moved to here                 #
 ################################################################
 rm(list=ls())
@@ -176,24 +176,30 @@ for (v in validation_set){
       load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_seasonal.Rdata"))
     }
   }
+  #if (monthly_out) {
+  #  stop("insert spos and epos for monthly plots! Not coded yet")
+  #} else {
+  #  spos <- which(vind[[1]]$time == syr)
+  #  epos <- which(vind[[1]]$time == paste0(eyr,'.5'))
+  #}
   validate.init <- validate
-  vind.init<-vind
-  vind.anom.init<-vind.anom
-  vind.anom.tot.init<-vind.anom.tot
-  vind.tot.init<-vind.tot
-  validate.anom.init<-validate.anom
+  validate.anom.init <- validate.anom
+  vind.init <- vind
+  vind.anom.init <- vind.anom
+  vind.tot.init <- vind.tot
+  vind.anom.tot.init <- vind.anom.tot
   
   validate <- validate.init[[v]]
+  validate.anom<-validate.anom.init[[v]]
   vind<-vind.init[[v]]
   vind.anom<-vind.anom.init[[v]]
-  vind.anom.tot<-vind.anom.tot.init[[v]]
   vind.tot<-vind.tot.init[[v]]
-  validate.anom<-validate.anom.init[[v]]  
+  vind.anom.tot<-vind.anom.tot.init[[v]]
   
   data.dim <- dim(echam$data)[c(1,2,2,3)]
   data.dim[2:3] <- c(s.plot,data.dim[3]/s.plot)
   ens.dim <- c(nrow(echam$ensmean), s.plot, ncol(echam$ensmean)/s.plot)
-  print(paste0("monthly_out: ",monthly_out))
+  print(paste("monthly_out:",monthly_out))
   
   
   
@@ -1075,8 +1081,8 @@ for (v in validation_set){
   ############### figs.14: Validation Indices TS  ###############
   ###############################################################
   
-  if (ind_ECHAM&!monthly_out) {
-    
+  #if (ind_ECHAM&!monthly_out) {
+  if (!monthly_out) {
     ################# Absolute values ##########################
     
     pdf(paste(figpath,'/vali_ind.pdf',sep='/'), width=9, height=6, paper='special')
@@ -1377,19 +1383,19 @@ for (v in validation_set){
   ###############################################################
   
   
-  
-  ###############################################################
-  ############ figs.16: Plot Distance Weight  ###################
-  ###############################################################
-  
-  # plot distance weights
-  if (plot_dweights) {
-    library(raster)
-    pdf(paste(figpath,'distance_weights.pdf',sep='/'), width=4.5, height=4.5, 
-        paper='special')
-    image(d.weights_all)
-    dev.off()
-  }
+  # 
+  # ###############################################################
+  # ############ figs.16: Plot Distance Weight  ###################
+  # ###############################################################
+  # 
+  # # plot distance weights
+  # if (plot_dweights) {
+  #   library(raster)
+  #   pdf(paste(figpath,'distance_weights.pdf',sep='/'), width=4.5, height=4.5, 
+  #       paper='special')
+  #   image(d.weights_all)
+  #   dev.off()
+  # }
   
   
   ###############################################################

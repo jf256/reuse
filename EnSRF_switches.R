@@ -2,8 +2,10 @@
 ################################ EnSRF_switches.R ####################################
 ######################################################################################
 
+expname="NTREND_50c_PbL_Pc2L_100m" 
+version="v1.3"    # set code version number for experiment and netcdf file names
+# v1.1 at DKRZ is experiment 1.2 here!
 
-expname="PAGES_tree_prox_only_avg_per_grid"
 
 
 #####################################################################################
@@ -73,7 +75,9 @@ generate_DOCUM=F                # if TRUE -> yuri's docu. data collection is rea
 generate_PAGES=F                # using the screened PAGES proxy dataset
                     # CODE from Roni missing to convert csv to RData 
 generate_NTREND=F   # CODE from Roni missing to convert csv to RData 
+# REMEMBER to use 12 months temp. forward model and yearly output for next which
 generate_PSEUDO=F               # DAPS PSEUDO PROXY EXPERIMENT: Set pseudo_prox to T further down (approx Line 145)
+                                # if F but pseudo_prox below is T, then .RData file is loaded
 
 
 # At the moment: any combination of read.these should be possible
@@ -86,30 +90,31 @@ generate_PSEUDO=F               # DAPS PSEUDO PROXY EXPERIMENT: Set pseudo_prox 
 
 generate_PROXIES=T
 
-if (generate_PROXIES==T) {
+#if (generate_PROXIES==T) {
   # You can choose any combination of months and variable (T&P) for regression_months.
   # Then you can choose for each source whether it to be included or not. 
   # The resulting realprox$mr is a matrix of dimension [1:x,1:25], where x depends on your chosen sources.
   # The 25 originates from 12 months for T and 12 for P plus the intercept. 
-  # The respective coloumns that were not chosen remain NA. 
+  # The respective columns that were not chosen remain NA. 
   # For MXD and SCHWEINGR it only takes the temperature and leaves the precip. months NA.
   # PAGES_tree data also consists of location on the SH: if for ex. t4 (is chosen), it takes t10 (t4+6) 
   # for any locations with lat<0. 
   
-  regression_months = c('t.first', 't.second','t.third','t.fourth','t.fifth','t.sixth') #'p.first', 'p.second','p.third','p.fourth','p.fifth','p.sixth'
+  #regression_months = c('t.first', 't.second','t.third','t.fourth','t.fifth','t.sixth') #'p.first', 'p.second','p.third','p.fourth','p.fifth','p.sixth'
+  regression_months = c('t.first', 't.second','t.third','t.fourth','t.fifth','t.sixth', 'p.first', 'p.second','p.third','p.fourth','p.fifth','p.sixth')
   
   #### PROXIES ####
   TRW=F          # 35 best TRW records from Petra's collection
   MXD=F          # additional MXD, not gridded Schweizgruber data
   SCHWEINGR=F    # Schweingruber/Briffa MXD grid
-  PAGES=T        # PAGESdata base version 2 from 01/2018
-  NTREND=F       # NTREND best tree data version 2018 (identical with 2015 paper)
+  PAGES=F        # PAGESdata base version 2 from 01/2018
+  NTREND=T       # NTREND best tree data version 2018 (identical with 2015 paper)
   TRW_PETRA=F    # all TRW series from ITRDB and recalibrated by Petra
   #################
   
   lm_fit_data = "CRU"          # can be CRU or GISS to calculate the reg coeff-s
   type = c("tree")              # only works with tree and coral (and both indiviually as well)
-} 
+#} 
 # END if generate_PROXIES
 
 
@@ -119,16 +124,16 @@ if (generate_PROXIES==T) {
 # Only either AIC or PVALUE can be TRUE, if both are set to TRUE only the AIC part will be run
 # if neither of AIC and PVALUE are TRUE then the full model is used without screening
 
-AIC=F                           # calculates linear regression models for different continuous subperiods and takes the best
-# one according to the AIC value.
+AIC=F                           # calculates linear regression models for different continuous 
+# subperiods and takes the best one according to the AIC value.
 # furthermore, it only keeps the signifcant models with pvalue>alpha (alpha set below)
 # Example T1-T6 AIC = 9, T2-T4 AIC=-1 (all combinations are respected)
 # => smallest AIC => best model=> if not significant => tree excluded
 
 PVALUE=F                        # calculates only the full regression model and only keeps the significant ones (pval>alpha)
-alpha=0.01                      # Significance level default: 0.05 or 0.01
+alpha=0.001                     # Significance level default: 0.05 or 0.01
 
-avg_realprox_per_grid=T         # if more than one tree is situated in one Echam-Gridcell an average 
+avg_realprox_per_grid=F         # if more than one tree is situated in one Echam-Gridcell an average 
 # of all treeringwidth is calculated before makeing the regression model. Because of the independed 
 # loading of the different datasets (ntrend, pages, petra), the average is only calculated taken 
 # from trees of the same dataset ->if all 3 datasets are used it can occur, that still 3 averaged 
@@ -148,37 +153,37 @@ ghcn_prec=F
 import_luca=F                   # old and new docu data 
 
 #### Proxy Data ####
-trw_only=F                      # Petra's 35 best TRW only
-mxd_only=F                      # Use only MXD tree ring proxies, NOT Petra's TRW
-schweingr_only=F                # Use Schweingruber MXD grid only
-pseudo_prox=F                   # Pseudo Proxies for generate_PSEUDO
+#trw_only=F                      # Petra's 35 best TRW only
+#mxd_only=F                      # Use only MXD tree ring proxies, NOT Petra's TRW
+#schweingr_only=F                # Use Schweingruber MXD grid only
+pseudo_prox=F                    # use DAPS Pseudo-Proxies
 
 # all available data selected above are automatically switched on when available in EnSRF_data
 
-if (generate_PROXIES){
-  if ((generate_PAGES & PAGES) | (generate_NTREND & NTREND) | (trw_only) | (mxd_only) | (schweingr_only)){
-    stop("WARNING! These switches should not be set to TRUE simultaneously: 
-         generate_PAGES   & PAGES
-         generate_NTREND  & NTREND
-         generate_PROXIES & trw_only
-         generate_PROXIES & mxd_only
-         generate_PROXIES & schweingr_only
-         ")
-    }
-  }
+# if (generate_PROXIES){
+#   if ((generate_PAGES & PAGES) | (generate_NTREND & NTREND) | (trw_only) | (mxd_only) | (schweingr_only)){
+#     stop("WARNING! These switches should not be set to TRUE simultaneously: 
+#          generate_PAGES   & PAGES
+#          generate_NTREND  & NTREND
+#          generate_PROXIES & trw_only
+#          generate_PROXIES & mxd_only
+#          generate_PROXIES & schweingr_only
+#          ")
+#     }
+#   }
 
 #################
 # To use a bigger ensemble for the background
 no_forc_big_ens= F      # use all years as one big ensemble regardless of forcing like LMR
                         # ONLY works with next option load_71yr_anom=T
-covarclim=0             # set 50 or 100 [%] how much echam climatology covariance should be used
+covarclim=50            # set 50 or 100 [%] how much echam climatology covariance should be used
                             # default=0, i.e. current year covar from ECHAM ensemble
 cov_inflate = F         # inflate the PB matrix
-inflate_fac = 1.02       # the factor of covariance inflation
+inflate_fac = 1.02      # the factor of covariance inflation
 # Only used if no_forc_big_ens=T or covarclim>0
 state = "changing"      # can be "static" or "changing" (static = the same big ens used for all year, changing = it is recalculated for every year)
 n_covar=100             # set sample size for covar calc or for no_forc LMR like experiment, e.g. 250 or 500
-PHclim_loc = F          # whether we want to localize the PHclim, only works if covarclim > 0
+PHclim_loc = T          # whether we want to localize the PHclim, only works if covarclim > 0
 PHclim_lvec_factor = 2  # if PHclim_loc=T, we can use eg. 2times the distances as in the 30 ensemble member, at the moment only works for shape_wgt= "circle"
 mixed_loc = F           # first combining Pb and Pclim then localizing
 update_PHclim = F       # whether PHclim should be updated assimilating observation-by-observation
@@ -283,10 +288,10 @@ check_dist=F                    # test for ideal cut-off distance of spatial cor
 ana.enssize=F
 #NCEP_SOCOL=F
 
-# choose validation data set:
+# choose validation data sets saved in the analysis step (EnSRF_data):
 # (all three can be selected simultaneously)
 vali_cru=T
-vali_twentycr=T
+vali_twentycr=F
 vali_recon=F
 #####################################################################################
 
@@ -299,37 +304,42 @@ vali_recon=F
 #####################################################################################
 # prepare plot switches
 #####################################################################################
-monthly_out=F                 # if sixmonstatevector=T output is backtransformed to seasonal 
+
+validation_set=c("cru_vali")    #can be set to cru_vali, or twentycr_vali or 
+# both together c("cru_vali","twentycr_vali")
+# choses which validation set should be used in the postprocessing and plots
+monthly_out=F                   # if sixmonstatevector=T output is backtransformed to seasonal 
 yearly_out=F                    # if both false, plots seasonal averages are calculated
-# average or monthly data if monthly_out=T 
-calc_prepplot=T                 # save half year averages calc from monthly data into /prepplot folder
-load_indices=T                  # if TRUE: indices are combined to allts variables for whole period 
+                                # average or monthly data if monthly_out=T 
+temporal_postproc=T             # save half year averages calc from monthly data into /prepplot folder
+mergetime_indices=T             # if TRUE: indices are combined to allts variables for whole period 
                                 # (e.g. also for 1604-2004) and saved into image folder for TS-plots
 # run next option "load_prepplot" for entire validation period, usually 
 # 1902-2003, because it creates time series
-load_prepplot=T                 # if calc_prepplot has been run, load_prepplot can be used
-# saves image and only needs to be run once, afterward set "load_image=T" 
-load_image=T                    # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
+mergetime_fields=T              # if calc_prepplot has been run, load_prepplot can be used
+# saves image and only needs to be run once, afterward set "load_images=T" 
+load_images=F                   # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
+                                # of merged indices and fields. NOT need if just calculated before
+calc_vali_stat=T                # calculate validation statistics after preparation (set "load_image=T")
+CRPS=F                          # calculate Continuous Ranked Probability Score
+ind_anom=T                      # calculate indices from anomaly data
+
+vali_plots=T                    # source EnSRF_plots.R script 
+
+#ind_ECHAM=T                     # delete/comment code in prepplot script and then delete switches here
+#ind_recon=F                     # delete/comment code in prepplot script and then delete switches here
+
 
 write_coor=F                    # write ascii files with assimilated stations and data per ts
 # maybe change files names for new EKF400 version "1.0" to "1.1"
-# write_netcdf requires to run calc_prepplot before 
-# best set load_prepplot=F and load_image=F
+# write_netcdf requires to run calc_postproc before 
+# best set mergetime_*=F and load_image=F
 write_netcdf=F                  # write entire EKF400 to NetCDF files
-version="v1.3"                  # set version number for netcdf file name
-# v1.1 at DKRZ is experiment 1.2 here!
 if (!monthly_out & write_netcdf) {
   write_netcdf=F
   print('ACHTUNG: write_netcdf set to FALSE because monthly_out=F')
 }
 statyr=1905                     # 1941 1850/69 year, when station network is kept constant
-
-calc_vali_stat=T                # calculate validation statistics after preparation (set "load_image=T")
-CRPS=F                          # calculate Continuous Ranked Probability Score
-vali_plots=F                    # source EnSRF_plots.R script 
-ind_ECHAM=F                     # delete/comment code in prepplot script and then delete switches here
-ind_recon=F                     # delete/comment code in prepplot script and then delete switches here
-ind_anom=T                      # calculate indices from anomaly data
 
 #####################################################################################
 
@@ -339,19 +349,15 @@ ind_anom=T                      # calculate indices from anomaly data
 #####################################################################################
 # plot switches
 #####################################################################################
-validation_set=c("cru_vali")    #can be set to cru_vali, or twentycr_vali or both together c("cru_vali","twentycr_vali")
-#choses which validation set should be used in the plots
 
 monthly=F
 pseudoproxy=F
-plot_dweights=F
-write_nc=F
-recalc <- F
-reload <- F
+#plot_dweights=F
+#write_nc=F
+#recalc <- F
+#reload <- F
 plstat <- NULL                  #calibrate # NULL or calibrate
 countseries <- T
 #PAGES <- F                     # write output for PAGES paper
-
-
 
 # -----------------------------------------------------------------------------------------

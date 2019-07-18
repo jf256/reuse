@@ -2,11 +2,10 @@
 ################################ EnSRF_switches.R ####################################
 ######################################################################################
 
-expname="NTREND_50c_PbL_Pc2L_100m" 
+expname="PAGES_corals_only_p05AIC_T_HADSST_vali"
+
 version="v1.3"    # set code version number for experiment and netcdf file names
 # v1.1 at DKRZ is experiment 1.2 here!
-
-
 
 #####################################################################################
 # general switches 
@@ -89,7 +88,9 @@ generate_PSEUDO=F               # DAPS PSEUDO PROXY EXPERIMENT: Set pseudo_prox 
 #                  Weil in Pages sind es nicht dieselben
 
 generate_PROXIES=T
-
+# for multiple parallel runs generate_PROXIES only has to be true for the first run
+# once they are create they can be loaded with this switch=F
+# NOTE: The proxy data set switches need to remain to automatically set real_prox=T in EnSRF data script
 #if (generate_PROXIES==T) {
   # You can choose any combination of months and variable (T&P) for regression_months.
   # Then you can choose for each source whether it to be included or not. 
@@ -100,44 +101,46 @@ generate_PROXIES=T
   # PAGES_tree data also consists of location on the SH: if for ex. t4 (is chosen), it takes t10 (t4+6) 
   # for any locations with lat<0. 
   
-  #regression_months = c('t.first', 't.second','t.third','t.fourth','t.fifth','t.sixth') #'p.first', 'p.second','p.third','p.fourth','p.fifth','p.sixth'
-  regression_months = c('t.first', 't.second','t.third','t.fourth','t.fifth','t.sixth', 'p.first', 'p.second','p.third','p.fourth','p.fifth','p.sixth')
+  regression_months = c('t.first', 't.second','t.third','t.fourth','t.fifth','t.sixth') 
+  #regression_months = c('t.first', 't.second','t.third','t.fourth','t.fifth','t.sixth', 
+  #                      'p.first', 'p.second','p.third','p.fourth','p.fifth','p.sixth')
   
   #### PROXIES ####
   TRW=F          # 35 best TRW records from Petra's collection
   MXD=F          # additional MXD, not gridded Schweizgruber data
   SCHWEINGR=F    # Schweingruber/Briffa MXD grid
-  PAGES=F        # PAGESdata base version 2 from 01/2018
-  NTREND=T       # NTREND best tree data version 2018 (identical with 2015 paper)
+  NTREND=F       # NTREND best tree data version 2018 (identical with 2015 paper)
+  PAGES=T        # PAGESdata base version 2 from 01/2018
   TRW_PETRA=F    # all TRW series from ITRDB and recalibrated by Petra
   #################
   
-  lm_fit_data = "CRU"          # can be CRU or GISS to calculate the reg coeff-s
-  type = c("tree")              # only works with tree and coral (and both indiviually as well)
-#} 
-# END if generate_PROXIES
+  # ATTENTION: precip. forward model only works with CRU and NOT GISS
+  lm_fit_data = "GISS"          # can be CRU or GISS to calculate the reg coeff-s (GISS is land+ocean temp only)
+  type = c("coral")              # only works with tree and coral (and both indiviually as well)
+  #}  
+  # END if generate_PROXIES
 
 
-# Nevin: May 2018 
-####### SCREENING FOR PROXIES ##########
-# (For now only works for temperature)
-# Only either AIC or PVALUE can be TRUE, if both are set to TRUE only the AIC part will be run
-# if neither of AIC and PVALUE are TRUE then the full model is used without screening
+  # Nevin: May 2018 
+  ####### SCREENING FOR PROXIES ##########
+  # (For now only works for temperature)
+  # Only either AIC or PVALUE can be TRUE, if both are set to TRUE only the AIC part will be run
+  # if neither of AIC and PVALUE are TRUE then the full model is used without screening
 
-AIC=F                           # calculates linear regression models for different continuous 
-# subperiods and takes the best one according to the AIC value.
-# furthermore, it only keeps the signifcant models with pvalue>alpha (alpha set below)
-# Example T1-T6 AIC = 9, T2-T4 AIC=-1 (all combinations are respected)
-# => smallest AIC => best model=> if not significant => tree excluded
+  AIC=T                           # calculates linear regression models for different continuous 
+  # subperiods and takes the best one according to the AIC value.
+  # furthermore, it only keeps the signifcant models with pvalue>alpha (alpha set below)
+  # Example T1-T6 AIC = 9, T2-T4 AIC=-1 (all combinations are respected)
+  # => smallest AIC => best model=> if not significant => tree excluded
 
-PVALUE=F                        # calculates only the full regression model and only keeps the significant ones (pval>alpha)
-alpha=0.001                     # Significance level default: 0.05 or 0.01
+  PVALUE=T                        # calculates only the full regression model and only keeps the significant ones (pval>alpha)
+  alpha=0.05                      # Significance level default: 0.05 or 0.01
 
-avg_realprox_per_grid=F         # if more than one tree is situated in one Echam-Gridcell an average 
-# of all treeringwidth is calculated before makeing the regression model. Because of the independed 
-# loading of the different datasets (ntrend, pages, petra), the average is only calculated taken 
-# from trees of the same dataset ->if all 3 datasets are used it can occur, that still 3 averaged 
-# trees are in one gridbox.
+  avg_realprox_per_grid=F         # if more than one tree is situated in one Echam-Gridcell an average 
+  # of all treeringwidth is calculated before makeing the regression model. Because of the independed 
+  # loading of the different datasets (ntrend, pages, petra), the average is only calculated taken 
+  # from trees of the same dataset ->if all 3 datasets are used it can occur, that still 3 averaged 
+  # trees are in one gridbox.
 
 ########
 
@@ -156,8 +159,14 @@ import_luca=F                   # old and new docu data
 #trw_only=F                      # Petra's 35 best TRW only
 #mxd_only=F                      # Use only MXD tree ring proxies, NOT Petra's TRW
 #schweingr_only=F                # Use Schweingruber MXD grid only
-pseudo_prox=F                    # use DAPS Pseudo-Proxies
-
+pseudo_prox=F                    # use DAPS Pseudo-Proxies and annual resolution Jan-Dez
+if (pseudo_prox) {
+  if (generate_PROXIES==T) {stop("pseudo_prox and generate_PROXIES cannot be used together")}
+  sixmonstatevector=F    # using annual mean
+  s <- 1
+  season=12              # year from jan-dec
+  print("ATTENTION: sixmonstatevector has been set to FALSE for annual resolution pseudoproxy experiment!")
+}
 # all available data selected above are automatically switched on when available in EnSRF_data
 
 # if (generate_PROXIES){
@@ -176,17 +185,17 @@ pseudo_prox=F                    # use DAPS Pseudo-Proxies
 # To use a bigger ensemble for the background
 no_forc_big_ens= F      # use all years as one big ensemble regardless of forcing like LMR
                         # ONLY works with next option load_71yr_anom=T
-covarclim=50            # set 50 or 100 [%] how much echam climatology covariance should be used
+covarclim=0            # set 50 or 100 [%] how much echam climatology covariance should be used
                             # default=0, i.e. current year covar from ECHAM ensemble
 cov_inflate = F         # inflate the PB matrix
-inflate_fac = 1.02      # the factor of covariance inflation
+  inflate_fac = 1.02      # the factor of covariance inflation
 # Only used if no_forc_big_ens=T or covarclim>0
 state = "changing"      # can be "static" or "changing" (static = the same big ens used for all year, changing = it is recalculated for every year)
-n_covar=100             # set sample size for covar calc or for no_forc LMR like experiment, e.g. 250 or 500
+n_covar=250             # set sample size for covar calc or for no_forc LMR like experiment, e.g. 250 or 500
 PHclim_loc = T          # whether we want to localize the PHclim, only works if covarclim > 0
 PHclim_lvec_factor = 2  # if PHclim_loc=T, we can use eg. 2times the distances as in the 30 ensemble member, at the moment only works for shape_wgt= "circle"
 mixed_loc = F           # first combining Pb and Pclim then localizing
-update_PHclim = F       # whether PHclim should be updated assimilating observation-by-observation
+update_PHclim = T       # whether PHclim should be updated assimilating observation-by-observation
 save_ananomallts = F    # in the covarclim exps if we update the climatology part -> whether to save the "climatological" analysis or not
 
 
@@ -246,17 +255,22 @@ shape_wgt = "circle"          # can be "circle" or "ellipse" depends on how we w
 landcorr = F                  # use simulation WITHOUT land use bug if TRUE
 
 # how to treat multiple input series in same grid box
-first_obs_per_grid=F  # first observations per echam grid box ATTENTION: only this 
-                       # or second next option (avg_prox_per_grid) can be TRUE
-  firstproxres=10      # grid resolution for instr. stations (5 = echamgrid/5)
-avg_obs_per_grid=F    # average more than one observation per echam grid box 
+best2worst=F           # order proxies from best first to worst last based on residuals
+                       # if FALSE then worst first and best last
+best_prox_per_grid=F   # use only one real proxy record with lowest residuals per grid cell 
+  bestproxres=0.1      # generates lon/lat grid with set resolution 0.1 mean only best proxy in ~10km2 grid
+first_inst_per_grid=F  # first instrumental observations per echam grid box 
+                       # ATTENTION: only this or second next option (avg_prox_per_grid) can be TRUE
+                       # "DON'T USE FIRST_INST_PER_GRID IF YOU WANT TO INCLUDE REAL PROXY DATA AND 
+                       # INSTRUMENTALS AT THE SAME TIME")
+  firstinstres=1       # grid resolution for instr. stations (5 = echamgrid/5)
+avg_obs_per_grid=F     # average more than one observation per echam grid box 
                        # and calc proxy vs echam correlation
 ins_tim_loc = T        # whether the instrumental obs-s should be localized in time or not
 instmaskprox=F         # remove proxy data from grid boxes that have instr. data
 reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=F            # calc on land only
-fasttest=F             # use even less data
 tps_only=T             # only use temp, precip and slp in state vector, remove other vars
 no_stream=F            # all echam vars but stream function as there is problem with 
 #                       # 5/9 levels, which are in lat dimension before and after 1880
@@ -309,7 +323,8 @@ validation_set=c("cru_vali")    #can be set to cru_vali, or twentycr_vali or
 # both together c("cru_vali","twentycr_vali")
 # choses which validation set should be used in the postprocessing and plots
 monthly_out=F                   # if sixmonstatevector=T output is backtransformed to seasonal 
-yearly_out=F                    # if both false, plots seasonal averages are calculated
+# yearly out is old switch from nevin. annual output automatically if pseudo_prox=T
+  yearly_out=F                    # if both false, plots seasonal averages are calculated
                                 # average or monthly data if monthly_out=T 
 temporal_postproc=T             # save half year averages calc from monthly data into /prepplot folder
 mergetime_indices=T             # if TRUE: indices are combined to allts variables for whole period 
@@ -351,7 +366,7 @@ statyr=1905                     # 1941 1850/69 year, when station network is kep
 #####################################################################################
 
 monthly=F
-pseudoproxy=F
+#pseudoproxy=F                 # old from Nevin pseudoproxy try
 #plot_dweights=F
 #write_nc=F
 #recalc <- F

@@ -55,30 +55,20 @@ source('EnSRF_functions.R')
 
 
 if (monthly_out) {
-  # if(calc_prepplot){
-  #   dir.create(paste0("../data/prepplot/EKF400_",version,"_",expname))
-  #   dir.create(paste0("../data/prepplot/EKF400_",version,"_",expname,"/prepplot_monthly/"))
-  # }
   prepplotdir=paste0("../data/prepplot/EKF400_",version,"_",expname,"/prepplot_monthly/")
   nseas=12
   s.plot=12
+} else if (pseudo_prox) {
+  prepplotdir=paste0("../data/prepplot/EKF400_",version,"_",expname,"/prepplot_annual/") 
+  nseas=1
+  s.plot=1
 } else {
-  # if(calc_prepplot){
-  #   dir.create(paste0("../data/prepplot/",expname))
-  #   dir.create(paste0("../data/prepplot/",expname,'/prepplot_seasonal/'))
-  # }
   prepplotdir=paste0("../data/prepplot/EKF400_",version,"_",expname,"/prepplot_seasonal/") 
   nseas=2
   s.plot=2
 }
 figpath=paste0('../figures/EKF400_',version,'_',expname,'_',syr,'-',eyr) #format(Sys.time(), "%Y%m%d_%H-%M_")
 dir.create(figpath)
-
-# if (monthly_out){
-#   s.plot <- 12
-# }else {
-#   s.plot <- 2
-# }
 
 pnames <- paste(c('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'), ')', sep='')
 
@@ -91,7 +81,7 @@ pnames <- paste(c('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'), ')', s
 
 ################ Count Series Plot ####################
 
-if (countseries) {
+if (countseries & !pseudo_prox) {
   # count number of assimilation data of each type and add to plot
   nmxd <- ntrw <- nprox <- ndoc <-ninstslp <-ninsttemp <- ninst <- rep(NA,length(syr:eyr))
   i <- 1
@@ -155,11 +145,17 @@ if (countseries) {
 
 for (v in validation_set){
   # loop over all validation datasets in validation_set, specified in the SWITCHES script.
+  # 1. reads validation statistics file with everything related to the 20th century vali period
+  # 2. reads the indices_tot file for plotting of time series over the entire e.g. 400-yr period
   if (every2grid) {
     if (monthly_out) {
       load(file=paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                        syr,"-",eyr,"_monthly_2ndgrid.Rdata"))
       load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_monthly_2ndgrid.Rdata"))
+    } else if (pseudo_prox) {
+      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+                       syr,"-",eyr,"_annual_2ndgrid.Rdata"))
+      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_annual_2ndgrid.Rdata"))
     } else {
       load(file=paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                        syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
@@ -170,6 +166,10 @@ for (v in validation_set){
       load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                       syr,"-",eyr,"_monthly.Rdata",sep=""))
       load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_monthly.Rdata"))
+    } else if (pseudo_prox) {
+      load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+                      syr,"-",eyr,"_annual.Rdata",sep=""))
+      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_annual.Rdata"))
     } else {
       load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                       syr,"-",eyr,"_seasonal.Rdata",sep=""))
@@ -213,10 +213,11 @@ for (v in validation_set){
     valilegend<-"20CR"
   }
   
-  lonlatnr<-c(592,676,278,632,1460)
+  lonlatnr<-c(592,676,278,632,1460,2734)
   #look at plot_example_ts in function script.
   #codeline beneath finds gridbox with lowest correlation (was used because of strange bad results)
-  #which(corr$ensmean[,2]==min(corr$ensmean[which(corr$lat<34&corr$lat>24&corr$lon<(90)&corr$lon>(68)&corr$names=="temp2"),2],na.rm=T))
+  #which(corr$ensmean[,2]==min(corr$ensmean[which(corr$lat<(-13)&corr$lat>(-18)&corr$lon<(170)&corr$lon>(165)&corr$names=="temp2"),2],na.rm=T))
+  # vanatu -15.4492793 167.595411
   for (nr in lonlatnr){
     plot_example_ts(validate,analysis,echam,nr)
     plot_example_ts(validate.anom,analysis.anom,echam.anom,nr,type="anomaly")
@@ -229,7 +230,7 @@ for (v in validation_set){
   ###############################################################
   ####### figs.03: Time Series for indices (full period) ########
   ###############################################################
-  
+  if (!pseudo_prox) {
   inds <- c('ENH.temp2', 'EU.temp2', 'NEU.temp2', 'GLO.temp2')
   indices <- c('ENH.temp2','NAM.temp2','SAM.temp2','AFR.temp2',
                'ASI.temp2','AUS.temp2','ARC.temp2','ANT.temp2',
@@ -244,73 +245,61 @@ for (v in validation_set){
   vind.tot$names<-indices
   for(ind in inds){
     pdf(paste(figpath,'/timeseries_',v,'_',ind,'.pdf',sep=''), width=15, height=4.5, paper='special')
-    
-    winter<-seq(1,length(eind.tot$time),by=2)
-    summer<-seq(2,length(eind.tot$time), by=2)
-    
-    valiwinter<-seq(1,length(vind.tot$time),by=2)
-    valisummer<-seq(2,length(vind.tot$time),by=2)
-    
-    ylimmin<-min(cbind(c(vind.tot$ensmean[which(vind.tot$names==ind),valiwinter],rep(NA,syr-syrtot)), eind.tot$ensmean[which(eind.tot$names==ind),winter],
-                       aind.tot$ensmean[which(aind.tot$names==ind),winter]),na.rm=T)-1
-    
-    ylimmax<-max(cbind(c(vind.tot$ensmean[which(vind.tot$names==ind),valiwinter],rep(NA,syr-syrtot)), eind.tot$ensmean[which(eind.tot$names==ind),winter],
-                       aind.tot$ensmean[which(aind.tot$names==ind),winter]),na.rm=T)+1
-    
-    par(oma=c(0,0,0,0),mar=c(4,4,2,0.5),mfrow=c(1,2))
-    plot(eind.tot$time[winter],eind.tot$ensmean[which(eind.tot$names==ind),winter], ylim=c(ylimmin,ylimmax),ty='l',col="black",main="Oct.-Mar.",
-         xlab='year',ylab=paste(ind,'[°C]'))
-    polygon(c(eind.tot$time[winter],rev(eind.tot$time[winter])),c(apply(eind.tot$data[which(eind.tot$names==ind),winter,],1,max),
-                                                                  rev(apply(eind.tot$data[which(eind.tot$names==ind),winter,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
-    
-    
-    lines(aind.tot$time[winter],aind.tot$ensmean[which(aind.tot$names==ind),winter],col="red")
-    polygon(c(aind.tot$time[winter],rev(aind.tot$time[winter])),c(apply(aind.tot$data[which(aind.tot$names==ind),winter,],1,max),
-                                                                  rev(apply(aind.tot$data[which(aind.tot$names==ind),winter,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
-    lines(vind.tot$time[valiwinter], vind.tot$ensmean[which(vind.tot$names==ind),valiwinter],col="blue")
-    legend("bottomleft", c(valilegend, 'CCC400', "EFK400"),col=c("blue", "black", "red"),
-           lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='transparent',
-           box.col='transparent', cex=1)
-    
-    ylimmin<-min(cbind(c(vind.tot$ensmean[which(vind.tot$names==ind),valisummer],rep(NA,syr-syrtot)), eind.tot$ensmean[which(eind.tot$names==ind),summer],
-                       aind.tot$ensmean[which(aind.tot$names==ind),summer]),na.rm=T)-1
-    
-    ylimmax<-max(cbind(c(vind.tot$ensmean[which(vind.tot$names==ind),valisummer],rep(NA,syr-syrtot)), eind.tot$ensmean[which(eind.tot$names==ind),summer],
-                       aind.tot$ensmean[which(aind.tot$names==ind),summer]),na.rm=T)+1
-    
-    plot(eind.tot$time[winter],eind.tot$ensmean[which(eind.tot$names==ind),summer], ylim=c(ylimmin,ylimmax),ty='l',col="black",main="Apr.-Sept.",
-         xlab='year',ylab='')
-    polygon(c(eind.tot$time[summer],rev(eind.tot$time[winter])),c(apply(eind.tot$data[which(eind.tot$names==ind),summer,],1,max),
-                                                                  rev(apply(eind.tot$data[which(eind.tot$names==ind),summer,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
-    
-    
-    lines(aind.tot$time[winter],aind.tot$ensmean[which(aind.tot$names==ind),summer],col="red")
-    polygon(c(aind.tot$time[winter],rev(aind.tot$time[winter])),c(apply(aind.tot$data[which(aind.tot$names==ind),summer,],1,max),
-                                                                  rev(apply(aind.tot$data[which(aind.tot$names==ind),summer,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
-    lines(vind.tot$time[valiwinter], vind.tot$ensmean[which(vind.tot$names==ind),valisummer],col="blue")
+      winter<-seq(1,length(eind.tot$time),by=2)
+      summer<-seq(2,length(eind.tot$time), by=2)
+      valiwinter<-seq(1,length(vind.tot$time),by=2)
+      valisummer<-seq(2,length(vind.tot$time),by=2)
+      # winter
+      ylimmin<-min(cbind(c(vind.tot$ensmean[which(vind.tot$names==ind),valiwinter],rep(NA,syr-syrtot)), 
+                         eind.tot$ensmean[which(eind.tot$names==ind),winter],
+                         aind.tot$ensmean[which(aind.tot$names==ind),winter]),na.rm=T)-1
+      ylimmax<-max(cbind(c(vind.tot$ensmean[which(vind.tot$names==ind),valiwinter],rep(NA,syr-syrtot)), 
+                         eind.tot$ensmean[which(eind.tot$names==ind),winter],
+                         aind.tot$ensmean[which(aind.tot$names==ind),winter]),na.rm=T)+1
+      par(oma=c(0,0,0,0),mar=c(4,4,2,0.5),mfrow=c(1,2))
+      plot(eind.tot$time[winter],eind.tot$ensmean[which(eind.tot$names==ind),winter], ylim=c(ylimmin,ylimmax),ty='l',col="black",main="Oct.-Mar.",
+           xlab='year',ylab=paste(ind,'[°C]'))
+      polygon(c(eind.tot$time[winter],rev(eind.tot$time[winter])),c(apply(eind.tot$data[which(eind.tot$names==ind),winter,],1,max),
+              rev(apply(eind.tot$data[which(eind.tot$names==ind),winter,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
+      lines(aind.tot$time[winter],aind.tot$ensmean[which(aind.tot$names==ind),winter],col="red")
+      polygon(c(aind.tot$time[winter],rev(aind.tot$time[winter])),c(apply(aind.tot$data[which(aind.tot$names==ind),winter,],1,max),
+              rev(apply(aind.tot$data[which(aind.tot$names==ind),winter,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
+      lines(vind.tot$time[valiwinter], vind.tot$ensmean[which(vind.tot$names==ind),valiwinter],col="blue")
+      legend("bottomleft", c(valilegend, 'CCC400', "EFK400"),col=c("blue", "black", "red"),
+             lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='transparent',
+             box.col='transparent', cex=1)
+      # summer
+      ylimmin<-min(cbind(c(vind.tot$ensmean[which(vind.tot$names==ind),valisummer],rep(NA,syr-syrtot)), 
+                         eind.tot$ensmean[which(eind.tot$names==ind),summer],
+                         aind.tot$ensmean[which(aind.tot$names==ind),summer]),na.rm=T)-1
+      ylimmax<-max(cbind(c(vind.tot$ensmean[which(vind.tot$names==ind),valisummer],rep(NA,syr-syrtot)), 
+                         eind.tot$ensmean[which(eind.tot$names==ind),summer],
+                         aind.tot$ensmean[which(aind.tot$names==ind),summer]),na.rm=T)+1
+      plot(eind.tot$time[summer],eind.tot$ensmean[which(eind.tot$names==ind),summer], ylim=c(ylimmin,ylimmax),
+           ty='l',col="black",main="Apr.-Sept.",xlab='year',ylab='')
+      polygon(c(eind.tot$time[summer],rev(eind.tot$time[summer])),c(apply(eind.tot$data[which(eind.tot$names==ind),summer,],1,max),
+              rev(apply(eind.tot$data[which(eind.tot$names==ind),summer,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
+      lines(aind.tot$time[summer],aind.tot$ensmean[which(aind.tot$names==ind),summer],col="red")
+      polygon(c(aind.tot$time[summer],rev(aind.tot$time[summer])),c(apply(aind.tot$data[which(aind.tot$names==ind),summer,],1,max),
+              rev(apply(aind.tot$data[which(aind.tot$names==ind),summer,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
+      lines(vind.tot$time[valisummer], vind.tot$ensmean[which(vind.tot$names==ind),valisummer],col="blue")
     dev.off()
-    
     
     # indices timeserie whole periode smoothed by runningmean wdow = window of running mean
     wdow<-11
     vind.run<-runmean(vind.tot$ensmean[which(vind.tot$names==ind),], 2*wdow,endrule="NA")
     aind.run<-runmean(aind.tot$ensmean[which(aind.tot$names==ind),], 2*wdow,endrule="NA")
     eind.run<-runmean(eind.tot$ensmean[which(eind.tot$names==ind),], 2*wdow,endrule="NA")
-    
-    ylimmin<-min(rbind(vind.run, eind.run,
-                       aind.run),na.rm=T)-1
-    
-    ylimmax<-max(rbind(vind.run, eind.run,
-                       aind.run),na.rm=T)+1
-    
+    ylimmin<-min(rbind(vind.run,eind.run,aind.run),na.rm=T)-1
+    ylimmax<-max(rbind(vind.run,eind.run,aind.run),na.rm=T)+1
     pdf(paste(figpath,'/timeseries_',v,'_',ind,'_smoothed.pdf',sep=''), width=15, height=4.5, paper='special')
-    plot(eind.tot$time,eind.run, ylim=c(ylimmin,ylimmax),ty='l',col="black",
-         xlab='year',ylab=paste(ind,'[°C]'), main=paste(wdow,'year running mean'))
-    lines(vind.tot$time, vind.run, col="blue")
-    lines(aind.tot$time, aind.run, col="red")
-    legend("bottomleft", c(valilegend, 'CCC400', "EFK400"),col=c("blue", "black", "red"),
-           lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='transparent',
-           box.col='transparent', cex=1)
+      plot(eind.tot$time,eind.run, ylim=c(ylimmin,ylimmax),ty='l',col="black",
+           xlab='year',ylab=paste(ind,'[°C]'), main=paste(wdow,'year running mean'))
+      lines(vind.tot$time, vind.run, col="blue")
+      lines(aind.tot$time, aind.run, col="red")
+      legend("bottomleft", c(valilegend, 'CCC400', "EFK400"),col=c("blue", "black", "red"),
+             lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='transparent',
+             box.col='transparent', cex=1)
     dev.off()
   }
   
@@ -318,50 +307,53 @@ for (v in validation_set){
   vind.anom.tot$names<-indices
   for(ind in inds){
     pdf(paste(figpath,'/timeseries_',v,'_',ind,'_anom.pdf',sep=''), width=15, height=4.5, paper='special')
-    
-    winter<-seq(1,length(eind.anom.tot$time),by=2)
-    summer<-seq(2,length(eind.anom.tot$time), by=2)
-    
-    valiwinter<-seq(1,length(vind.anom.tot$time),by=2)
-    valisummer<-seq(2,length(vind.anom.tot$time),by=2)
-    
-    ylimmin<-min(cbind(c(vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),valiwinter],rep(NA,syr-syrtot)), eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),winter],
-                       aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),winter]),na.rm=T)-1
-    
-    ylimmax<-max(cbind(c(vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),valiwinter],rep(NA,syr-syrtot)), eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),winter],
-                       aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),winter]),na.rm=T)+1
-    
-    par(oma=c(0,0,0,0),mar=c(4,4,2,0.5),mfrow=c(1,2))
-    plot(eind.anom.tot$time[winter],eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),winter], ylim=c(ylimmin,ylimmax),ty='l',col="black",main="Oct.-Mar.",
-         xlab='year',ylab=paste(ind,'[°C]'))
-    polygon(c(eind.anom.tot$time[winter],rev(eind.anom.tot$time[winter])),c(apply(eind.anom.tot$data[which(eind.anom.tot$names==ind),winter,],1,max),
-                                                                  rev(apply(eind.anom.tot$data[which(eind.anom.tot$names==ind),winter,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
-    
-    
-    lines(aind.anom.tot$time[winter],aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),winter],col="red")
-    polygon(c(aind.anom.tot$time[winter],rev(aind.anom.tot$time[winter])),c(apply(aind.anom.tot$data[which(aind.anom.tot$names==ind),winter,],1,max),
-                                                                  rev(apply(aind.anom.tot$data[which(aind.anom.tot$names==ind),winter,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
-    lines(vind.anom.tot$time[valiwinter], vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),valiwinter],col="blue")
-    legend("bottomleft", c(valilegend, 'CCC400', "EFK400"),col=c("blue", "black", "red"),
-           lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='transparent',
-           box.col='transparent', cex=1)
-    
-    ylimmin<-min(cbind(c(vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),valisummer],rep(NA,syr-syrtot)), eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),summer],
-                       aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),summer]),na.rm=T)-1
-    
-    ylimmax<-max(cbind(c(vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),valisummer],rep(NA,syr-syrtot)), eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),summer],
-                       aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),summer]),na.rm=T)+1
-    
-    plot(eind.anom.tot$time[winter],eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),summer], ylim=c(ylimmin,ylimmax),ty='l',col="black",main="Apr.-Sept.",
-         xlab='year',ylab='')
-    polygon(c(eind.anom.tot$time[summer],rev(eind.anom.tot$time[winter])),c(apply(eind.anom.tot$data[which(eind.anom.tot$names==ind),summer,],1,max),
-                                                                  rev(apply(eind.anom.tot$data[which(eind.anom.tot$names==ind),summer,],1,min))),density=NA, col=rgb(1,1,1,3,maxColorValue=10))
-    
-    
-    lines(aind.anom.tot$time[winter],aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),summer],col="red")
-    polygon(c(aind.anom.tot$time[winter],rev(aind.anom.tot$time[winter])),c(apply(aind.anom.tot$data[which(aind.anom.tot$names==ind),summer,],1,max),
-                                                                  rev(apply(aind.anom.tot$data[which(aind.anom.tot$names==ind),summer,],1,min))),density=NA, col=rgb(10,0,0,3,maxColorValue=10))
-    lines(vind.anom.tot$time[valiwinter], vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),valisummer],col="blue")
+      winter<-seq(1,length(eind.anom.tot$time),by=2)
+      summer<-seq(2,length(eind.anom.tot$time), by=2)
+      valiwinter<-seq(1,length(vind.anom.tot$time),by=2)
+      valisummer<-seq(2,length(vind.anom.tot$time),by=2)
+      ylimmin<-min(cbind(c(vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),valiwinter],rep(NA,syr-syrtot)), 
+                         eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),winter],
+                         aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),winter]),na.rm=T)-1
+      ylimmax<-max(cbind(c(vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),valiwinter],rep(NA,syr-syrtot)), 
+                         eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),winter],
+                         aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),winter]),na.rm=T)+1
+      par(oma=c(0,0,0,0),mar=c(4,4,2,0.5),mfrow=c(1,2))
+      # winter
+      plot(eind.anom.tot$time[winter],eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),winter], 
+           ylim=c(ylimmin,ylimmax),ty='l',col="black",main="Oct.-Mar.",xlab='year',ylab=paste(ind,'[°C]'))
+      polygon(c(eind.anom.tot$time[winter],rev(eind.anom.tot$time[winter])),
+              c(apply(eind.anom.tot$data[which(eind.anom.tot$names==ind),winter,],1,max),
+              rev(apply(eind.anom.tot$data[which(eind.anom.tot$names==ind),winter,],1,min))),
+              density=NA, col=rgb(1,1,1,3,maxColorValue=10))
+      lines(aind.anom.tot$time[winter],aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),winter],col="red")
+      polygon(c(aind.anom.tot$time[winter],rev(aind.anom.tot$time[winter])),
+              c(apply(aind.anom.tot$data[which(aind.anom.tot$names==ind),winter,],1,max),
+              rev(apply(aind.anom.tot$data[which(aind.anom.tot$names==ind),winter,],1,min))),
+              density=NA, col=rgb(10,0,0,3,maxColorValue=10))
+      lines(vind.anom.tot$time[valiwinter], vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),valiwinter],col="blue")
+      legend("bottomleft", c(valilegend, 'CCC400', "EFK400"),col=c("blue", "black", "red"),
+             lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='transparent',
+             box.col='transparent', cex=1)
+      # summer
+      ylimmin<-min(cbind(c(vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),valisummer],
+                   rep(NA,syr-syrtot)), eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),summer],
+                   aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),summer]),na.rm=T)-1
+      ylimmax<-max(cbind(c(vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),valisummer],
+                   rep(NA,syr-syrtot)), eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),summer],
+                   aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),summer]),na.rm=T)+1
+      plot(eind.anom.tot$time[summer],eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),summer], ylim=c(ylimmin,ylimmax),ty='l',col="black",main="Apr.-Sept.",
+           xlab='year',ylab='')
+      polygon(c(eind.anom.tot$time[summer],rev(eind.anom.tot$time[summer])),
+              c(apply(eind.anom.tot$data[which(eind.anom.tot$names==ind),summer,],1,max),
+              rev(apply(eind.anom.tot$data[which(eind.anom.tot$names==ind),summer,],1,min))),
+              density=NA,col=rgb(1,1,1,3,maxColorValue=10))
+      lines(aind.anom.tot$time[summer],aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),summer],col="red")
+      polygon(c(aind.anom.tot$time[summer],rev(aind.anom.tot$time[summer])),
+              c(apply(aind.anom.tot$data[which(aind.anom.tot$names==ind),summer,],1,max),
+              rev(apply(aind.anom.tot$data[which(aind.anom.tot$names==ind),summer,],1,min))),
+              density=NA,col=rgb(10,0,0,3,maxColorValue=10))
+      lines(vind.anom.tot$time[valisummer],vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),valisummer],
+            col="blue")
     dev.off()
     
     
@@ -370,25 +362,20 @@ for (v in validation_set){
     vind.run<-runmean(vind.anom.tot$ensmean[which(vind.anom.tot$names==ind),], 2*wdow,endrule="NA")
     aind.run<-runmean(aind.anom.tot$ensmean[which(aind.anom.tot$names==ind),], 2*wdow,endrule="NA")
     eind.run<-runmean(eind.anom.tot$ensmean[which(eind.anom.tot$names==ind),], 2*wdow,endrule="NA")
-    
-    ylimmin<-min(rbind(vind.run, eind.run,
-                       aind.run),na.rm=T)-1
-    
-    ylimmax<-max(rbind(vind.run, eind.run,
-                       aind.run),na.rm=T)+1
-    
+    ylimmin<-min(rbind(vind.run, eind.run,aind.run),na.rm=T)-1
+    ylimmax<-max(rbind(vind.run, eind.run,aind.run),na.rm=T)+1
     pdf(paste(figpath,'/timeseries_',v,'_',ind,'_anom_smoothed.pdf',sep=''), width=15, height=4.5, paper='special')
-    plot(eind.anom.tot$time,eind.run, ylim=c(ylimmin,ylimmax),ty='l',col="black",
-         xlab='year',ylab=paste(ind,'[°C]'), main=paste(wdow,'year running mean'))
-    lines(vind.anom.tot$time, vind.run, col="blue")
-    lines(aind.anom.tot$time, aind.run, col="red")
-    legend("bottomleft", c(valilegend, 'CCC400', "EFK400"),col=c("blue", "black", "red"),
-           lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='transparent',
-           box.col='transparent', cex=1)
+      plot(eind.anom.tot$time,eind.run, ylim=c(ylimmin,ylimmax),ty='l',col="black",
+           xlab='year',ylab=paste(ind,'[°C]'), main=paste(wdow,'year running mean'))
+      lines(vind.anom.tot$time, vind.run, col="blue")
+      lines(aind.anom.tot$time, aind.run, col="red")
+      legend("bottomleft", c(valilegend, 'CCC400', "EFK400"),col=c("blue", "black", "red"),
+             lty=c(1,1,1),lwd=c(1,1,1),pt.cex=1, pt.lwd=1,inset=0.005, bg='transparent',
+             box.col='transparent', cex=1)
     dev.off()
   }
   ###############################################################
-  
+  } # end if not pseudo_prox
   
   
   ###############################################################
@@ -612,10 +599,10 @@ for (v in validation_set){
     espread$ensmean <- array(ech.spread, c(nrow(ech.spread),ncol(ech.spread)))
     
     aspread <- echam
-    if (pseudoproxy) { 
-      ana.spread.bkp <- ana.spread
-      ana.spread <- ana.spread.bkp[4] 
-    }
+#    if (pseudoproxy) { 
+#      ana.spread.bkp <- ana.spread
+#      ana.spread <- ana.spread.bkp[4] 
+#    }
     #if ((instrumental) || (inst_at_proxy) || (real_proxies)) {ana.spread <- ana.spread.bkp[2] }
     #aspread$data <- array(unlist(ana.spread)/as.vector(ech.spread)*100, c(nrow(ech.spread), 1, ncol(ech.spread)*(length(ana.spread))))
     aspread$data <- array(unlist(ana.spread)/as.vector(ech.spread)*100, c(nrow(ech.spread), 1, ncol(ech.spread)))
@@ -717,12 +704,13 @@ for (v in validation_set){
   ###################### Temperature Correlation ################
   
   corr.tot <- echam
-  corr.tot$data <- array(cbind(corr.ech$ensmean,corr$ensmean),c(dim(corr$ensmean)[1],1,dim(corr$ensmean)[2]*2)) #[,,1:2,drop=F]
+  #corr.tot$data <- array(cbind(corr.ech$ensmean,corr$ensmean),c(dim(corr$ensmean)[1],1,dim(corr$ensmean)[2]*2)) #[,,1:2,drop=F]
   ## it doesn't make sense to put $ensmean into $data
   ## and the choosing type='data'
   ## different approach: put $ensmean into $ensmean and 
   ## choose type='ensmean'
-  corr.tot$ensmean <- array(cbind(corr.ech$ensmean,corr$ensmean),c(dim(corr$ensmean)[1],dim(corr$ensmean)[2]*2)) #[,,1:2,drop=F]
+  #corr.tot$ensmean <- array(cbind(corr.ech$ensmean,corr$ensmean),c(dim(corr$ensmean)[1],dim(corr$ensmean)[2]*2)) #[,,1:2,drop=F]
+  corr.tot$ensmean <- array(cbind(corr.ech$ensmean,corr$ensmean),c(dim(corr$ensmean)[1],s.plot*2)) #[,,1:2,drop=F]
   
   levs <- c(-1,seq(-0.9,0.9,0.2),1)
   if (monthly_out) {
@@ -764,14 +752,20 @@ for (v in validation_set){
   ###############################################################
   
   corr.diff <- corr.tot
-  corr.diff$data <- corr.diff$data[,,(ncol(corr.tot$ensmean)/2+1):ncol(corr.tot$ensmean)]-corr.diff$data[,,1:(ncol(corr.tot$ensmean)/2)]
-  corr.diff$ensmean <- corr.diff$ensmean[,(ncol(corr.tot$ensmean)/2+1):ncol(corr.tot$ensmean)]-corr.diff$ensmean[,1:(ncol(corr.tot$ensmean)/2)]
+  if (pseudo_prox) {
+    corr.diff$ensmean <- array(corr.diff$ensmean[,2]-corr.diff$ensmean[,1],dim=c(dim(corr.diff$ensmean)[1],1))
+  } else {
+    corr.diff$data <- corr.diff$data[,,(ncol(corr.tot$ensmean)/2+1):ncol(corr.tot$ensmean)]-corr.diff$data[,,1:(ncol(corr.tot$ensmean)/2)]
+    corr.diff$ensmean <- corr.diff$ensmean[,(ncol(corr.tot$ensmean)/2+1):ncol(corr.tot$ensmean)]-corr.diff$ensmean[,1:(ncol(corr.tot$ensmean)/2)]
+  }
   
   ###################### Temperature CorrDiff ###################
   
   if (monthly_out) {
     plot_echam4(corr.diff, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs, type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('corr.diff_echam_anal-',v,'_temp_summer.pdf'), paper='special')
     plot_echam4(corr.diff, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs, type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('corr.diff_echam_anal-',v,'_temp_winter.pdf'), paper='special')
+  } else if (pseudo_prox) {
+    plot_echam4(corr.diff, varname='temp2', cex.pt=1.5, names=pnames[1], lev=levs, type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('corr.diff_echam_anal-',v,'_temp.pdf'), paper='special')
   } else {
     plot_echam4(corr.diff, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs, type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('corr.diff_echam_anal-',v,'_temp.pdf'), paper='special')
   }
@@ -780,19 +774,39 @@ for (v in validation_set){
   ###################### Precipitation CorrDiff ################
   
   if (monthly_out) {
-    plot_echam4(corr.diff, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('corr.diff_echam_anal-',v,'_precip_summer.pdf'), paper='special')
-    plot_echam4(corr.diff, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('corr.diff_echam_anal-',v,'_precip_winter.pdf'), paper='special')
+    plot_echam4(corr.diff, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs, 
+                type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",
+                plotname=paste0('corr.diff_echam_anal-',v,'_precip_summer.pdf'), paper='special')
+    plot_echam4(corr.diff, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], 
+                lev=levs, type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",
+                plotname=paste0('corr.diff_echam_anal-',v,'_precip_winter.pdf'), paper='special')
+  } else if (pseudo_prox) {
+    plot_echam4(corr.diff, varname='precip', cex.pt=1.5, names=pnames[1], lev=levs, type='ensmean', 
+                st.col=NULL, stations=plstat,NHseason=NULL,
+                plotname=paste0('corr.diff_echam_anal-',v,'_precip.pdf'), paper='special')
   } else {
-    plot_echam4(corr.diff, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('corr.diff_echam_anal-',v,'_precip.pdf'), paper='special')
+    plot_echam4(corr.diff, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], 
+                lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,
+                plotname=paste0('corr.diff_echam_anal-',v,'_precip.pdf'), paper='special')
   }
   
   ################# Sea Level Pressure CorrDiff #################
   
   if (monthly_out) {
-    plot_echam4(corr.diff, varname='slp', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('corr.diff_echam_anal-',v,'_slp_summer.pdf'), paper='special')
-    plot_echam4(corr.diff, varname='slp', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('corr.diff_echam_anal-',v,'_slp_winter.pdf'), paper='special')
+    plot_echam4(corr.diff, varname='slp', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs, 
+                type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",
+                plotname=paste0('corr.diff_echam_anal-',v,'_slp_summer.pdf'), paper='special')
+    plot_echam4(corr.diff, varname='slp', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs, 
+                type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",
+                plotname=paste0('corr.diff_echam_anal-',v,'_slp_winter.pdf'), paper='special')
+  } else if (pseudo_prox) {
+    plot_echam4(corr.diff, varname='slp', cex.pt=1.5, names=pnames[1], lev=levs, type='ensmean', 
+                st.col=NULL, stations=plstat,NHseason=NULL,
+                plotname=paste0('corr.diff_echam_anal-',v,'_slp.pdf'), paper='special')
   } else {
-    plot_echam4(corr.diff, varname='slp', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('corr.diff_echam_anal-',v,'_slp.pdf'), paper='special')
+    plot_echam4(corr.diff, varname='slp', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs, 
+                type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,
+                plotname=paste0('corr.diff_echam_anal-',v,'_slp.pdf'), paper='special')
   }
   
   ###############################################################
@@ -1084,228 +1098,226 @@ for (v in validation_set){
   #if (ind_ECHAM&!monthly_out) {
   if (!monthly_out) {
     ################# Absolute values ##########################
-    
     pdf(paste(figpath,'/vali_ind.pdf',sep='/'), width=9, height=6, paper='special')
-    par(mfrow=c(4,2), cex.axis=1.4, cex.lab=1.4, mar=c(3,5,1,1), oma=c(0,0,0,0))
-    
-    vind2=vind
-    vind2$data=array(vind$data,c(dim(vind$data)[1],2,dim(vind$data)[2]/2))
-    eind2=eind
-    eind2$ensmean=array(eind$ensmean,c(dim(eind$ensmean)[1],2,dim(eind$ensmean)[2]/2))
-    eind2$min=array(apply(eind$data,1:2,min),c(dim(eind$ensmean)[1],2,dim(eind$ensmean)[2]/2))
-    eind2$max=array(apply(eind$data,1:2,max),c(dim(eind$ensmean)[1],2,dim(eind$ensmean)[2]/2))
-    aind2=aind
-    aind2$ensmean=array(aind$ensmean,c(dim(aind$ensmean)[1],2,dim(aind$ensmean)[2]/2))
-    aind2$min=array(apply(aind$data,1:2,min),c(dim(aind$ensmean)[1],2,dim(aind$ensmean)[2]/2))
-    aind2$max=array(apply(aind$data,1:2,max),c(dim(aind$ensmean)[1],2,dim(aind$ensmean)[2]/2))
-    
-    if(!tps_only){
-      indices <- c('ENH.temp2','NAM.temp2','SAM.temp2','AFR.temp2',
-                   'ASI.temp2','AUS.temp2','ARC.temp2','ANT.temp2',
-                   'NEU.temp2','MED.temp2',
-                   'GLO.temp2','NAM.precip','SAM.precip','AFR.precip',
-                   'ASI.precip','AUS.precip','ARC.precip','ANT.precip',
-                   'NEU.precip','MED.precip',
-                   'SH.temp2','NAM.slp','SAM.slp','AFR.slp',
-                   'ASI.slp','AUS.slp','ARC.slp','ANT.slp',
-                   'NEU.slp','MED.slp',
-                   'NH.temp2', 'EU.temp2', 'EU.precip', 'EU.slp',
-                   'HC.calc', 'SJ_u200.calc', 'SJ_slp.calc', 'PV.calc',
-                   'PWC.calc', 'DIMI.calc') #,'ITCZ.calc', 'NAO.calc', 'PNA.calc')
-      vind2$names[which(vind2$names=="ind_recon_dimi")]<-"DIMI.calc"
-      vind2$names[which(vind2$names=="ind_recon_z100")]<-"PV.calc"
-      #vind2$names[which(vind2$names=="ind_recon_z300")]<-midlattitude circulation
-      vind2$names[which(vind2$names=="ind_recon_pwc")]<-"PWC.calc"
-      vind2$names[which(vind2$names=="ind_recon_hc")]<-"HC.calc"
-      vind2$names[which(vind2$names=="ind_recon_sj")]<-"SJ_slp.calc"
-      units<-c(rep('[ºC]',11),rep('[mm]',9),'[ºC]',rep('[hPa]',9),rep('[ºC]',2),'[mm]','[hPa]',rep('',6))
-    }else{
-      indices <- c('ENH.temp2','NAM.temp2','SAM.temp2','AFR.temp2',
-                   'ASI.temp2','AUS.temp2','ARC.temp2','ANT.temp2',
-                   'NEU.temp2','MED.temp2',
-                   'GLO.temp2','NAM.precip','SAM.precip','AFR.precip',
-                   'ASI.precip','AUS.precip','ARC.precip','ANT.precip',
-                   'NEU.precip','MED.precip',
-                   'SH.temp2','NAM.slp','SAM.slp','AFR.slp',
-                   'ASI.slp','AUS.slp','ARC.slp','ANT.slp',
-                   'NEU.slp','MED.slp',
-                   'NH.temp2', 'EU.temp2', 'EU.precip', 'EU.slp')
-      units<-c(rep('[ºC]',11),rep('[mm]',9),'[ºC]',rep('[hPa]',9),rep('[ºC]',2),'[mm]','[hPa]')
-    }
-    ti=seq(1,length(vind$time),by=2)
-    i=1
-    for (ind in indices) {
-      mainname=ind
-      for (seas in c(1,2)) {
-        if(all(is.nan(eind2$ensmean[which(eind2$names==ind),,]))){
-          next()
-        }else{
-          if (ind=="SJ_u200.calc"){ # only one SJ in vind but 2 different calculations ind aind and eind
-            if (seas == 1) {color='darkblue'; color3='blue'; color2='cyan'}
-            if (seas == 2) {color='darkred'; color3='red'; color2='orange'}
-            if (units[i]=='[ºC]'){
-              ymin=min(eind2$min[which(eind2$names==ind),seas,])-5
-              ymax=max(eind2$max[which(eind2$names==ind),seas,])+5
-            }else if (units[i]=='[mm]'){
-              ymin=min(eind2$min[which(eind2$names==ind),seas,])-20
-              ymax=max(eind2$max[which(eind2$names==ind),seas,])+20
-            }else if (units[i]=='[hPa]'){
-              ymin=min(eind2$min[which(eind2$names==ind),seas,])-2
-              ymax=max(eind2$max[which(eind2$names==ind),seas,])+2
-            }else{
-              ymin=min(eind2$min[which(eind2$names==ind),seas,])
-              ymax=max(eind2$max[which(eind2$names==ind),seas,])
-            }
-            plot(vind2$time[ti],vind2$data[which(vind2$names=='SJ_slp.calc'),seas,],ty='l',col=color,lty=1,ylim=c(ymin,ymax),main=mainname,ylab=units[i],xlab='')
-            lines(eind2$time[ti],eind2$ensmean[which(eind2$names==ind),seas,],ty='l',col=color2,lwd=2,lty=2,main='')
-            lines(eind2$time[ti],eind2$min[which(eind2$names==ind),seas,],ty='l',col=color2,lty=2,lwd=1,main='')
-            lines(eind2$time[ti],eind2$max[which(eind2$names==ind),seas,],ty='l',col=color2,lty=2,lwd=1,main='')
-            lines(aind2$time[ti],aind2$ensmean[which(aind2$names==ind),seas,],ty='l',col=color3,lwd=2,lty=3,main='')
-            lines(aind2$time[ti],aind2$min[which(aind2$names==ind),seas,],ty='l',col=color3,lty=3,lwd=1,main='')
-            lines(aind2$time[ti],aind2$max[which(aind2$names==ind),seas,],ty='l',col=color3,lty=3,lwd=1,main='')
+      par(mfrow=c(4,2), cex.axis=1.4, cex.lab=1.4, mar=c(3,5,1,1), oma=c(0,0,0,0))
+      vind2=vind
+      vind2$data=array(vind$data,c(dim(vind$data)[1],2,dim(vind$data)[2]/2))
+      eind2=eind
+      eind2$ensmean=array(eind$ensmean,c(dim(eind$ensmean)[1],2,dim(eind$ensmean)[2]/2))
+      eind2$min=array(apply(eind$data,1:2,min),c(dim(eind$ensmean)[1],2,dim(eind$ensmean)[2]/2))
+      eind2$max=array(apply(eind$data,1:2,max),c(dim(eind$ensmean)[1],2,dim(eind$ensmean)[2]/2))
+      aind2=aind
+      aind2$ensmean=array(aind$ensmean,c(dim(aind$ensmean)[1],2,dim(aind$ensmean)[2]/2))
+      aind2$min=array(apply(aind$data,1:2,min),c(dim(aind$ensmean)[1],2,dim(aind$ensmean)[2]/2))
+      aind2$max=array(apply(aind$data,1:2,max),c(dim(aind$ensmean)[1],2,dim(aind$ensmean)[2]/2))
+      if(!tps_only){
+        indices <- c('ENH.temp2','NAM.temp2','SAM.temp2','AFR.temp2',
+                     'ASI.temp2','AUS.temp2','ARC.temp2','ANT.temp2',
+                     'NEU.temp2','MED.temp2',
+                     'GLO.temp2','NAM.precip','SAM.precip','AFR.precip',
+                     'ASI.precip','AUS.precip','ARC.precip','ANT.precip',
+                     'NEU.precip','MED.precip',
+                     'SH.temp2','NAM.slp','SAM.slp','AFR.slp',
+                     'ASI.slp','AUS.slp','ARC.slp','ANT.slp',
+                     'NEU.slp','MED.slp',
+                     'NH.temp2', 'EU.temp2', 'EU.precip', 'EU.slp',
+                     'HC.calc', 'SJ_u200.calc', 'SJ_slp.calc', 'PV.calc',
+                     'PWC.calc', 'DIMI.calc') #,'ITCZ.calc', 'NAO.calc', 'PNA.calc')
+        vind2$names[which(vind2$names=="ind_recon_dimi")]<-"DIMI.calc"
+        vind2$names[which(vind2$names=="ind_recon_z100")]<-"PV.calc"
+        #vind2$names[which(vind2$names=="ind_recon_z300")]<-midlattitude circulation
+        vind2$names[which(vind2$names=="ind_recon_pwc")]<-"PWC.calc"
+        vind2$names[which(vind2$names=="ind_recon_hc")]<-"HC.calc"
+        vind2$names[which(vind2$names=="ind_recon_sj")]<-"SJ_slp.calc"
+        units<-c(rep('[ºC]',11),rep('[mm]',9),'[ºC]',rep('[hPa]',9),rep('[ºC]',2),'[mm]','[hPa]',rep('',6))
+      } else {
+        indices <- c('ENH.temp2','NAM.temp2','SAM.temp2','AFR.temp2',
+                     'ASI.temp2','AUS.temp2','ARC.temp2','ANT.temp2',
+                     'NEU.temp2','MED.temp2',
+                     'GLO.temp2','NAM.precip','SAM.precip','AFR.precip',
+                     'ASI.precip','AUS.precip','ARC.precip','ANT.precip',
+                     'NEU.precip','MED.precip',
+                     'SH.temp2','NAM.slp','SAM.slp','AFR.slp',
+                     'ASI.slp','AUS.slp','ARC.slp','ANT.slp',
+                     'NEU.slp','MED.slp',
+                     'NH.temp2', 'EU.temp2', 'EU.precip', 'EU.slp')
+        units<-c(rep('[ºC]',11),rep('[mm]',9),'[ºC]',rep('[hPa]',9),rep('[ºC]',2),'[mm]','[hPa]')
+      }
+      ti=seq(1,length(vind$time),by=2)
+      i=1
+      for (ind in indices) {
+        mainname=ind
+        for (seas in c(1,2)) {
+          if(all(is.nan(eind2$ensmean[which(eind2$names==ind),,]))){
+            next()
           }else{
-            if (seas == 1) {color='darkblue'; color3='blue'; color2='cyan'}
-            if (seas == 2) {color='darkred'; color3='red'; color2='orange'}
-            if (units[i]=='[ºC]'){
-              ymin=min(eind2$min[which(eind2$names==ind),seas,])-5
-              ymax=max(eind2$max[which(eind2$names==ind),seas,])+5
-            }else if (units[i]=='[mm]'){
-              ymin=min(eind2$min[which(eind2$names==ind),seas,])-20
-              ymax=max(eind2$max[which(eind2$names==ind),seas,])+20
-            }else if (units[i]=='[hPa]'){
-              ymin=min(eind2$min[which(eind2$names==ind),seas,])-2
-              ymax=max(eind2$max[which(eind2$names==ind),seas,])+2
-            }else{
-              ymin=min(eind2$min[which(eind2$names==ind),seas,],na.rm=T)-2
-              ymax=max(eind2$max[which(eind2$names==ind),seas,],na.rm=T)+2
+            if (ind=="SJ_u200.calc"){ # only one SJ in vind but 2 different calculations ind aind and eind
+              if (seas == 1) {color='darkblue'; color3='blue'; color2='cyan'}
+              if (seas == 2) {color='darkred'; color3='red'; color2='orange'}
+              if (units[i]=='[ºC]'){
+                ymin=min(eind2$min[which(eind2$names==ind),seas,])-5
+                ymax=max(eind2$max[which(eind2$names==ind),seas,])+5
+              } else if (units[i]=='[mm]') {
+                ymin=min(eind2$min[which(eind2$names==ind),seas,])-20
+                ymax=max(eind2$max[which(eind2$names==ind),seas,])+20
+              } else if (units[i]=='[hPa]') {
+                ymin=min(eind2$min[which(eind2$names==ind),seas,])-2
+                ymax=max(eind2$max[which(eind2$names==ind),seas,])+2
+              } else {
+                ymin=min(eind2$min[which(eind2$names==ind),seas,])
+                ymax=max(eind2$max[which(eind2$names==ind),seas,])
+              }
+              plot(vind2$time[ti],vind2$data[which(vind2$names=='SJ_slp.calc'),seas,],ty='l',
+                   col=color,lty=1,ylim=c(ymin,ymax),main=mainname,ylab=units[i],xlab='')
+              lines(eind2$time[ti],eind2$ensmean[which(eind2$names==ind),seas,],ty='l',col=color2,lwd=2,lty=2,main='')
+              lines(eind2$time[ti],eind2$min[which(eind2$names==ind),seas,],ty='l',col=color2,lty=2,lwd=1,main='')
+              lines(eind2$time[ti],eind2$max[which(eind2$names==ind),seas,],ty='l',col=color2,lty=2,lwd=1,main='')
+              lines(aind2$time[ti],aind2$ensmean[which(aind2$names==ind),seas,],ty='l',col=color3,lwd=2,lty=3,main='')
+              lines(aind2$time[ti],aind2$min[which(aind2$names==ind),seas,],ty='l',col=color3,lty=3,lwd=1,main='')
+              lines(aind2$time[ti],aind2$max[which(aind2$names==ind),seas,],ty='l',col=color3,lty=3,lwd=1,main='')
+            } else {
+              if (seas == 1) {color='darkblue'; color3='blue'; color2='cyan'}
+              if (seas == 2) {color='darkred'; color3='red'; color2='orange'}
+              if (units[i]=='[ºC]'){
+                ymin=min(eind2$min[which(eind2$names==ind),seas,])-5
+                ymax=max(eind2$max[which(eind2$names==ind),seas,])+5
+              } else if (units[i]=='[mm]') {
+                ymin=min(eind2$min[which(eind2$names==ind),seas,])-20
+                ymax=max(eind2$max[which(eind2$names==ind),seas,])+20
+              } else if (units[i]=='[hPa]') {
+                ymin=min(eind2$min[which(eind2$names==ind),seas,])-2
+                ymax=max(eind2$max[which(eind2$names==ind),seas,])+2
+              } else {
+                ymin=min(eind2$min[which(eind2$names==ind),seas,],na.rm=T)-2
+                ymax=max(eind2$max[which(eind2$names==ind),seas,],na.rm=T)+2
+              }
+              plot(vind2$time[ti],vind2$data[which(vind2$names==ind),seas,],ty='l',col=color,
+                   lty=1,ylim=c(ymin,ymax),main=mainname,ylab=units[i],xlab='')
+              lines(eind2$time[ti],eind2$ensmean[which(eind2$names==ind),seas,],ty='l',col=color2,lwd=2,lty=2,main='')
+              lines(eind2$time[ti],eind2$min[which(eind2$names==ind),seas,],ty='l',col=color2,lty=2,lwd=1,main='')
+              lines(eind2$time[ti],eind2$max[which(eind2$names==ind),seas,],ty='l',col=color2,lty=2,lwd=1,main='')
+              lines(aind2$time[ti],aind2$ensmean[which(aind2$names==ind),seas,],ty='l',col=color3,lwd=2,lty=3,main='')
+              lines(aind2$time[ti],aind2$min[which(aind2$names==ind),seas,],ty='l',col=color3,lty=3,lwd=1,main='')
+              lines(aind2$time[ti],aind2$max[which(aind2$names==ind),seas,],ty='l',col=color3,lty=3,lwd=1,main='')
             }
-            plot(vind2$time[ti],vind2$data[which(vind2$names==ind),seas,],ty='l',col=color,lty=1,ylim=c(ymin,ymax),main=mainname,ylab=units[i],xlab='')
-            lines(eind2$time[ti],eind2$ensmean[which(eind2$names==ind),seas,],ty='l',col=color2,lwd=2,lty=2,main='')
-            lines(eind2$time[ti],eind2$min[which(eind2$names==ind),seas,],ty='l',col=color2,lty=2,lwd=1,main='')
-            lines(eind2$time[ti],eind2$max[which(eind2$names==ind),seas,],ty='l',col=color2,lty=2,lwd=1,main='')
-            lines(aind2$time[ti],aind2$ensmean[which(aind2$names==ind),seas,],ty='l',col=color3,lwd=2,lty=3,main='')
-            lines(aind2$time[ti],aind2$min[which(aind2$names==ind),seas,],ty='l',col=color3,lty=3,lwd=1,main='')
-            lines(aind2$time[ti],aind2$max[which(aind2$names==ind),seas,],ty='l',col=color3,lty=3,lwd=1,main='')
           }
         }
+        i=i+1
       }
-      i=i+1
-    }
     dev.off()
     
     
     #################### Anomaly Indices ##########################
     pdf(paste(figpath,'/vali_ind_anom.pdf',sep='/'), width=9, height=6, paper='special')
-    par(mfrow=c(4,2), cex.axis=1.4, cex.lab=1.4, mar=c(3,5,1,1), oma=c(0,0,0,0))
-    
-    vind2=vind.anom
-    vind2$data=array(vind.anom$data,c(dim(vind.anom$data)[1],2,dim(vind.anom$data)[2]/2))
-    eind2=eind.anom
-    eind2$ensmean=array(eind.anom$ensmean,c(dim(eind.anom$ensmean)[1],2,dim(eind.anom$ensmean)[2]/2))
-    eind2$min=array(apply(eind.anom$data,1:2,min),c(dim(eind.anom$ensmean)[1],2,dim(eind.anom$ensmean)[2]/2))
-    eind2$max=array(apply(eind.anom$data,1:2,max),c(dim(eind.anom$ensmean)[1],2,dim(eind.anom$ensmean)[2]/2))
-    aind2=aind.anom
-    aind2$ensmean=array(aind.anom$ensmean,c(dim(aind.anom$ensmean)[1],2,dim(aind.anom$ensmean)[2]/2))
-    aind2$min=array(apply(aind.anom$data,1:2,min),c(dim(aind.anom$ensmean)[1],2,dim(aind.anom$ensmean)[2]/2))
-    aind2$max=array(apply(aind.anom$data,1:2,max),c(dim(aind.anom$ensmean)[1],2,dim(aind.anom$ensmean)[2]/2))
-    
-    if(!tps_only){
-      indices <- c('ENH.temp2','NAM.temp2','SAM.temp2','AFR.temp2',
-                   'ASI.temp2','AUS.temp2','ARC.temp2','ANT.temp2',
-                   'NEU.temp2','MED.temp2',
-                   'GLO.temp2','NAM.precip','SAM.precip','AFR.precip',
-                   'ASI.precip','AUS.precip','ARC.precip','ANT.precip',
-                   'NEU.precip','MED.precip',
-                   'SH.temp2','NAM.slp','SAM.slp','AFR.slp',
-                   'ASI.slp','AUS.slp','ARC.slp','ANT.slp',
-                   'NEU.slp','MED.slp',
-                   'NH.temp2', 'EU.temp2', 'EU.precip', 'EU.slp',
-                   'HC.calc', 'SJ_u200.calc', 'SJ_slp.calc', 'PV.calc',
-                   'PWC.calc', 'DIMI.calc') #,'ITCZ.calc', 'NAO.calc', 'PNA.calc')
-      vind2$names[which(vind2$names=="ind_recon_dimi")]<-"DIMI.calc"
-      vind2$names[which(vind2$names=="ind_recon_z100")]<-"PV.calc"
-      #vind2$names[which(vind2$names=="ind_recon_z300")]<-midlattitude circulation
-      vind2$names[which(vind2$names=="ind_recon_pwc")]<-"PWC.calc"
-      vind2$names[which(vind2$names=="ind_recon_hc")]<-"HC.calc"
-      vind2$names[which(vind2$names=="ind_recon_sj")]<-"SJ_slp.calc"
-      units<-c(rep('[ºC]',11),rep('[mm]',9),'[ºC]',rep('[hPa]',9),rep('[ºC]',2),'[mm]','[hPa]',rep('',6))
-    }else{
-      indices <- c('ENH.temp2','NAM.temp2','SAM.temp2','AFR.temp2',
-                   'ASI.temp2','AUS.temp2','ARC.temp2','ANT.temp2',
-                   'NEU.temp2','MED.temp2',
-                   'GLO.temp2','NAM.precip','SAM.precip','AFR.precip',
-                   'ASI.precip','AUS.precip','ARC.precip','ANT.precip',
-                   'NEU.precip','MED.precip',
-                   'SH.temp2','NAM.slp','SAM.slp','AFR.slp',
-                   'ASI.slp','AUS.slp','ARC.slp','ANT.slp',
-                   'NEU.slp','MED.slp',
-                   'NH.temp2', 'EU.temp2', 'EU.precip', 'EU.slp')
-      units<-c(rep('[ºC]',11),rep('[mm]',9),'[ºC]',rep('[hPa]',9),rep('[ºC]',2),'[mm]','[hPa]')
-    }
-    ti=seq(1,length(vind$time),by=2)
-    i=1
-    for (ind in indices) {
-      mainname=ind
-      for (seas in c(1,2)) {
-        if(all(is.nan(eind2$ensmean[which(eind2$names==ind),,]))){
-          next()
-        }else{
-          if (ind=="SJ_u200.calc"){ # only one SJ in vind but 2 different calculations ind aind and eind
-            if (seas == 1) {color='darkblue'; color3='blue'; color2='cyan'}
-            if (seas == 2) {color='darkred'; color3='red'; color2='orange'}
-            if (units[i]=='[ºC]'){
-              ymin=min(eind2$min[which(eind2$names==ind),seas,])
-              ymax=max(eind2$max[which(eind2$names==ind),seas,])
-            }else if (units[i]=='[mm]'){
-              ymin=min(eind2$min[which(eind2$names==ind),seas,])
-              ymax=max(eind2$max[which(eind2$names==ind),seas,])
-            }else if (units[i]=='[hPa]'){
-              ymin=min(eind2$min[which(eind2$names==ind),seas,])
-              ymax=max(eind2$max[which(eind2$names==ind),seas,])
-            }else{
-              ymin=min(eind2$min[which(eind2$names==ind),seas,])
-              ymax=max(eind2$max[which(eind2$names==ind),seas,])
+      par(mfrow=c(4,2), cex.axis=1.4, cex.lab=1.4, mar=c(3,5,1,1), oma=c(0,0,0,0))
+      vind2=vind.anom
+      vind2$data=array(vind.anom$data,c(dim(vind.anom$data)[1],2,dim(vind.anom$data)[2]/2))
+      eind2=eind.anom
+      eind2$ensmean=array(eind.anom$ensmean,c(dim(eind.anom$ensmean)[1],2,dim(eind.anom$ensmean)[2]/2))
+      eind2$min=array(apply(eind.anom$data,1:2,min),c(dim(eind.anom$ensmean)[1],2,dim(eind.anom$ensmean)[2]/2))
+      eind2$max=array(apply(eind.anom$data,1:2,max),c(dim(eind.anom$ensmean)[1],2,dim(eind.anom$ensmean)[2]/2))
+      aind2=aind.anom
+      aind2$ensmean=array(aind.anom$ensmean,c(dim(aind.anom$ensmean)[1],2,dim(aind.anom$ensmean)[2]/2))
+      aind2$min=array(apply(aind.anom$data,1:2,min),c(dim(aind.anom$ensmean)[1],2,dim(aind.anom$ensmean)[2]/2))
+      aind2$max=array(apply(aind.anom$data,1:2,max),c(dim(aind.anom$ensmean)[1],2,dim(aind.anom$ensmean)[2]/2))
+      if(!tps_only){
+        indices <- c('ENH.temp2','NAM.temp2','SAM.temp2','AFR.temp2',
+                     'ASI.temp2','AUS.temp2','ARC.temp2','ANT.temp2',
+                     'NEU.temp2','MED.temp2',
+                     'GLO.temp2','NAM.precip','SAM.precip','AFR.precip',
+                     'ASI.precip','AUS.precip','ARC.precip','ANT.precip',
+                     'NEU.precip','MED.precip',
+                     'SH.temp2','NAM.slp','SAM.slp','AFR.slp',
+                     'ASI.slp','AUS.slp','ARC.slp','ANT.slp',
+                     'NEU.slp','MED.slp',
+                     'NH.temp2', 'EU.temp2', 'EU.precip', 'EU.slp',
+                     'HC.calc', 'SJ_u200.calc', 'SJ_slp.calc', 'PV.calc',
+                     'PWC.calc', 'DIMI.calc') #,'ITCZ.calc', 'NAO.calc', 'PNA.calc')
+        vind2$names[which(vind2$names=="ind_recon_dimi")]<-"DIMI.calc"
+        vind2$names[which(vind2$names=="ind_recon_z100")]<-"PV.calc"
+        #vind2$names[which(vind2$names=="ind_recon_z300")]<-midlattitude circulation
+        vind2$names[which(vind2$names=="ind_recon_pwc")]<-"PWC.calc"
+        vind2$names[which(vind2$names=="ind_recon_hc")]<-"HC.calc"
+        vind2$names[which(vind2$names=="ind_recon_sj")]<-"SJ_slp.calc"
+        units<-c(rep('[ºC]',11),rep('[mm]',9),'[ºC]',rep('[hPa]',9),rep('[ºC]',2),'[mm]','[hPa]',rep('',6))
+      } else {
+        indices <- c('ENH.temp2','NAM.temp2','SAM.temp2','AFR.temp2',
+                     'ASI.temp2','AUS.temp2','ARC.temp2','ANT.temp2',
+                     'NEU.temp2','MED.temp2',
+                     'GLO.temp2','NAM.precip','SAM.precip','AFR.precip',
+                     'ASI.precip','AUS.precip','ARC.precip','ANT.precip',
+                     'NEU.precip','MED.precip',
+                     'SH.temp2','NAM.slp','SAM.slp','AFR.slp',
+                     'ASI.slp','AUS.slp','ARC.slp','ANT.slp',
+                     'NEU.slp','MED.slp',
+                     'NH.temp2', 'EU.temp2', 'EU.precip', 'EU.slp')
+        units<-c(rep('[ºC]',11),rep('[mm]',9),'[ºC]',rep('[hPa]',9),rep('[ºC]',2),'[mm]','[hPa]')
+      }
+      ti=seq(1,length(vind$time),by=2)
+      i=1
+      for (ind in indices) {
+        mainname=ind
+        for (seas in c(1,2)) {
+          if (all(is.nan(eind2$ensmean[which(eind2$names==ind),,]))) {
+            next()
+          } else {
+            if (ind=="SJ_u200.calc"){ # only one SJ in vind but 2 different calculations ind aind and eind
+              if (seas == 1) {color='darkblue'; color3='blue'; color2='cyan'}
+              if (seas == 2) {color='darkred'; color3='red'; color2='orange'}
+              if (units[i]=='[ºC]') {
+                ymin=min(eind2$min[which(eind2$names==ind),seas,])
+                ymax=max(eind2$max[which(eind2$names==ind),seas,])
+              } else if (units[i]=='[mm]') {
+                ymin=min(eind2$min[which(eind2$names==ind),seas,])
+                ymax=max(eind2$max[which(eind2$names==ind),seas,])
+              } else if (units[i]=='[hPa]') {
+                ymin=min(eind2$min[which(eind2$names==ind),seas,])
+                ymax=max(eind2$max[which(eind2$names==ind),seas,])
+              } else {
+                ymin=min(eind2$min[which(eind2$names==ind),seas,])
+                ymax=max(eind2$max[which(eind2$names==ind),seas,])
+              }
+              plot(vind2$time[ti],vind2$data[which(vind2$names=='SJ_slp.calc'),seas,],ty='l',
+                   col=color,lty=1,ylim=c(ymin,ymax),main=mainname,ylab=units[i],xlab='')
+              lines(eind2$time[ti],eind2$ensmean[which(eind2$names==ind),seas,],ty='l',col=color2,lwd=2,lty=2,main='')
+              lines(eind2$time[ti],eind2$min[which(eind2$names==ind),seas,],ty='l',col=color2,lty=2,lwd=1,main='')
+              lines(eind2$time[ti],eind2$max[which(eind2$names==ind),seas,],ty='l',col=color2,lty=2,lwd=1,main='')
+              lines(aind2$time[ti],aind2$ensmean[which(aind2$names==ind),seas,],ty='l',col=color3,lwd=2,lty=3,main='')
+              lines(aind2$time[ti],aind2$min[which(aind2$names==ind),seas,],ty='l',col=color3,lty=3,lwd=1,main='')
+              lines(aind2$time[ti],aind2$max[which(aind2$names==ind),seas,],ty='l',col=color3,lty=3,lwd=1,main='')
+            } else {
+              if (seas == 1) {color='darkblue'; color3='blue'; color2='cyan'}
+              if (seas == 2) {color='darkred'; color3='red'; color2='orange'}
+              if (units[i]=='[ºC]') {
+                ymin=min(eind2$min[which(eind2$names==ind),seas,])-5
+                ymax=max(eind2$max[which(eind2$names==ind),seas,])+5
+              } else if (units[i]=='[mm]') {
+                ymin=min(eind2$min[which(eind2$names==ind),seas,])-20
+                ymax=max(eind2$max[which(eind2$names==ind),seas,])+20
+              } else if (units[i]=='[hPa]') {
+                ymin=min(eind2$min[which(eind2$names==ind),seas,])-2
+                ymax=max(eind2$max[which(eind2$names==ind),seas,])+2
+              } else {
+                ymin=min(eind2$min[which(eind2$names==ind),seas,],na.rm=T)-2
+                ymax=max(eind2$max[which(eind2$names==ind),seas,],na.rm=T)+2
+              }
+              plot(vind2$time[ti],vind2$data[which(vind2$names==ind),seas,],ty='l',col=color,lty=1,
+                   ylim=c(ymin,ymax),main=mainname,ylab=units[i],xlab='')
+              lines(eind2$time[ti],eind2$ensmean[which(eind2$names==ind),seas,],ty='l',col=color2,lwd=2,lty=2,main='')
+              lines(eind2$time[ti],eind2$min[which(eind2$names==ind),seas,],ty='l',col=color2,lty=2,lwd=1,main='')
+              lines(eind2$time[ti],eind2$max[which(eind2$names==ind),seas,],ty='l',col=color2,lty=2,lwd=1,main='')
+              lines(aind2$time[ti],aind2$ensmean[which(aind2$names==ind),seas,],ty='l',col=color3,lwd=2,lty=3,main='')
+              lines(aind2$time[ti],aind2$min[which(aind2$names==ind),seas,],ty='l',col=color3,lty=3,lwd=1,main='')
+              lines(aind2$time[ti],aind2$max[which(aind2$names==ind),seas,],ty='l',col=color3,lty=3,lwd=1,main='')
             }
-            plot(vind2$time[ti],vind2$data[which(vind2$names=='SJ_slp.calc'),seas,],ty='l',col=color,lty=1,ylim=c(ymin,ymax),main=mainname,ylab=units[i],xlab='')
-            lines(eind2$time[ti],eind2$ensmean[which(eind2$names==ind),seas,],ty='l',col=color2,lwd=2,lty=2,main='')
-            lines(eind2$time[ti],eind2$min[which(eind2$names==ind),seas,],ty='l',col=color2,lty=2,lwd=1,main='')
-            lines(eind2$time[ti],eind2$max[which(eind2$names==ind),seas,],ty='l',col=color2,lty=2,lwd=1,main='')
-            lines(aind2$time[ti],aind2$ensmean[which(aind2$names==ind),seas,],ty='l',col=color3,lwd=2,lty=3,main='')
-            lines(aind2$time[ti],aind2$min[which(aind2$names==ind),seas,],ty='l',col=color3,lty=3,lwd=1,main='')
-            lines(aind2$time[ti],aind2$max[which(aind2$names==ind),seas,],ty='l',col=color3,lty=3,lwd=1,main='')
-          }else{
-            if (seas == 1) {color='darkblue'; color3='blue'; color2='cyan'}
-            if (seas == 2) {color='darkred'; color3='red'; color2='orange'}
-            if (units[i]=='[ºC]'){
-              ymin=min(eind2$min[which(eind2$names==ind),seas,])-5
-              ymax=max(eind2$max[which(eind2$names==ind),seas,])+5
-            }else if (units[i]=='[mm]'){
-              ymin=min(eind2$min[which(eind2$names==ind),seas,])-20
-              ymax=max(eind2$max[which(eind2$names==ind),seas,])+20
-            }else if (units[i]=='[hPa]'){
-              ymin=min(eind2$min[which(eind2$names==ind),seas,])-2
-              ymax=max(eind2$max[which(eind2$names==ind),seas,])+2
-            }else{
-              ymin=min(eind2$min[which(eind2$names==ind),seas,],na.rm=T)-2
-              ymax=max(eind2$max[which(eind2$names==ind),seas,],na.rm=T)+2
-            }
-            plot(vind2$time[ti],vind2$data[which(vind2$names==ind),seas,],ty='l',col=color,lty=1,ylim=c(ymin,ymax),main=mainname,ylab=units[i],xlab='')
-            lines(eind2$time[ti],eind2$ensmean[which(eind2$names==ind),seas,],ty='l',col=color2,lwd=2,lty=2,main='')
-            lines(eind2$time[ti],eind2$min[which(eind2$names==ind),seas,],ty='l',col=color2,lty=2,lwd=1,main='')
-            lines(eind2$time[ti],eind2$max[which(eind2$names==ind),seas,],ty='l',col=color2,lty=2,lwd=1,main='')
-            lines(aind2$time[ti],aind2$ensmean[which(aind2$names==ind),seas,],ty='l',col=color3,lwd=2,lty=3,main='')
-            lines(aind2$time[ti],aind2$min[which(aind2$names==ind),seas,],ty='l',col=color3,lty=3,lwd=1,main='')
-            lines(aind2$time[ti],aind2$max[which(aind2$names==ind),seas,],ty='l',col=color3,lty=3,lwd=1,main='')
           }
         }
+        i=i+1
       }
-      i=i+1
-    }
     dev.off()
-    
-    
-    
     ###############################################################
+    
+    
     
     
     
@@ -1313,7 +1325,8 @@ for (v in validation_set){
     ######### figs.15: Validation Indices Correlations  ###########
     ###############################################################
     
-    inds <- c('ENH.temp2', 'NAM.temp2', 'SAM.temp2', 'AFR.temp2')
+    if (!pseudo_prox) {
+    inds <- c('ENH.temp2', 'EU.temp2', 'EU.precip', 'EU.slp')
     indices <- c('ENH.temp2','NAM.temp2','SAM.temp2','AFR.temp2',
                  'ASI.temp2','AUS.temp2','ARC.temp2','ANT.temp2',
                  'NEU.temp2','MED.temp2',
@@ -1324,7 +1337,6 @@ for (v in validation_set){
                  'ASI.slp','AUS.slp','ARC.slp','ANT.slp',
                  'NEU.slp','MED.slp',
                  'NH.temp2', 'EU.temp2', 'EU.precip', 'EU.slp')
-    
     RE.mat <- array(NA, c(length(inds), 2, 31))
     corr.mat <- array(NA, c(length(inds)*2, 2, 31))
     ind.names <- list()
@@ -1341,49 +1353,46 @@ for (v in validation_set){
     }
     
     pdf(paste(figpath,'/index_correlation.pdf',sep='/'), width=9, height=6, paper='special')
-    par(mfrow=c(2,2), mar=c(1,1,0,0), oma=c(0,2,1,0), cex.axis=1.4, cex.lab=1.4)
-    
-    ind.col <- list()
-    ind.col2 <- list()
-    ind.col[[1]] <- hcl(c(0,0,120,240,270,300), c=40, l=50)
-    ind.col[[2]] <- hcl(c(0,0,120,240,270,200), c=40, l=50)
-    ind.col2[[1]] <- hcl(rep(c(0,0,120,240,270,300), each=2), c=40, l=c(90,50))
-    ind.col2[[2]] <- hcl(rep(c(0,0,120,240,270,200), each=2), c=40, l=c(90,50))
-    
-    for (se in 1:2){
-      plot(0, type='n', xaxt='n', ylim=c(-1.1,1.1), xlim=c(0.5,length(inds) + .5), xlab='', ylab='', yaxt=if (se == 2) 'n' else 's')
-      polygon(c(-1,-1,9,9), c(0,-2,-2,0), border=NA, col=grey(0.9))
-      if (pseudoproxy){
-        boxplot(t(RE.mat[,se,1:29]), at=seq(inds), col=hcl(rep(seq(indices)/length(indices)*360, each=1), c=45, l=75),add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5, range=0, lty=1)
-        points(seq(inds) - 0.35, RE.mat[,se,30], pch='>', lwd=3, cex=1.4)
-      } else {
+      par(mfrow=c(2,2), mar=c(1,1,0,0), oma=c(0,2,1,0), cex.axis=1.4, cex.lab=1.4)
+      ind.col <- list()
+      ind.col2 <- list()
+      ind.col[[1]] <- hcl(c(0,0,120,240,270,300), c=40, l=50)
+      ind.col[[2]] <- hcl(c(0,0,120,240,270,200), c=40, l=50)
+      ind.col2[[1]] <- hcl(rep(c(0,0,120,240,270,300), each=2), c=40, l=c(90,50))
+      ind.col2[[2]] <- hcl(rep(c(0,0,120,240,270,200), each=2), c=40, l=c(90,50))
+      for (se in 1:2){
+        plot(0, type='n', xaxt='n', ylim=c(-1.1,1.1), xlim=c(0.5,length(inds) + .5), xlab='', ylab='', yaxt=if (se == 2) 'n' else 's')
+        polygon(c(-1,-1,9,9), c(0,-2,-2,0), border=NA, col=grey(0.9))
+#        if (pseudoproxy){
+#          boxplot(t(RE.mat[,se,1:29]), at=seq(inds), col=hcl(rep(seq(indices)/length(indices)*360, each=1), c=45, l=75),add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5, range=0, lty=1)
+#          points(seq(inds) - 0.35, RE.mat[,se,30], pch='>', lwd=3, cex=1.4)
+#        } else {
         boxplot(t(RE.mat[,se,1:30]), at=seq(inds), col=hcl(rep(seq(indices)/length(indices)*360, each=1), c=45, l=75),add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, boxwex=0.5, range=0, lty=1)
         points(seq(inds) - 0.35, RE.mat[,se,31], pch='>', lwd=3, cex=1.4)
-        
+ #       }
+        text(seq(inds), rep(-0.9,3), ind.names[[se]], cex=1.2, adj=c(0.5,1))
+        text(0.5,1.1,paste(pnames[se], ' Skill (RE) in ', c('October to March', 'April to September')[se], sep='') , cex=1.4, adj=c(0,1))
       }
-      text(seq(inds), rep(-0.9,3), ind.names[[se]], cex=1.2, adj=c(0.5,1))
-      text(0.5,1.1,paste(pnames[se], ' Skill (RE) in ', c('October to March', 'April to September')[se], sep='') , cex=1.4, adj=c(0,1))
-    }
-    
-    indind <- c(1,2,4,5,7,8,10,11)
-    for (se in 1:2){
-      plot(0, type='n', xaxt='n', ylim=c(-1.1,1.1), xlim=c(0,max(indind)+1), xlab='', ylab='', yaxt=if (se == 2) 'n' else 's')
-      polygon(c(-1,-1,max(indind)+c(2,2)), c(0,-2,-2,0), border=NA, col=grey(0.9))
-      boxplot(t(corr.mat[,se,1:30]), at=indind, col=hcl(rep(seq(indices)/length(indices)*360, each=2), c=c(30,60), l=c(95,50)),
-              add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, range=0, lty=1)
-      points(seq(1.5,max(indind),3) - 1.2, corr.mat[seq(1,nrow(corr.mat),2),se,31], pch='>', lwd=3, cex=1.4)
-      points(seq(1.5,max(indind),3) + 1.2, corr.mat[seq(2,nrow(corr.mat),2),se,31], pch='<', lwd=3, cex=1.4)
-      text(seq(1.5,max(indind),3), rep(-0.9,3), ind.names[[se]], cex=1.2, adj=c(0.5,1))
-      text(0,1.1,paste(pnames[se + 2], ' Correlation in ', c('October to March', 'April to September')[se], sep=''), cex=1.4, adj=c(0,1))
-    }
+      indind <- c(1,2,4,5,7,8,10,11)
+      for (se in 1:2){
+        plot(0, type='n', xaxt='n', ylim=c(-1.1,1.1), xlim=c(0,max(indind)+1), xlab='', ylab='', yaxt=if (se == 2) 'n' else 's')
+        polygon(c(-1,-1,max(indind)+c(2,2)), c(0,-2,-2,0), border=NA, col=grey(0.9))
+        boxplot(t(corr.mat[,se,1:30]), at=indind, col=hcl(rep(seq(indices)/length(indices)*360, each=2), c=c(30,60), l=c(95,50)),
+                add=T, xaxt='n', yaxt='n', xlab='', ylab='', lwd=1, range=0, lty=1)
+        points(seq(1.5,max(indind),3) - 1.2, corr.mat[seq(1,nrow(corr.mat),2),se,31], pch='>', lwd=3, cex=1.4)
+        points(seq(1.5,max(indind),3) + 1.2, corr.mat[seq(2,nrow(corr.mat),2),se,31], pch='<', lwd=3, cex=1.4)
+        text(seq(1.5,max(indind),3), rep(-0.9,3), ind.names[[se]], cex=1.2, adj=c(0.5,1))
+        text(0,1.1,paste(pnames[se + 2], ' Correlation in ', c('October to March', 'April to September')[se], sep=''), cex=1.4, adj=c(0,1))
+      }
     dev.off()
-    
+    } # end not pseudo_prox
   } # end if(echam_ind)
-  
   ###############################################################
   
   
-  # 
+  
+  
+   
   # ###############################################################
   # ############ figs.16: Plot Distance Weight  ###################
   # ###############################################################

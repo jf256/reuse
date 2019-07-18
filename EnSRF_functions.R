@@ -13,8 +13,8 @@ echclimpath <- paste0(dataextdir,'echam_clim/')
 echsdpath <- paste0(dataextdir,'echam_sd/')
 crupath <- paste0(dataextdir,'vali_data/cru/')
 gisspath = paste0(dataextdir,'vali_data/giss/')
-ghcntemppath <- paste0(dataextdir,'../assim_data/ghcn/temp_v3/')
-ghcnprecippath <- paste0(dataextdir,'../assim_data/ghcn/precip_v2/')
+ghcntemppath <- paste0(dataextdir,'assimil_data/ghcn/temp_v3/')
+ghcnprecippath <- paste0(dataextdir,'assim_data/ghcn/precip_v2/')
 #histalppath <- paste0(dataintdir,'instr/histalp/')
 petrapath <- paste0(dataextdir,'assimil_data/proxies/petra/')
 mxdpath <- paste0(dataextdir,'assimil_data/proxies/mxd/')
@@ -576,11 +576,6 @@ read_echam1 <- function(filehead, path=echpath, xlim=c(-180,180), ylim=c(-90,90)
           if (varname == 'precip') data <- data * 3600 * 24 * 30
           if (varname == 'slp') data <- data / 100
         }
-        if (path == nceppath) {
-          if (varname == 'temp2') data <- data - 273.15
-          if (varname == 'precip') data <- data * 3600 * 24 * 30
-          if (varname == 'slp') data <- data 
-        }
         # compute seasonal averages
         #dat <- array(data[,11:(ncol(data)-2)], c(nrow(data), 6, ncol(data)/6 - 2))
         #data <- apply(dat, c(1,3), mean, na.rm=T)
@@ -1063,18 +1058,19 @@ read_proxy2 <- function(syr,eyr){
 
 
 # PAGES proxies are TEMPERATURE sensitive
-# PAGES year is from April to March
+# PAGES year is from now from Oct. to Mar. (JF 201905) NOT April to March
 # tree: regression calculated for NH from April till September, for SH from October till March
-# coral: regression is calculated by using all months (12 reg coeff-s from April till March                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   )
-# docu: save docu data as an RData file
-# inst: save inst data as an Rdata file
-# PATHES SHOULD BE MAKE MORE GENERAL!!!
+# coral: regression is now calculated based on half-yearly data (JF 201905) 
+#        NOT by using all months (12 reg coeff-s from April till March                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   )
+# ??? docu: save docu data as an RData file ???
+# ??? inst: save inst data as an Rdata file ???
 read_pages = function(fsyr,feyr,archivetype, validate) {
   # load(paste0(paste0(workdir,'/../pages_proxies.RData', sep='')))
   # load("/scratch3/veronika/reuse/pages_proxies.RData")
-  load(paste0(pagespath,"pages_proxies_roni_2018_01.RData"))
+  # load(paste0(pagespath,"pages_proxies_roni_2018_01.RData"))
   
   if(archivetype == "tree") {
+    load(paste0(pagespath,"pages_proxies_jf_201905.RData"))
     if(exists("mrNH")){rm(mrNH)}
     if(exists("mrSH")){rm(mrSH)}
     mylist.names = c("data","time","lon","lat","archivetype","elevation")
@@ -1089,8 +1085,10 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
     p_tree$elevation = pages_proxies$elevation[which(pages_proxies$archivetype =="tree")]
     # Create a new variable for 1901-1970
     # the period on which we will calculate the multiple lin regression -> cut out 1901-1970
-    start_yr = which(p_tree$time == "1901")
-    end_yr = which(p_tree$time == "1970")
+    # we set 1902-71 because PAGES coral year 1902 equals Oct 1901 - Sep 1902
+    # and there is no CRU data before Jan 1901
+    start_yr = which(p_tree$time == "1902")
+    end_yr = which(p_tree$time == "1971")
     mylist.names = c("data","time")
     p_tree_1901_1970 = setNames(vector("list", length(mylist.names)), mylist.names)
     # p_tree_1901_1970$data = scale(pages_proxies$chronologies[,which(pages_proxies$archivetype =="tree")])
@@ -1100,6 +1098,8 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
       nc=nc_open(paste(crupath,'/cru_allvar_abs_1901-2004.nc',sep=''), write=F)
       t1=ncvar_get(nc, "temp2") # for CRU temp
       t2 <- t1[,,1:852] # from year 1901 till 1971
+      p1=ncvar_get(nc, "precip") # for CRU precip
+      p2 <- p1[,,1:852] # from year 1901 till 1971
     } else if (validate == "GISS") {
       nc=nc_open(paste(gisspath,'/air.2x2.250_anom_echamgrid.nc',sep=''), write=F) 
       t1=ncvar_get(nc, "air") # for GISS air temp and SST
@@ -1137,6 +1137,7 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
       k=which(abs(lonlist-p_tree$lon[i]+0.001)==mdistx[x])
       l=which(abs(latlist-p_tree$lat[i])==mdisty[y])
       t3<-t2[k,l,]
+      p3<-p2[k,l,]
       j=1
       while(all(is.na(t3))){
         if(j>9){
@@ -1149,13 +1150,15 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
         k=which(abs(lonlist-p_tree$lon[i]+0.001)==mdistx[x])
         l=which(abs(latlist-p_tree$lat[i])==mdisty[y])
         t3<-t2[k,l,]
+        p3<-p2[k,l,]
         j=j+1
       }
       #Nevin Mai 2018: end
       if (all(is.na(t3))|length(which(is.na(p_tree_1901_1970$data[,i])))>=50) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
         if (p_tree$lat[i] > 0){
           if (!exists("mrNH")) {
-            mrNH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) #nr of coeff + intercept
+            #mrNH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) #nr of coeff + intercept
+            mrNH <- rep(NA,(length(regression_months)+1)) #nr of coeff + intercept
             var_residuNH <- NA
             NHlat <- p_tree$lat[i]
             NHlon <- p_tree$lon[i]
@@ -1164,7 +1167,8 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
             write(paste0(p_tree$lon[i]," , ",p_tree$lat[i]),file=paste0('../log/',logfn),append=T)
             count=count+1
           } else {
-            mrNH <- rbind(mrNH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))#nr of coeff + intercept
+            #mrNH <- rbind(mrNH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))#nr of coeff + intercept
+            mrNH <- rbind(mrNH,rep(NA,(length(regression_months)+1)))#nr of coeff + intercept
             var_residuNH <- c(var_residuNH,rep(NA,1))
             NHlat <- c(NHlat,p_tree$lat[i])
             NHlon <- c(NHlon,p_tree$lon[i])
@@ -1175,7 +1179,8 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
           }
         } else {
           if (!exists("mrSH")){
-            mrSH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # nr of coeff + intercept
+            #mrSH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # nr of coeff + intercept
+            mrSH <- rep(NA,(length(regression_months)+1)) # nr of coeff + intercept
             var_residuSH <- NA
             SHlat <- p_tree$lat[i]
             SHlon <- p_tree$lon[i]
@@ -1184,7 +1189,8 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
             write(paste0(p_tree$lon[i]," , ",p_tree$lat[i]),file=paste0('../log/',logfn),append=T)
             count=count+1
           } else {
-            mrSH <- rbind(mrSH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))
+            #mrSH <- rbind(mrSH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))
+            mrSH <- rbind(mrSH,rep(NA,(length(regression_months)+1)))
             var_residuSH <- c(var_residuSH,rep(NA,1))
             SHlat <- c(SHlat,p_tree$lat[i])
             SHlon <- c(SHlon,p_tree$lon[i])
@@ -1196,34 +1202,71 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
         }
       } else { # we can calculate the regression
         # make variable for each month
-        t5 = t3[c(4:(length(t3)-9))]
+        #t5 = t3[c(4:(length(t3)-9))]
+        t5 = t3[c(10:(length(t3)-3))] # PAGES extraction 01 2018 with year from Oct to Sep
         t4 = t(array(t5,c(6,length(t5)/6))) #makes half year bunches
-        tSH = t4[seq(2,nrow(t4),2),] #takes the months from Oct to March
-        tNH = t4[seq(1,nrow(t4),2),] #takes the months from April to September, shortened because easier later
+        #tSH = t4[seq(2,nrow(t4),2),] #takes the months from Oct to March
+        #tNH = t4[seq(1,nrow(t4),2),] #takes the months from April to September, shortened because easier later
+        tSH = t4[seq(1,nrow(t4),2),] #takes the months from Oct to March
+        tNH = t4[seq(2,nrow(t4),2),] #takes the months from April to September, shortened because easier later
         # t4 = t(array(t5,c(12,length(t5)/12))) # 70 years from Apr-March, cuts the last half year without warning
+        #p5 = p3[c(4:(length(p3)-9))]
+        p5 = p3[c(10:(length(p3)-3))]
+        p4 = t(array(p5,c(6,length(p5)/6))) #makes half year bunches
+        #pSH = p4[seq(2,nrow(p4),2),] #takes the months from Oct to March
+        #pNH = p4[seq(1,nrow(p4),2),] #takes the months from April to September
+        pSH = p4[seq(1,nrow(p4),2),] #takes the months from Oct to March
+        pNH = p4[seq(2,nrow(p4),2),] #takes the months from April to September
         
         if (p_tree$lat[i] > 0) { # which half a year we want to use for calculating the regression
-          unab <- tNH
+          #unab <- tNH
+          unab <- cbind(tNH,pNH)
         } else {
-          unab <- tSH
+          #unab <- tSH
+          unab <- cbind(tSH,pSH)
         }                  
-        colnames(unab) <- c('t.first','t.second','t.third','t.fourth','t.fifth','t.sixth')
-        onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
-        unab <- unab[,match(onlytemp,colnames(unab))]
+        colnames(unab) <- c('t.first','t.second','t.third','t.fourth','t.fifth','t.sixth',
+                            'p.first','p.second','p.third','p.fourth','p.fifth','p.sixth')
+        #onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
+        unab <- unab[,match(regression_months,colnames(unab))]
         
         if(AIC){
           len<-length(grep("t.",regression_months,fixed=TRUE))
-          combos<-cbind(combn(len,2),rbind(1:len,1:len))
+          len2<-length(grep("p.",regression_months,fixed=TRUE)) 
+          combos.t<-cbind(combn(len,2),rbind(1:len,1:len))
+          combos.p<-cbind((combn(len2,2)+len),rbind((len+1):(len+len2),(len+1):(len+len2)))
+          combos<-cbind(combos.t,combos.p)
+          #combos
+          #combos<-cbind(combn(len,2),rbind(1:len,1:len))
           resultlist<-list()
           pvals<-rep(NA,dim(combos)[2])
           aics<-rep(NA,dim(combos)[2])
           #bics<-rep(NA,dim(combos)[2])
+
+          counter=1
+          #just T or P combos allowed  
           for(j in 1:dim(combos)[2]){
             resultlist[[j]]<-lm(p_tree_1901_1970$data[,i]~unab[,combos[1,j]:combos[2,j]],na.action = na.exclude)
-            sumry<-summary(resultlist[[j]])
-            pvals[j]<-1-pf(sumry$fstatistic[1],sumry$fstatistic[2],sumry$fstatistic[3])
-            aics[j]<-AIC(resultlist[[j]])
+            sumry<-summary(resultlist[[counter]])
+            pvals[counter]<-1-pf(sumry$fstatistic[1],sumry$fstatistic[2],sumry$fstatistic[3])
+            aics[counter]<-AIC(resultlist[[counter]])
             #bics[j]<-BIC(resultlist[[j]])
+            counter=counter+1
+          }
+          mixcombos=array(NA,dim=c(4,(dim(combos.t)[2]*dim(combos.p)[2])))
+          mcounter=1
+          # mixed T and P combos but both have to be consequative months
+          for(k in 1:dim(combos.t)[2]){
+            for(l in 1:dim(combos.p)[2]){
+              mixcombos[,mcounter] <- c(combos.t[1,k],combos.t[2,k],combos.p[1,l],combos.p[2,l])
+              resultlist[[(counter)]]<-lm(p_tree_1901_1970$data[,i]~unab[,c(combos.t[1,k]:combos.t[2,k],combos.p[1,l]:combos.p[2,l])],na.action = na.exclude)
+              sumry<-summary(resultlist[[counter]])
+              pvals[counter]<-1-pf(sumry$fstatistic[1],sumry$fstatistic[2],sumry$fstatistic[3])
+              aics[counter]<-AIC(resultlist[[counter]])
+              #bics[j]<-BIC(resultlist[[j]])
+              counter=counter+1
+              mcounter=mcounter+1
+            }
           }
           fit<-resultlist[[which(aics==min(aics))]]
           pval<-pvals[which(aics==min(aics))]
@@ -1238,7 +1281,14 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
           sumry<-summary(fit)
           
           if(!(pval>alpha)){
-            results$coefficients[c(1,(combos[1,which(aics==min(aics))]+1):(combos[2,which(aics==min(aics))]+1))]<-fit$coefficients
+            if (which(aics==min(aics))<=ncol(combos)) {
+              results$coefficients[c(1,(combos[1,which(aics==min(aics))]+1):(combos[2,which(aics==min(aics))]+1))]<-fit$coefficients
+            } else {
+              results$coefficients[c(1,c(mixcombos[1,(which(aics==min(aics))-ncol(combos))]+1): 
+                                       (mixcombos[2,(which(aics==min(aics))-ncol(combos))]+1),
+                                       (mixcombos[3,(which(aics==min(aics))-ncol(combos))]+1): 
+                                       (mixcombos[4,(which(aics==min(aics))-ncol(combos))]+1))]<-fit$coefficients
+            }
             results$residuals<-fit$residuals
             cnames->names(results$coefficients)
             rnames->names(results$residuals)
@@ -1329,22 +1379,39 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
     
     
   } else if (archivetype == "coral") {
-    if(exists("mrNH")){rm(mrNH)}
-    if(exists("mrSH")){rm(mrSH)}
+    # special case because so far we had only annual tree ring proxies with one value per year
+    # for trees, the function convert_to_2season converted the $data part from 1 column to 2 columns
+    # where the winter column of each hemisphere just included NA, i.e. separated by $lat<0
+    # there were no issues with reg. coeff. because only months.one to months.six in each hemisphere
+    # now corals have 2 values per year similar to seasonal documentary data in the future
+    # SOLUTION: Make two corals out of each single coral, one for oct-mar and one for apr-sep
+    #           should be easy because they come in two separate files already, just row.bind
+    load(paste0(pagespath,"pages_proxies_oct_mar_jf_201905.RData"))
+    load(paste0(pagespath,"pages_proxies_apr_sep_jf_201905.RData"))
+    # if(exists("mrNH")){rm(mrNH)}
+    if(exists("mr")){rm(mr)}
     mylist.names = c("data","time","lon","lat","archivetype","elevation")
     p_coral = setNames(vector("list", length(mylist.names)), mylist.names)
     # keep the data set by fsyr and feyr
-    ti <- which((pages_proxies$year>= fsyr) & (pages_proxies$year <= feyr))
-    p_coral$data = scale(pages_proxies$chronologies[ti,which(pages_proxies$archivetype =="coral")])
-    p_coral$time = pages_proxies$year[ti]
-    p_coral$lon = pages_proxies$lonlat[1, which(pages_proxies$archivetype =="coral")]
-    p_coral$lat = pages_proxies$lonlat[2, which(pages_proxies$archivetype =="coral")]
-    p_coral$archivetype = pages_proxies$archivetype[which(pages_proxies$archivetype =="coral")]
-    p_coral$elevation = pages_proxies$elevation[which(pages_proxies$archivetype =="coral")]
+    ti <- which((pages_proxies_oct_mar$year>= fsyr) & (pages_proxies_oct_mar$year <= feyr))
+    p_coral$data = cbind(
+      scale(pages_proxies_oct_mar$chronologies[ti,which(pages_proxies_oct_mar$archivetype =="coral")]),
+      scale(pages_proxies_apr_sep$chronologies[ti,which(pages_proxies_apr_sep$archivetype =="coral")]))
+    p_coral$time = pages_proxies_oct_mar$year[ti]
+    p_coral$lon = c(pages_proxies_oct_mar$lonlat[1, which(pages_proxies_oct_mar$archivetype =="coral")],
+                    pages_proxies_apr_sep$lonlat[1, which(pages_proxies_apr_sep$archivetype =="coral")])
+    p_coral$lat = c(pages_proxies_oct_mar$lonlat[2, which(pages_proxies_oct_mar$archivetype =="coral")],
+                    pages_proxies_apr_sep$lonlat[2, which(pages_proxies_apr_sep$archivetype =="coral")])
+    p_coral$archivetype = c(pages_proxies_oct_mar$archivetype[which(pages_proxies_oct_mar$archivetype =="coral")],
+                            pages_proxies_apr_sep$archivetype[which(pages_proxies_apr_sep$archivetype =="coral")])
+    p_coral$elevation = c(pages_proxies_oct_mar$elevation[which(pages_proxies_oct_mar$archivetype =="coral")],
+                          pages_proxies_apr_sep$elevation[which(pages_proxies_apr_sep$archivetype =="coral")])
     # Create a new variable for 1901-1970
-    # the period on which we will calculate the multiple lin regression -> cut out 1901-1970
-    start_yr = which(p_coral$time == "1901")
-    end_yr = which(p_coral$time == "1970")
+    # the period on which we will calculate the multiple regression -> cut out 1901-1970
+    # we set 1902-71 because PAGES coral year 1902 equals Oct 1901 - Sep 1902
+    # and there is no CRU data before Jan 1901
+    start_yr = which(p_coral$time == "1902")
+    end_yr = which(p_coral$time == "1971")
     mylist.names = c("data","time")
     p_coral_1901_1970 = setNames(vector("list", length(mylist.names)), mylist.names)
     # p_coral_1901_1970$data = scale(pages_proxies$chronologies[,which(pages_proxies$archivetype =="coral")])
@@ -1355,27 +1422,28 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
       t1=ncvar_get(nc, "temp2") # for CRU temp
       t2 <- t1[,,1:852] # from year 1901 till 1971
     } else if (validate == "GISS") {
-      nc=nc_open(paste(gisspath,'/air.2x2.250_anom_echamgrid.nc',sep=''), write=F) 
+      nc=nc_open(paste(gisspath,'/air.2x2.250_anom_echamgrid.nc',sep=''), write=F)
       t1=ncvar_get(nc, "air") # for GISS air temp and SST
       t2 <- t1[,,253:1104]
     }
-    lonlist=ncvar_get(nc, "lon") 
+    lonlist=ncvar_get(nc, "lon")
     lonlist[lonlist > 180] <- lonlist[lonlist > 180] - 360
-    latlist=ncvar_get(nc, "lat") 
+    latlist=ncvar_get(nc, "lat")
     nc_close(nc)
-    
+
     if(avg_realprox_per_grid){
       p_coral<-calc_avg_realprox_per_grid(p_coral)
     }
-    
+
     write("PAGES CORAL:",file=paste0('../log/',logfn),append=T)
     write("List of excluded Proxies:",file=paste0('../log/',logfn),append=T)
     write("   lon:   ,   lat:",file=paste0('../log/',logfn),append=T)
     count=0
-    
-    # start calculation the regression for each coral data  
+
+    # start calculation the regression for each coral data
     for (i in 1:length(p_coral$lon)) {
-      #Nevin May 2018: This code sequence chooses the closest neighbour gridbox with available data. 
+      #print(i)
+      #Nevin May 2018: This code sequence chooses the closest neighbour gridbox with available data.
       #It first checks the closest for data, than the second closest and so on until all neighbours are checked-> 9 boxes are checked
       mdistx<-sort(abs(lonlist-p_coral$lon[i]+0.001))[1:3]
       mdisty<-sort(abs(latlist-p_coral$lat[i]))[1:3]
@@ -1406,79 +1474,88 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
         j=j+1
       }
       #Nevin Mai 2018: end
-      if (all(is.na(t3))|length(which(is.na(p_coral_1901_1970$data[,i])))>=50) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
-        if (p_coral$lat[i] > 0){
-          if (!exists("mrNH")) {
-            mrNH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) #nr of coeff + intercept
-            var_residuNH <- NA
-            NHlat <- p_coral$lat[i]
-            NHlon <- p_coral$lon[i]
-            NHelev <- p_coral$elevation[i]
-            NHdata <- p_coral$data[,i]
-            write(paste0(p_coral$lon[i]," , ",p_coral$lat[i]),file=paste0('../log/',logfn),append=T)
-            count=count+1
-          } else {
-            mrNH <- rbind(mrNH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))#nr of coeff + intercept
-            var_residuNH <- c(var_residuNH,rep(NA,1))
-            NHlat <- c(NHlat,p_coral$lat[i])
-            NHlon <- c(NHlon,p_coral$lon[i])
-            NHelev <- c(NHelev,p_coral$elevation[i])
-            NHdata <- cbind(NHdata,p_coral$data[,i])
-            write(paste0(p_coral$lon[i]," , ",p_coral$lat[i]),file=paste0('../log/',logfn),append=T)
-            count=count+1
-          }
-        }else{
-          if (!exists("mrSH")){
-            mrSH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # nr of coeff + intercept
-            var_residuSH <- NA
-            SHlat <- p_coral$lat[i]
-            SHlon <- p_coral$lon[i]
-            SHelev <- p_coral$elevation[i]
-            SHdata <- p_coral$data[,i]
-            write(paste0(p_coral$lon[i]," , ",p_coral$lat[i]),file=paste0('../log/',logfn),append=T)
-            count=count+1
-          }else{
-            mrSH <- rbind(mrSH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))
-            var_residuSH <- c(var_residuSH,rep(NA,1))
-            SHlat <- c(SHlat,p_coral$lat[i])
-            SHlon <- c(SHlon,p_coral$lon[i])
-            SHelev <- c(SHelev,p_coral$elevation[i])
-            SHdata <- cbind(SHdata,p_coral$data[,i])
-            write(paste0(p_coral$lon[i]," , ",p_coral$lat[i]),file=paste0('../log/',logfn),append=T)
-            count=count+1
-          }
+      if (all(is.na(t3))|length(which(is.na(p_coral_1901_1970$data[,i])))>=50) { 
+        # There is no observation data in the CRU or GISS -> the regression cannot be calculated
+        if (!exists("mr")) {
+          #mr <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) #nr of coeff + intercept
+          mr <- rep(NA,(length(regression_months)+1)) #nr of coeff + intercept
+          var_residu <- NA
+          lat <- p_coral$lat[i]
+          lon <- p_coral$lon[i]
+          elev <- p_coral$elevation[i]
+          data <- p_coral$data[,i]
+          write(paste0(p_coral$lon[i]," , ",p_coral$lat[i]),file=paste0('../log/',logfn),append=T)
+          count=count+1
+        } else {
+          mr <- rbind(mr,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))#nr of coeff + intercept
+          #mr <- rbind(mr,rep(NA,(length(regression_months)+1))) #nr of coeff + intercept
+          var_residu <- c(var_residu,rep(NA,1))
+          lat <- c(lat,p_coral$lat[i])
+          lon <- c(lon,p_coral$lon[i])
+          elev <- c(elev,p_coral$elevation[i])
+          data <- cbind(data,p_coral$data[,i])
+          write(paste0(p_coral$lon[i]," , ",p_coral$lat[i]),file=paste0('../log/',logfn),append=T)
+          count=count+1
         }
       } else { # we can calculate the regression
-        # make variable for each month
-        t5 = t3[c(4:(length(t3)-9))]
+        # make variable for each month 
+        # starting in October with Raphies new PAGES export from 01/2018
+        t5 = t3[c(10:(length(t3)-3))]
         t4 = t(array(t5,c(6,length(t5)/6))) #makes half year bunches
-        tSH = t4[seq(2,nrow(t4),2),] #takes the months from Oct to March
-        tNH = t4[seq(1,nrow(t4),2),] #takes the months from April to September
+        t_oct_mar = t4[seq(1,nrow(t4),2),] #takes the months from Oct to March
+        t_apr_sep = t4[seq(2,nrow(t4),2),] #takes the months from April to September
         # t4 = t(array(t5,c(12,length(t5)/12))) # 70 years from Apr-March
         
-        if (p_coral$lat[i] > 0) { # which half a year we want to use for calculating the regression
-          unab <- tNH
+        # if (p_coral$lat[i] > 0) { # which half a year we want to use for calculating the regression
+        if (i <= length(pages_proxies_oct_mar$lonlat[1, which(pages_proxies_oct_mar$archivetype =="coral")])) {
+          unab <- t_oct_mar
         } else {
-          unab <- tSH
-        }                  
+          unab <- t_apr_sep 
+        }
         colnames(unab) <- c('t.first','t.second','t.third','t.fourth','t.fifth','t.sixth')
-        onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
-        unab <- unab[,match(onlytemp,colnames(unab))]
-        
+        # onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
+        # unab <- unab[,match(onlytemp,colnames(unab))]
+     
         if(AIC){
+          #print("AIC")
           len<-length(grep("t.",regression_months,fixed=TRUE))
-          combos<-cbind(combn(len,2),rbind(1:len,1:len))
+          # len2<-length(grep("p.",regression_months,fixed=TRUE))
+          combos.t<-cbind(combn(len,2),rbind(1:len,1:len))
+          # combos.p<-cbind((combn(len2,2)+len),rbind((len+1):(len+len2),(len+1):(len+len2)))
+          # combos<-cbind(combos.t,combos.p)
+          combos <- combos.t
+          # combos<-cbind(combn(len,2),rbind(1:len,1:len))
+          # combos <- combn(12,2) #JF 201905
           resultlist<-list()
           pvals<-rep(NA,dim(combos)[2])
           aics<-rep(NA,dim(combos)[2])
           #bics<-rep(NA,dim(combos)[2])
+          counter=1
+          #just T or P combos allowed
           for(j in 1:dim(combos)[2]){
+            #print(j)
             resultlist[[j]]<-lm(p_coral_1901_1970$data[,i]~unab[,combos[1,j]:combos[2,j]],na.action = na.exclude)
-            sumry<-summary(resultlist[[j]])
-            pvals[j]<-1-pf(sumry$fstatistic[1],sumry$fstatistic[2],sumry$fstatistic[3])
-            aics[j]<-AIC(resultlist[[j]])
+            sumry<-summary(resultlist[[counter]])
+            pvals[counter]<-1-pf(sumry$fstatistic[1],sumry$fstatistic[2],sumry$fstatistic[3])
+            aics[counter]<-AIC(resultlist[[counter]])
             #bics[j]<-BIC(resultlist[[j]])
+            counter=counter+1
           }
+          # mixcombos=array(NA,dim=c(4,(dim(combos.t)[2]*dim(combos.p)[2])))
+          # mcounter=1
+          # # mixed T and P combos but both have to be consequative months
+          # for(k in 1:dim(combos.t)[2]){
+          #   for(l in 1:dim(combos.p)[2]){
+          #     mixcombos[,mcounter] <- c(combos.t[1,k],combos.t[2,k],combos.p[1,l],combos.p[2,l])
+          #     resultlist[[(counter)]]<-lm(p_coral_1901_1970$data[,i]~unab[,c(combos.t[1,k]:combos.t[2,k],combos.p[1,l]:combos.p[2,l])],na.action = na.exclude)
+          #     sumry<-summary(resultlist[[counter]])
+          #     pvals[counter]<-1-pf(sumry$fstatistic[1],sumry$fstatistic[2],sumry$fstatistic[3])
+          #     aics[counter]<-AIC(resultlist[[counter]])
+          #     #bics[j]<-BIC(resultlist[[j]])
+          #     counter=counter+1
+          #     mcounter=mcounter+1
+          #   }
+          # }
           fit<-resultlist[[which(aics==min(aics))]]
           pval<-pvals[which(aics==min(aics))]
           # multiple linear regression
@@ -1490,14 +1567,27 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
           results$coefficients<-rep(NA,length(results$coefficients))
           results$residuals<-rep(NA,length(results$residuals))
           sumry<-summary(fit)
-          
+
           if(!(pval>alpha)){
+            #print("pval>alpha")
+            # if (which(aics==min(aics))<=ncol(combos)) {
             results$coefficients[c(1,(combos[1,which(aics==min(aics))]+1):(combos[2,which(aics==min(aics))]+1))]<-fit$coefficients
+            # } else {
+            #  results$coefficients[c(1,c(mixcombos[1,(which(aics==min(aics))-ncol(combos))]+1):
+            #                           (mixcombos[2,(which(aics==min(aics))-ncol(combos))]+1),
+            #                         (mixcombos[3,(which(aics==min(aics))-ncol(combos))]+1):
+            #                           (mixcombos[4,(which(aics==min(aics))-ncol(combos))]+1))]<-fit$coefficients
+            #}
             results$residuals<-fit$residuals
             cnames->names(results$coefficients)
             rnames->names(results$residuals)
-          }
+          } #else {
+            #results$coefficients<-rep(NA,length(results$coefficients))
+            #results$residuals<-rep(NA, length(results$residuals))
+          #}
+
         }else if(PVALUE){
+          #print("PVALUE")
           results <- lm(p_coral_1901_1970$data[,i]~unab,  na.action=na.exclude)
           sumry<-summary(results)
           pval<-1-pf(sumry$fstatistic[1],sumry$fstatistic[2],sumry$fstatistic[3])
@@ -1505,80 +1595,103 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
             results$coefficients<-rep(NA,length(results$coefficients))
             results$residuals<-rep(NA, length(results$residuals))
           }
+          
         } else {
+          #print("ELSE")
           results <- lm(p_coral_1901_1970$data[,i]~unab,  na.action=na.exclude)
         }
-        corr = cor.test(fitted.values(results),p_coral_1901_1970$data[,i]) 
-        # print(corr[4]) # correlations are very small
-        if (p_coral$lat[i] > 0){ 
-          if (!exists("mrNH")) { 
-            mrNH <- results$coefficients
-            var_residuNH <- var(results$residuals)
-            if (all(is.na(results$coefficients))){
-              write(paste0(p_coral$lon[i]," , ",p_coral$lat[i]),file=paste0('../log/',logfn),append=T)
-              count=count+1
-            }
-            NHlat <- p_coral$lat[i]
-            NHlon <- p_coral$lon[i]
-            NHelev <- p_coral$elevation[i]
-            NHdata <- p_coral$data[,i]
-          } else { 
-            mrNH <- rbind(mrNH,results$coefficients)
-            var_residuNH <- c(var_residuNH,var(results$residuals))
-            if(all(is.na(results$coefficients))){
-              write(paste0(p_coral$lon[i]," , ",p_coral$lat[i]),file=paste0('../log/',logfn),append=T)
-              count=count+1
-            }
-            NHlat <- c(NHlat,p_coral$lat[i])
-            NHlon <- c(NHlon,p_coral$lon[i])
-            NHelev <- c(NHelev,p_coral$elevation[i])
-            NHdata <- cbind(NHdata,p_coral$data[,i])
+        corr = cor.test(fitted.values(results),p_coral_1901_1970$data[,i])
+        #print(corr[4]) # correlations are very small
+    #     if (p_coral$lat[i] > 0){
+        if (!exists("mr")) { 
+          mr <- results$coefficients
+          var_residu <- var(results$residuals)
+          if (all(is.na(results$coefficients))){
+            write(paste0(p_coral$lon[i]," , ",p_coral$lat[i]),file=paste0('../log/',logfn),append=T)
+            count=count+1
           }
-        }else{
-          if (!exists("mrSH")) { 
-            mrSH <- results$coefficients
-            var_residuSH <- var(results$residuals)
-            if(all(is.na(results$coefficients))){
-              write(paste0(p_coral$lon[i]," , ",p_coral$lat[i]),file=paste0('../log/',logfn),append=T)
-              count=count+1
-            }
-            SHlat <- p_coral$lat[i]
-            SHlon <- p_coral$lon[i]
-            SHelev <- p_coral$elevation[i]
-            SHdata <- p_coral$data[,i]
-          } else { 
-            mrSH <- rbind(mrSH,results$coefficients)
-            var_residuSH <- c(var_residuSH,var(results$residuals))
-            if(all(is.na(results$coefficients))){
-              write(paste0(p_coral$lon[i]," , ",p_coral$lat[i]),file=paste0('../log/',logfn),append=T)
-              count=count+1
-            }
-            SHlat <- c(SHlat,p_coral$lat[i])
-            SHlon <- c(SHlon,p_coral$lon[i])
-            SHelev <- c(SHelev,p_coral$elevation[i])
-            SHdata <- cbind(SHdata,p_coral$data[,i])
-          }
+          lat <- p_coral$lat[i]
+          lon <- p_coral$lon[i]
+          elev <- p_coral$elevation[i]
+          data <- p_coral$data[,i]
+        } else { 
+          mr <- rbind(mr,results$coefficients)
+          var_residu <- c(var_residu,var(results$residuals))
+          if(all(is.na(results$coefficients))){
+            write(paste0(p_coral$lon[i]," , ",p_coral$lat[i]),file=paste0('../log/',logfn),append=T)
+            count=count+1
         }
+        lat <- c(lat,p_coral$lat[i])
+        lon <- c(lon,p_coral$lon[i])
+        elev <- c(elev,p_coral$elevation[i])
+        data <- cbind(data,p_coral$data[,i])
+        #print(mr)
       }
-    }
-    write(paste0("Total Number: ",length(p_coral$lon)),file=paste0('../log/',logfn),append=T)
-    write(paste0("Number excluded: ",count),file=paste0('../log/',logfn),append=T)
-    write(paste0("Netto Number: ",length(p_coral$lon)-count),file=paste0('../log/',logfn),append=T)
+    #     }else{
+    #       if (!exists("mrSH")) { 
+    #         mrSH <- results$coefficients
+    #         var_residuSH <- var(results$residuals)
+    #         if(all(is.na(results$coefficients))){
+    #           write(paste0(p_coral$lon[i]," , ",p_coral$lat[i]),file=paste0('../log/',logfn),append=T)
+    #           count=count+1
+    #         }
+    #         SHlat <- p_coral$lat[i]
+    #         SHlon <- p_coral$lon[i]
+    #         SHelev <- p_coral$elevation[i]
+    #         SHdata <- p_coral$data[,i]
+    #       } else { 
+    #         mrSH <- rbind(mrSH,results$coefficients)
+    #         var_residuSH <- c(var_residuSH,var(results$residuals))
+    #         if(all(is.na(results$coefficients))){
+    #           write(paste0(p_coral$lon[i]," , ",p_coral$lat[i]),file=paste0('../log/',logfn),append=T)
+    #           count=count+1
+    #         }
+    #         SHlat <- c(SHlat,p_coral$lat[i])
+    #         SHlon <- c(SHlon,p_coral$lon[i])
+    #         SHelev <- c(SHelev,p_coral$elevation[i])
+    #         SHdata <- cbind(SHdata,p_coral$data[,i])
+    #       }
+    #     }
+      } # end we can calc regression
+    } # end each coral loop
+    write(paste0("Total Number: ",(length(p_coral$lon))/2),file=paste0('../log/',logfn),append=T)
+    # /2 because of two seasons
+    write(paste0("Number excluded: ",(count/2)),file=paste0('../log/',logfn),append=T)
+    write(paste0("Netto Number: ",((length(p_coral$lon)-count)/2)),file=paste0('../log/',logfn),append=T)
     
-    mrtmp<-matrix(NA, nrow(mrNH)+nrow(mrSH),13)
-    colnames(mrtmp) <- c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabp.first","unabp.second","unabp.third","unabp.fourth","unabp.fifth","unabp.sixth")
-    mrtmp[1:nrow(mrNH),match(colnames(mrNH),colnames(mrtmp))]<-mrNH 
-    mrtmp[(nrow(mrNH)+1):nrow(mrtmp),match(colnames(mrSH),colnames(mrtmp))]<-mrSH
-    datatmp <- matrix(NA, 403, ncol(NHdata)+ncol(SHdata))
-    datatmp[,1:ncol(NHdata)] <- NHdata
-    datatmp[,(ncol(NHdata)+1):ncol(datatmp)] <- SHdata
+    mrtmp<-matrix(NA, nrow(mr),13)
+    colnames(mrtmp) <-c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth",
+                        "unabp.first","unabp.second","unabp.third","unabp.fourth","unabp.fifth","unabp.sixth")
+    mrtmp[,match(colnames(mr),colnames(mrtmp))]<-mr 
+    # mrtmp<-matrix(NA, nrow(mrNH)+nrow(mrSH),13)
+    # colnames(mrtmp) <- c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabp.first","unabp.second","unabp.third","unabp.fourth","unabp.fifth","unabp.sixth")
+    # mrtmp[1:nrow(mrNH),match(colnames(mrNH),colnames(mrtmp))]<-mrNH 
+    # mrtmp[(nrow(mrNH)+1):nrow(mrtmp),match(colnames(mrSH),colnames(mrtmp))]<-mrSH
+    # datatmp <- matrix(NA, 403, ncol(NHdata)+ncol(SHdata))
+    # datatmp[,1:ncol(NHdata)] <- NHdata
+    # datatmp[,(ncol(NHdata)+1):ncol(datatmp)] <- SHdata
+    # 
+    # p_coral$mr <- mrtmp
+    # p_coral$var_residu <- c(var_residuNH,var_residuSH)
+    # p_coral$lat <- c(NHlat,SHlat)
+    # p_coral$lon <- c(NHlon,SHlon)
+    # p_coral$elevation <- c(NHelev,SHelev)
+    # p_coral$data <- datatmp
     
+    #npmon <- length(grep("p.",regression_months,fixed=TRUE))
+    #namat <- array(NA,dim=c(nrow(mr),npmon))
+    #if (npmon > 0) {
+    #  p_coral$mr <- cbind(mr,namat)
+    #} else {
+    #  p_coral$mr <- mr
+    #}
     p_coral$mr <- mrtmp
-    p_coral$var_residu <- c(var_residuNH,var_residuSH)
-    p_coral$lat <- c(NHlat,SHlat)
-    p_coral$lon <- c(NHlon,SHlon)
-    p_coral$elevation <- c(NHelev,SHelev)
-    p_coral$data <- datatmp
+    p_coral$var_residu <- var_residu
+    p_coral$lat <- lat
+    p_coral$lon <- lon
+    p_coral$elevation <- elev
+    p_coral$data <- data
+    # make data in 2 season format and remove convert_to_2season function for corals
     invisible(p_coral)
     
   } else if (archivetype == "documents") {
@@ -1691,11 +1804,13 @@ read_ntrend = function(fsyr,feyr, validate) {
     if (all(is.na(t3))|length(which(is.na(ntrend_1901_1970$data[,i])))>=50) { # There is no observation data in the CRU or GISS -> the regression cannot be calculated
       if (i==1) {
         mr <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # coeff +intercept
+        #mr <- rep(NA,(length(regression_months)+1)) # coeff +intercept
         var_residu <- NA
         write(paste0(ntrend$lon[i]," , ",ntrend$lat[i]),file=paste0('../log/',logfn),append=T)
         count = count + 1
       } else {
         mr <- rbind(mr,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))
+        #mr <- rbind(mr,rep(NA,(length(regression_months)+1)))
         var_residu <- c(var_residu,rep(NA,1))
         write(paste0(ntrend$lon[i]," , ",ntrend$lat[i]),file=paste0('../log/',logfn),append=T)
         count = count + 1
@@ -1734,7 +1849,7 @@ read_ntrend = function(fsyr,feyr, validate) {
         results$coefficients<-rep(NA,length(results$coefficients))
         results$residuals<-rep(NA,length(results$residuals))
         sumry<-summary(fit)
-        
+
         if(!(pval>alpha)){
           results$coefficients[c(1,(combos[1,which(aics==min(aics))]+1):(combos[2,which(aics==min(aics))]+1))]<-fit$coefficients
           results$residuals<-fit$residuals
@@ -1756,6 +1871,7 @@ read_ntrend = function(fsyr,feyr, validate) {
       # print(corr[4]) # maybe under a certain corr value we could just set it to NA?
       if (i==1) { 
         mr <- results$coefficients
+        #mr <- c(results$coefficients,rep(NA,(length(regression_months)-length(onlytemp))))
         var_residu <- var(results$residuals)
         if (all(is.na(results$coefficients))){
           write(paste0(ntrend$lon[i]," , ",ntrend$lat[i]),file=paste0('../log/',logfn),append=T)
@@ -1763,6 +1879,7 @@ read_ntrend = function(fsyr,feyr, validate) {
         }
       } else { 
         mr <- rbind(mr,results$coefficients)
+        #mr <- rbind(mr,c(results$coefficients,rep(NA,(length(regression_months)-length(onlytemp)))))
         var_residu <- c(var_residu,var(results$residuals))
         if (all(is.na(results$coefficients))){
           write(paste0(ntrend$lon[i]," , ",ntrend$lat[i]),file=paste0('../log/',logfn),append=T)
@@ -1775,7 +1892,8 @@ read_ntrend = function(fsyr,feyr, validate) {
   write(paste0("Number excluded: ",count),file=paste0('../log/',logfn),append=T)
   write(paste0("Netto Number: ",length(ntrend$lon)-count),file=paste0('../log/',logfn),append=T)
   mrtmp<-matrix(NA, nrow(mr),13)
-  colnames(mrtmp) <-c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabp.first","unabp.second","unabp.third","unabp.fourth","unabp.fifth","unabp.sixth")
+  colnames(mrtmp) <-c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth",
+                      "unabp.first","unabp.second","unabp.third","unabp.fourth","unabp.fifth","unabp.sixth")
   mrtmp[,match(colnames(mr),colnames(mrtmp))]<-mr
   
   
@@ -1812,6 +1930,8 @@ read_trw_petra<-function(fsyr, feyr, validate){
     nc=nc_open(paste(crupath,'/cru_allvar_abs_1901-2004.nc',sep=''), write=F)
     t1=ncvar_get(nc, "temp2") # for CRU temp
     t2 <- t1[,,1:852] # from year 1901 till 1971
+    p1=ncvar_get(nc, "precip") # for CRU precip
+    p2 <- p1[,,1:852] 
   } else if (validate == "GISS") {
     nc=nc_open(paste(gisspath,'/air.2x2.250_anom_echamgrid.nc',sep=''), write=F)
     t1=ncvar_get(nc, "air") # for GISS air temp and SST
@@ -1846,6 +1966,7 @@ read_trw_petra<-function(fsyr, feyr, validate){
     k=which(abs(lonlist-tree_petra$lon[i]+0.001)==mdistx[x])
     l=which(abs(latlist-tree_petra$lat[i])==mdisty[y])
     t3<-t2[k,l,]
+    p3<-p2[k,l,]
     j=1
     while(all(is.na(t3))){
       if(j>9){
@@ -1858,13 +1979,15 @@ read_trw_petra<-function(fsyr, feyr, validate){
       k=which(abs(lonlist-tree_petra$lon[i]+0.001)==mdistx[x])
       l=which(abs(latlist-tree_petra$lat[i])==mdisty[y])
       t3<-t2[k,l,]
+      p3<-p2[k,l,]
       j=j+1
     }
     #Nevin Mai 2018: end
     if (all(is.na(t3))| length(which(is.na(tree_petra_1901_1970$data[,i])))>=50) { # There is no observation data in the CRU or GISS or to many NA (>=50/70) in the treering data-> the regression cannot/shouldnot be calculated
       if (tree_petra$lat[i] > 0){
         if (!exists("mrNH")) {
-          mrNH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) #nr of coeff + intercept
+          #mrNH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) #nr of coeff + intercept
+          mrNH <- rep(NA,(length(regression_months)+1)) #nr of coeff + intercept
           var_residuNH <- NA
           NHlat <- tree_petra$lat[i]
           NHlon <- tree_petra$lon[i]
@@ -1873,7 +1996,8 @@ read_trw_petra<-function(fsyr, feyr, validate){
           write(paste0(tree_petra$lon[i]," , ",tree_petra$lat[i]),file=paste0('../log/',logfn),append=T)
           count=count+1
         } else {
-          mrNH <- rbind(mrNH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))#nr of coeff + intercept
+          #mrNH <- rbind(mrNH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))#nr of coeff + intercept
+          mrNH <- rbind(mrNH,rep(NA,(length(regression_months)+1)))#nr of coeff + intercept
           var_residuNH <- c(var_residuNH,rep(NA,1))
           NHlat <- c(NHlat,tree_petra$lat[i])
           NHlon <- c(NHlon,tree_petra$lon[i])
@@ -1884,7 +2008,8 @@ read_trw_petra<-function(fsyr, feyr, validate){
         }
       }else  {
         if (!exists("mrSH")){
-          mrSH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # nr of coeff + intercept
+          #mrSH <- rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)) # nr of coeff + intercept
+          mrSH <- rep(NA,(length(regression_months)+1)) # nr of coeff + intercept
           var_residuSH <- NA
           SHlat <- tree_petra$lat[i]
           SHlon <- tree_petra$lon[i]
@@ -1893,7 +2018,8 @@ read_trw_petra<-function(fsyr, feyr, validate){
           write(paste0(tree_petra$lon[i]," , ",tree_petra$lat[i]),file=paste0('../log/',logfn),append=T)
           count=count+1
         }else{
-          mrSH <- rbind(mrSH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))
+          #mrSH <- rbind(mrSH,rep(NA,(length(grep("t.",regression_months,fixed=TRUE))+1)))
+          mrSH <- rbind(mrSH,rep(NA,(length(regression_months)+1)))
           var_residuSH <- c(var_residuSH,rep(NA,1))
           SHlat <- c(SHlat,tree_petra$lat[i])
           SHlon <- c(SHlon,tree_petra$lon[i])
@@ -1910,30 +2036,61 @@ read_trw_petra<-function(fsyr, feyr, validate){
       tSH = t4[seq(2,nrow(t4),2),] #takes the months from Oct to March
       tNH = t4[seq(1,nrow(t4),2),] #takes the months from April to September, shortened because easier later
       # t4 = t(array(t5,c(12,length(t5)/12))) # 70 years from Apr-March, cuts the last half year without warning
+      p5 = p3[c(4:(length(p3)-9))]
+      p4 = t(array(p5,c(6,length(p5)/6))) #makes half year bunches
+      pSH = p4[seq(2,nrow(p4),2),] #takes the months from Oct to March
+      pNH = p4[seq(1,nrow(p4),2),] #takes the months from April to September
       
       if (tree_petra$lat[i] > 0) { # which half a year we want to use for calculating the regression
-        unab <- tNH
+        #unab <- tNH
+        unab <- cbind(tNH,pNH) 
       } else {
-        unab <- tSH
+        #unab <- tSH
+        unab <- cbind(tSH,pSH) 
       }
-      colnames(unab) <- c('t.first','t.second','t.third','t.fourth','t.fifth','t.sixth')
+      colnames(unab) <- c('t.first','t.second','t.third','t.fourth','t.fifth','t.sixth',
+                          'p.first','p.second','p.third','p.fourth','p.fifth','p.sixth')
       
-      onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
-      unab <- unab[,match(onlytemp,colnames(unab))]
+      #onlytemp<-regression_months[grep("t.",regression_months,fixed=TRUE)]
+      unab <- unab[,match(regression_months,colnames(unab))]
       
       if(AIC){
         len<-length(grep("t.",regression_months,fixed=TRUE))
-        combos<-cbind(combn(len,2),rbind(1:len,1:len))
+        len2<-length(grep("p.",regression_months,fixed=TRUE)) 
+        combos.t<-cbind(combn(len,2),rbind(1:len,1:len))
+        combos.p<-cbind((combn(len2,2)+len),rbind((len+1):(len+len2),(len+1):(len+len2)))
+        combos<-cbind(combos.t,combos.p)
+        #combos
+        #combos<-cbind(combn(len,2),rbind(1:len,1:len))
         resultlist<-list()
         pvals<-rep(NA,dim(combos)[2])
         aics<-rep(NA,dim(combos)[2])
         #bics<-rep(NA,dim(combos)[2])
+        
+        counter=1
+        #just T or P combos allowed  
         for(j in 1:dim(combos)[2]){
           resultlist[[j]]<-lm(tree_petra_1901_1970$data[,i]~unab[,combos[1,j]:combos[2,j]],na.action = na.exclude)
-          sumry<-summary(resultlist[[j]])
-          pvals[j]<-1-pf(sumry$fstatistic[1],sumry$fstatistic[2],sumry$fstatistic[3])
-          aics[j]<-AIC(resultlist[[j]])
+          sumry<-summary(resultlist[[counter]])
+          pvals[counter]<-1-pf(sumry$fstatistic[1],sumry$fstatistic[2],sumry$fstatistic[3])
+          aics[counter]<-AIC(resultlist[[counter]])
           #bics[j]<-BIC(resultlist[[j]])
+          counter=counter+1
+        }
+        mixcombos=array(NA,dim=c(4,(dim(combos.t)[2]*dim(combos.p)[2])))
+        mcounter=1
+        # mixed T and P combos but both have to be consequative months
+        for(k in 1:dim(combos.t)[2]){
+          for(l in 1:dim(combos.p)[2]){
+            mixcombos[,mcounter] <- c(combos.t[1,k],combos.t[2,k],combos.p[1,l],combos.p[2,l])
+            resultlist[[(counter)]]<-lm(tree_petra_1901_1970$data[,i]~unab[,c(combos.t[1,k]:combos.t[2,k],combos.p[1,l]:combos.p[2,l])],na.action = na.exclude)
+            sumry<-summary(resultlist[[counter]])
+            pvals[counter]<-1-pf(sumry$fstatistic[1],sumry$fstatistic[2],sumry$fstatistic[3])
+            aics[counter]<-AIC(resultlist[[counter]])
+            #bics[j]<-BIC(resultlist[[j]])
+            counter=counter+1
+            mcounter=mcounter+1
+          }
         }
         fit<-resultlist[[which(aics==min(aics))]]
         pval<-pvals[which(aics==min(aics))]
@@ -1948,7 +2105,14 @@ read_trw_petra<-function(fsyr, feyr, validate){
         sumry<-summary(fit)
         
         if(!(pval>alpha)){
-          results$coefficients[c(1,(combos[1,which(aics==min(aics))]+1):(combos[2,which(aics==min(aics))]+1))]<-fit$coefficients
+          if (which(aics==min(aics))<=ncol(combos)) {
+            results$coefficients[c(1,(combos[1,which(aics==min(aics))]+1):(combos[2,which(aics==min(aics))]+1))]<-fit$coefficients
+          } else {
+            results$coefficients[c(1,c(mixcombos[1,(which(aics==min(aics))-ncol(combos))]+1): 
+                                     (mixcombos[2,(which(aics==min(aics))-ncol(combos))]+1),
+                                   (mixcombos[3,(which(aics==min(aics))-ncol(combos))]+1): 
+                                     (mixcombos[4,(which(aics==min(aics))-ncol(combos))]+1))]<-fit$coefficients
+          }
           results$residuals<-fit$residuals
           cnames->names(results$coefficients)
           rnames->names(results$residuals)
@@ -2043,48 +2207,71 @@ read_trw_petra<-function(fsyr, feyr, validate){
 }
 
 read_pseudo<-function(){
-  pseudodata<-as.matrix(read.table(paste0(dataextdir,'DAPS_pseudoprox/pseudoproxy_no_gaps.txt')))
-  lonlat<-as.matrix(read.table(paste0(dataextdir,'DAPS_pseudoprox/lonlat_no_gaps.txt'),header=T))
-  colnames(lonlat)<-NULL
-  rownames(lonlat)<-NULL
-  colnames(pseudodata)<-NULL
-  pseudolist<-list(data=matrix(rep(NA,117*76),117,76),time=rep(NA,117), lon=rep(NA,76),lat=rep(NA,76))
-  pseudotime<-pseudodata[,1]
-  pseudodata<-pseudodata[,2:77]
-  pseudolist$data<-apply(pseudodata,2,scale)
-  pseudolist$time<-pseudotime
-  pseudolist$lat<-lonlat[,2]
-  pseudolist$lon<-lonlat[,1]
+  
+  tmpdata <- as.matrix(read.table(paste0(dataextdir,'DAPS_pseudoprox/input_data_DAPS.txt')))
+  pseudoprox <- list()
+  # read data from 1901 onwards (line 5)
+  pseudoprox$time <- as.numeric(tmpdata[-(1:4),1])
+  pseudoprox$data <- apply(apply(tmpdata[-(1:4),-1],2,as.numeric),2,scale)
+  pseudoprox$lon <-  as.numeric(tmpdata[2,-1])
+  pseudoprox$lon[pseudoprox$lon > 180] <- pseudoprox$lon[pseudoprox$lon > 180] - 360
+  pseudoprox$lat <- as.numeric(tmpdata[1,-1])
+  pseudoprox$var_residu <- rep(NA,length(pseudoprox$lon))
+  pseudoprox$mr <- matrix(NA,nrow=length(pseudoprox$lon),ncol=2)
   
   nc=nc_open(paste0(crupath,'cru_allvar_abs_1901-2004.nc'), write=F)
   t1=ncvar_get(nc, "temp2") # for CRU temp
-  t2 <- t1[,,1:1248] # from year 1901 till 1971
   lonlist=ncvar_get(nc, "lon")
   lonlist[lonlist > 180] <- lonlist[lonlist > 180] - 360
   latlist=ncvar_get(nc, "lat")
   nc_close(nc)
   
-  nlat_nh<-length(which(pseudolist$lat>0))
-  nhpos<-which(pseudolist$lat>0)
-  ti=which(pseudolist$time<=2004&pseudolist$time>=1901)
-  
-  pseudoprox<-list(data=matrix(rep(NA,104*nlat_nh),104,nlat_nh),time=rep(NA,104), lon=rep(NA,nlat_nh),lat=rep(NA,nlat_nh),mr=matrix(rep(NA,13*nlat_nh),nlat_nh,13),var_residu=rep(NA,nlat_nh))
-  pseudoprox$data<-pseudolist$data[ti,nhpos]
-  pseudoprox$time<-pseudolist$time[ti]
-  pseudoprox$lat<-pseudolist$lat[nhpos]
-  pseudoprox$lon<-pseudolist$lon[nhpos]
-  pseudoprox$mr<-cbind(rep(0,2*nlat_nh),matrix(rep(1/12,12*nlat_nh),2*nlat_nh,6),matrix(rep(NA,12*nlat_nh),2*nlat_nh,6))
-  residus<-rep(NA,104)
   for(i in 1:length(pseudoprox$lon)){
     k=which(abs(lonlist-pseudoprox$lon[i]+0.001)==min(abs(lonlist-pseudoprox$lon[i]+0.001)))
     l=which(abs(latlist-pseudoprox$lat[i])==min(abs(latlist-pseudoprox$lat[i])))
-    t3 <- t2[k,l,]
-    for(j in 1:104){
-      residus[j]<-1/12*sum(t3[(12*(j-1)+1):(j*12)])-pseudoprox$data[j,i]
+    if (max(match(k,l,nomatch=-99999))==-99999) {
+      k=which(abs(lonlist-pseudoprox$lon[i]+2.001)==min(abs(lonlist-pseudoprox$lon[i]+2.001)))
+      l=which(abs(latlist-pseudoprox$lat[i])==min(abs(latlist-pseudoprox$lat[i])))
+    } 
+    if (max(match(k,l,nomatch=-99999))==-99999) {
+      k=which(abs(lonlist-pseudoprox$lon[i]-2.001)==min(abs(lonlist-pseudoprox$lon[i]-2.001)))
+      l=which(abs(latlist-pseudoprox$lat[i])==min(abs(latlist-pseudoprox$lat[i])))
     }
-    pseudoprox$var_residu[i]<-var(residus)
+    if (max(match(k,l,nomatch=-99999))==-99999) {
+      k=which(abs(lonlist-pseudoprox$lon[i]+0.001)==min(abs(lonlist-pseudoprox$lon[i]+0.001)))
+      l=which(abs(latlist-pseudoprox$lat[i]+2)==min(abs(latlist-pseudoprox$lat[i]+2)))
+    }
+    if (max(match(k,l,nomatch=-99999))==-99999) {
+      k=which(abs(lonlist-pseudoprox$lon[i]+0.001)==min(abs(lonlist-pseudoprox$lon[i]+0.001)))
+      l=which(abs(latlist-pseudoprox$lat[i]-2)==min(abs(latlist-pseudoprox$lat[i]-2)))
+    }
+    if (max(match(k,l,nomatch=-99999))==-99999) {
+      k=which(abs(lonlist-pseudoprox$lon[i]+2.001)==min(abs(lonlist-pseudoprox$lon[i]+2.001)))
+      l=which(abs(latlist-pseudoprox$lat[i]+2)==min(abs(latlist-pseudoprox$lat[i]+2)))
+    } 
+    if (max(match(k,l,nomatch=-99999))==-99999) {
+      k=which(abs(lonlist-pseudoprox$lon[i]-2.001)==min(abs(lonlist-pseudoprox$lon[i]-2.001)))
+      l=which(abs(latlist-pseudoprox$lat[i]+2)==min(abs(latlist-pseudoprox$lat[i]+2)))
+    }
+    if (max(match(k,l,nomatch=-99999))==-99999) {
+      k=which(abs(lonlist-pseudoprox$lon[i]+2.001)==min(abs(lonlist-pseudoprox$lon[i]+2.001)))
+      l=which(abs(latlist-pseudoprox$lat[i]-2)==min(abs(latlist-pseudoprox$lat[i]-2)))
+    } 
+    if (max(match(k,l,nomatch=-99999))==-99999) {
+      k=which(abs(lonlist-pseudoprox$lon[i]-2.001)==min(abs(lonlist-pseudoprox$lon[i]-2.001)))
+      l=which(abs(latlist-pseudoprox$lat[i]-2)==min(abs(latlist-pseudoprox$lat[i]-2)))
+    }
+    t3 <- t1[k,l,] 
+    # make variable for each month
+    t4 <- t(array(t3,c(12,length(t3)/12)))
+    if (!all(is.na(t4))) {
+      unab <- apply(t4[1:100,],1,mean) # year 1:100 is 1901-2000
+      results <- lm(pseudoprox$data[,i]~unab)
+      pseudoprox$mr[i,] <- results$coefficients
+      pseudoprox$var_residu[i] <- var(results$residuals)  
+    }
   }
-  dimnames(pseudoprox$mr)[[2]]<-c("(Intercept)","unabt.first","unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabt.seventh","unabt.eighth","unabt.ninth","unabt.tenth","unabt.eleventh","unabt.twelfth")
+  dimnames(pseudoprox$mr)[[2]]<-c("(Intercept)","unabt.first") #,"unabt.second","unabt.third","unabt.fourth","unabt.fifth","unabt.sixth","unabt.seventh","unabt.eighth","unabt.ninth","unabt.tenth","unabt.eleventh","unabt.twelfth")
   invisible(pseudoprox)
 }
 
@@ -2142,6 +2329,23 @@ compute_Hi_Hredux_proxy <- function(stations, echam, regcoef=NULL, threshold=700
 }
 
 
+
+# version that works with annual avg. such as for pseudoproxy exp. instead of monthly data
+compute_Hi_Hredux_pseudoproxy <- function(stations, echam, regcoef=NULL, threshold=700){
+  H <- array(0, c(length(stations$data),(ncol(stations$mr)-1)*2))
+  for (i in seq(stations$lon)){
+    if (!is.na(stations$lon[i])) { 
+      dist <- compute_dist(echam$lon, echam$lat, stations$lon[i], stations$lat[i])
+      if (min(dist) < threshold) {
+        H[i,1] <- if (!is.na(regcoef[i,2])) which.min(dist) else NA 
+        H[i,2] <- if (!is.na(regcoef[i,2])) regcoef[i,2]  else NA
+      }
+    }   
+  }
+  H[which(is.na(H))] <- 0
+  H <- H[,abs(colSums(H)) > 0]
+  return(H)
+}
 
 
 
@@ -2791,7 +2995,7 @@ read_ghcn <- function(timlim=c(syr,eyr)){
   
   ghcn.data=array(as.numeric(ghcn.data.tmp),c(dim(ghcn.data.tmp)[1],dim(ghcn.data.tmp)[2]))
   
-  ghcn <- list(data=ghcn.data/100, lon=stations.new[mask,'LONGITUDE'], lat=stations.new[mask,'LATITUDE'], names=gsub(' *$', '', as.character(stations.new[mask,'NAME'])), height=stations.new[mask,'STNELEV'], time=seq(min(years) + 1/24, by=1/12, length=nrow(ghcn.data)))
+  ghcn <- list(data=ghcn.data/100, id=stations.new[mask,'ID'], lon=stations.new[mask,'LONGITUDE'], lat=stations.new[mask,'LATITUDE'], names=gsub(' *$', '', as.character(stations.new[mask,'NAME'])), height=stations.new[mask,'STNELEV'], time=seq(min(years) + 1/24, by=1/12, length=nrow(ghcn.data)))
 }
 
 
@@ -2841,7 +3045,7 @@ read_ghcn_refyr <- function(syr,eyr,refsyr,refeyr){
   mask <- apply(!is.na(tmp.arr), 3, sum) > 0.01 * prod(dim(tmp.arr)[1:2])
   ghcn.data.tmp <- array(aperm(tmp.arr[,,mask], c(2,1,3)), c(prod(dim(tmp.arr)[1:2]), sum(mask)))
   ghcn.data=array(as.numeric(ghcn.data.tmp),c(dim(ghcn.data.tmp)[1],dim(ghcn.data.tmp)[2]))
-  ghcn <- list(data=ghcn.data/100, lon=stations.new[mask,'LONGITUDE'], lat=stations.new[mask,'LATITUDE'], names=gsub(' *$', '', as.character(stations.new[mask,'NAME'])), height=stations.new[mask,'STNELEV'], time=seq(min(years) + 1/24, by=1/12, length=nrow(ghcn.data)))
+  ghcn <- list(data=ghcn.data/100, id=stations.new[mask,'ID'], lon=stations.new[mask,'LONGITUDE'], lat=stations.new[mask,'LATITUDE'], names=gsub(' *$', '', as.character(stations.new[mask,'NAME'])), height=stations.new[mask,'STNELEV'], time=seq(min(years) + 1/24, by=1/12, length=nrow(ghcn.data)))
 }
 # 
 # # read in GHCN version 3 (temperature)
@@ -3441,7 +3645,7 @@ plot_echam <- function(x, levs, varname='temp2', type='data',  ti=1,
                      pch=4, col=rgb(0,0,10,8,maxColorValue=10), cex=st.cex))
           try(points(stations$lon[stations$names=='prox' & !is.na(stations$data[,i])], 
                      stations$lat[stations$names=='prox' & !is.na(stations$data[,i])], 
-                     pch=3, col=ifelse(apply(is.na(stations$mr),1,all),"firebrick4",rgb(0,10,0,8,maxColorValue=10)), cex=st.cex,lwd=1.5))
+                     pch=3, col=ifelse(apply(is.na(stations$mr),1,all),"firebrick4","darkgreen"), cex=st.cex,lwd=1.5))
         } else {
           points(statlon, statlat, pch=1, col=st.col, cex=st.cex)
         }
@@ -4045,7 +4249,7 @@ select_stations <- function(x, x.i){
 
 
 # matrix with dimension: number of proxies times vector of model variables at locations
-# for each proxy a matrix which =1 at one location
+# for each proxy a matrix which equals 1 at one location
 compute_H <- function(stations, echam, threshold=700){
   H <- array(0, c(nrow(stations$data), nrow(echam$data)))
   for (i in seq(stations$lon)){
@@ -5692,7 +5896,7 @@ add_contour <- function(x, cvarname = "gph500", ctype="ensmean", ti=1, ccol='bla
 
 
 plot_pages <- function(wl=31, reg, xa='n',box='n',seas='yrmean',anom=T,anomper=(1901:1980),lw=1,
-                       sca=F,yl="Temperature [??C]",xl='Year',plotbem=T,plotmem=T,plotech=T,
+                       sca=F,yl="Temperature",xl='Year',plotbem=T,plotmem=T,plotech=T,
                        pag=T,use18=T,title='',plotts=NULL){ 
   if (title=='') { title <- paste(eind.allts$names[reg],"anomalies") }
   # set memb 18 to NA because of SH bias
@@ -6076,11 +6280,6 @@ read_pdsi <- function(filehead, path=echpath, xlim=c(-180,180), ylim=c(-90,90), 
           if (varname == 'temp2') data <- data - 273.15
           if (varname == 'precip') data <- data * 3600 * 24 * 30
           if (varname == 'slp') data <- data / 100
-        }
-        if (path == nceppath) {
-          if (varname == 'temp2') data <- data - 273.15
-          if (varname == 'precip') data <- data * 3600 * 24 * 30
-          if (varname == 'slp') data <- data 
         }
         # compute seasonal averages
         #dat <- array(data[,11:(ncol(data)-2)], c(nrow(data), 6, ncol(data)/6 - 2))
@@ -6540,6 +6739,7 @@ setup_read_pages<- function(type){
     pagesprox$time <-p_tree$time
     pagesprox$mr <- rbind(p_tree$mr, p_coral$mr) 
     pagesprox$var_residu <- c(p_tree$var_residu, p_coral$var_residu)
+    pagesprox$archivetype <- c(p_tree$archivetype, p_coral$archivetype)
     save(pagesprox, file=paste0(workdir,"../data/pages/pages_tree_&_coral_",fsyr,"-",feyr,"_",lm_fit_data,".Rdata"))
   }
   return(pagesprox)
@@ -6591,43 +6791,33 @@ calculate_climatology <- function(x,cyr,subtracted,added,source){
 ## function to screen realprox data (+/- 5 std.)
 
 screenstd <- function (x,cyr,source) { #sources: proxy/inst
-  
-  
-  
   if (source=="proxy"){
-    
     x.clim<-calculate_climatology(x,cyr,35,35,source)
-    
     tiv=which(floor(x$time)==cyr)  
     x$data<-t(x$data)
     for (i in 1:length(x$lon)) {
-      
       rpmean<- mean(x.clim$data[i,],na.rm=T)
       rpsd   <- sd(x.clim$data[i,],na.rm=T)
       #rpmean <- mean(realprox$data[,i],na.rm=T)
       #rpsd   <- sd(realprox$data[,i],na.rm=T)
       if ((!is.na(rpmean)) & (!is.na(rpsd))) {
         if ((!is.na(x$data[i,tiv])) & ((x$data[i,tiv] < rpmean-5*rpsd)
-                                       | (x$data[i,tiv] > rpmean+5*rpsd))) {
+                                     | (x$data[i,tiv] > rpmean+5*rpsd))) {
           x$data[i,tiv] <- NA
           print(paste('proxy data', i, 'out of range'))
           write(paste('proxy data', i, 'out of range'),file=paste0('../log/',logfn),append=T)
-          
         }
       }
     }
   }
   
   if (source=="inst"){
-    
     x.clim<-calculate_climatology(x,cyr,36,35,source)
     echam.sd<-get("echam.sd")
     echam_clim_mon_ensmean <- get("echam_clim_mon_ensmean")
-    
     gpos <- getgridboxnum(x,echam.sd)
     
     # year from Oct to Sept for the climatology
-    
     vtmp <- array(x.clim$data,c(12, nrow(x.clim$data)/12, dim(x.clim$data)[2]))
     stsv = round(dim(vtmp)[2]/2)
     tiv=which(floor(x$time)==cyr)  
@@ -6637,8 +6827,6 @@ screenstd <- function (x,cyr,source) { #sources: proxy/inst
       if (!is.na(gpos[i])) {
         m <- gpos[i]
         if (!is.na(m)) {
-          
-          
           for (j in 1:12) {
             # if bias corrected proxy/inst is outside echam ens range +- 5SD,
             # data point will not be assimilated at this time step
@@ -6649,7 +6837,6 @@ screenstd <- function (x,cyr,source) { #sources: proxy/inst
                 #     ((vtmp[j,((stsv-1)/12+1),i]+ biasm) > echam$ensmean[m,(j+12)]+5*echam.sd$data[m,j])) {
                 if (((vtmp[j,stsv,i]+biasm) < echam_clim_mon_ensmean[m,j]-5*echam.sd$data[m,j]) |
                     ((vtmp[j,stsv,i]+ biasm) > echam_clim_mon_ensmean[m,j]+5*echam.sd$data[m,j])) {
-                  
                   x$data[sts-1+j,i]<-NA
                   print(paste('inst data',varname,'#:',i,'mon:',j,'out of range'))
                   write(paste('inst data', varname,'#:',i,'mon:',j,'out of range'),
@@ -6664,7 +6851,6 @@ screenstd <- function (x,cyr,source) { #sources: proxy/inst
                         file=paste0('../log/',logfn),append=T)
                   write(paste('echam sd', echam.sd$data[m,j]),
                         file=paste0('../log/',logfn),append=T)
-                  
                 }
               }
             }
@@ -6723,15 +6909,32 @@ convert_to_2_seasons <- function(x,source){
       x$time=x.allts$time[sts:ets]
       x$names=rep("prox",dim(x.allts$data)[1])
       return(list(x=x,x.allts=x.allts))
-      
     }else{
-      points.on.SH <- which(x$lat<0)
-      tmp2=array(NA,c(dim(tmp1)[1],2,dim(tmp1)[2]))
-      tmp2[,2,]=tmp1
+      # add code to treat corals with 1 value per season different than trees with 1 value oer year
+      pos_tree <- which(x$archivetype=='tree')
+      pos_coral <- which(x$archivetype=='coral')
+      len_coral <- length(pos_coral)
+      # coral part
+      tmp2c=array(NA,c(dim(tmp1[pos_coral,])[1],2,dim(tmp1[pos_coral,])[2]))
+      tmp2c[,1,] <- tmp1[1:(len_coral/2),] # 1. half of coral data is oct-mar
+      tmp2c[,2,] <- tmp1[(len_coral/2+1):len_coral,] # 2. half of coral data is apr-sep
+      # tree part JF 05/2019 
+      points.on.SH <- which(x$lat[pos_tree]<0)
+      tmp2t=array(NA,c(dim(tmp1[pos_tree,])[1],2,dim(tmp1[pos_tree,])[2]))
+      tmp2t[,2,]=tmp1[pos_tree,]
       if (!isempty(points.on.SH)){
-        tmp2[points.on.SH,1,]<-tmp2[points.on.SH,2,]
-        tmp2[points.on.SH,2,]<-NA
+        tmp2t[points.on.SH,1,]<-tmp2[points.on.SH,2,]
+        tmp2t[points.on.SH,2,]<-NA
       }
+      # now merge coral and tree again into tmp2
+      tmp2 <- abind(tmp2c,tmp2t,along=1)
+      # points.on.SH <- which(x$lat<0)
+      # tmp2=array(NA,c(dim(tmp1)[1],2,dim(tmp1)[2]))
+      # tmp2[,2,]=tmp1
+      # if (!isempty(points.on.SH)){
+      #   tmp2[points.on.SH,1,]<-tmp2[points.on.SH,2,]
+      #   tmp2[points.on.SH,2,]<-NA
+      # }
       x.allts$data=array(tmp2,c(dim(tmp2)[1],dim(tmp2)[2]*dim(tmp2)[3]))
       x.allts$time=seq(fsyr,feyr+0.5,0.5) 
       ti=which(floor(x.allts$time)==cyr)
@@ -6963,13 +7166,14 @@ calc_indices<-function(dataset, setname){
         pos1 <- which(trunc(dataset$lat,digits=8)==trunc(l,digits=8))
         pos2 <- which(dataset$names=='omega500')
         pos <- intersect(pos1,pos2)
+        
         if (length(dataset$ensmean[pos,])==2 | (monthly_out & length(dataset$ensmean[pos,])==12)) { zmean[c,] <- dataset$ensmean[pos,] }
-        else if (length(dataset$ensmean[pos,])>2 | (monthly_out & length(dataset$ensmean[pos,])>12)) { zmean[c,] <- apply(dataset$ensmean[pos,],2,mean) }
+        else if (length(dataset$ensmean[pos,])>2 | (monthly_out & length(dataset$ensmean[pos,])>12)) { zmean[c,] <- apply(dataset$ensmean[pos,,drop=F],2,mean) }
         c=c+1
       }
       latlist <- unique(dataset$lat)[which(which(unique(dataset$lat) > -30) %in% which(unique(dataset$lat) < 30))]
       pos3 <- match(round(latlist,digits=8),round(unique(dataset$lat),digits=8))
-      zmean <- zmean[pos3,]
+      zmean <- zmean[pos3,,drop=F]
       hc <- apply(zmean,2,min) # max upward wind is neg. omega value -> min function
       
       c=1
@@ -6979,13 +7183,13 @@ calc_indices<-function(dataset, setname){
         pos2 <- which(dataset$names=='omega500')
         pos <- intersect(pos1,pos2)
         if (length(dataset$ensmean[pos,])==2 | (monthly_out & length(dataset$ensmean[pos,])==12)) { zmean[c,] <- dataset$ensmean[pos,] }
-        else if (length(dataset$ensmean[pos,])>2 | (monthly_out & length(dataset$ensmean[pos,])>12)) { zmean[c,] <- apply(dataset$ensmean[pos,],2,mean) }
+        else if (length(dataset$ensmean[pos,])>2 | (monthly_out & length(dataset$ensmean[pos,])>12)) { zmean[c,] <- apply(dataset$ensmean[pos,,drop=F],2,mean) }
         c=c+1
       }
       latlist <- unique(dataset$lat)[which(which(unique(dataset$lat) > -30) %in%which(unique(dataset$lat) < 30))]
       pos3 <- match(round(latlist,digits=8),round(unique(dataset$lat),digits=8))
-      zmean <- zmean[pos3,]
-      itcz <- apply(zmean[2:(nrow(zmean)-1),],2,min)
+      zmean <- zmean[pos3,,drop=F]
+      itcz <- apply(zmean[2:(nrow(zmean)-1),,drop=F],2,min)
       dlat <-  mean(latlist[1:(length(latlist)-1)]-latlist[2:(length(latlist))])
       gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(itcz,digits=8)),each =length(pos3)), nrow=length(pos3))),2,which)
       gridmin <- latlist[gridminpos-seq(0,(nseas-1)*length(pos3),by=length(pos3))]
@@ -7003,13 +7207,13 @@ calc_indices<-function(dataset, setname){
         pos2 <- which(dataset$names=='u200')
         pos <- intersect(pos1,pos2)
         if (length(dataset$ensmean[pos,])==2 | (monthly_out & length(dataset$ensmean[pos,])==12)) { zmean[c,] <- dataset$ensmean[pos,] }
-        else if (length(dataset$ensmean[pos,])>2 | (monthly_out & length(dataset$ensmean[pos,])>12)) { zmean[c,] <- apply(dataset$ensmean[pos,],2,mean) }
+        else if (length(dataset$ensmean[pos,])>2 | (monthly_out & length(dataset$ensmean[pos,])>12)) { zmean[c,] <- apply(dataset$ensmean[pos,,drop=F],2,mean) }
         c=c+1
       }
       latlist <- unique(dataset$lat)[which(which(unique(dataset$lat) > 0) %in% which(unique(dataset$lat) < 57))]
       pos3 <- match(round(latlist,digits=8),round(unique(dataset$lat),digits=8))
-      zmean <- zmean[pos3,]
-      sj <- apply(zmean[2:(nrow(zmean)-1),],2,max) # max uwind
+      zmean <- zmean[pos3,,drop=F]
+      sj <- apply(zmean[2:(nrow(zmean)-1),,drop=F],2,max) # max uwind
       dlat <-  mean(latlist[1:(length(latlist)-1)]-latlist[2:(length(latlist))])   
       gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(sj,digits=8)),each =length(pos3)), nrow=length(pos3))),2,which)
       gridmin <- latlist[gridminpos-seq(0,(nseas-1)*length(pos3),by=length(pos3))]
@@ -7025,14 +7229,14 @@ calc_indices<-function(dataset, setname){
         pos2 <- which(dataset$names=='slp')
         pos <- intersect(pos1,pos2)
         if (length(dataset$ensmean[pos,])==2 | (monthly_out & length(dataset$ensmean[pos,])==12)) { zmean[c,] <- dataset$ensmean[pos,] }
-        else if (length(dataset$ensmean[pos,])>2 | (monthly_out & length(dataset$ensmean[pos,])>12)) { zmean[c,] <- apply(dataset$ensmean[pos,],2,mean) }
+        else if (length(dataset$ensmean[pos,])>2 | (monthly_out & length(dataset$ensmean[pos,])>12)) { zmean[c,] <- apply(dataset$ensmean[pos,,drop=F],2,mean) }
         c=c+1
       }
       latlist <- unique(dataset$lat)[which(which(unique(dataset$lat) > 0) %in%
                                              which(unique(dataset$lat) < 57))]
       pos3 <- match(round(latlist,digits=8),round(unique(dataset$lat),digits=8))
-      zmean <- zmean[pos3,]
-      sj <- apply(zmean[2:(nrow(zmean)-1),],2,max) # max slp
+      zmean <- zmean[pos3,,drop=F]
+      sj <- apply(zmean[2:(nrow(zmean)-1),,drop=F],2,max) # max slp
       dlat <-  mean(latlist[1:(length(latlist)-1)]-latlist[2:(length(latlist))])   
       gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(sj,digits=8)),each =length(pos3)), nrow=length(pos3))),2,which)
       gridmin <- latlist[gridminpos-seq(0,(nseas-1)*length(pos3),by=length(pos3))]
@@ -7137,14 +7341,18 @@ calc_indices<-function(dataset, setname){
             pos2 <- which(dataset$names=='omega500')
             pos <- intersect(pos1,pos2)
             if (length(dataset$data[pos,,m])==2 | (monthly_out & length(dataset$data[pos,,m])==12)) { zmean[c,] <- dataset$data[pos,,m] }
-            else if (length(dataset$data[pos,,m])>2| (monthly_out & length(dataset$data[pos,,m])>12)) { zmean[c,] <- apply(dataset$data[pos,,m],2,mean) }
+            else if (length(dataset$data[pos,,m])>2| (monthly_out & length(dataset$data[pos,,m])>12)) { zmean[c,] <- apply(dataset$data[pos,,m,drop=F],2,mean) }
             c=c+1
           }
           latlist <- unique(dataset$lat)[which(which(unique(dataset$lat) > -30) %in%
                                                  which(unique(dataset$lat) < 30))]
           pos3 <- match(round(latlist,digits=8),round(unique(dataset$lat),digits=8))
-          zmean <- zmean[pos3,]
-          hc[m,] <- apply(zmean,2,min) # max upward wind is neg. omega value -> min function
+          zmean <- zmean[pos3,,drop=F]
+          if (!all(zmean==0)){
+            hc[m,] <- apply(zmean,2,min) # max upward wind is neg. omega value -> min function
+          } else {
+            hc[m,] <- NA
+          }
         }
         
         # ITCZ location
@@ -7157,14 +7365,14 @@ calc_indices<-function(dataset, setname){
             pos2 <- which(dataset$names=='omega500')
             pos <- intersect(pos1,pos2)
             if (length(dataset$data[pos,,m])==2 | (monthly_out & length(dataset$data[pos,,m])==12)) { zmean[c,] <- dataset$data[pos,,m] }
-            else if (length(dataset$data[pos,,m])>2| (monthly_out & length(dataset$data[pos,,m])>12)) { zmean[c,] <- apply(dataset$data[pos,,m],2,mean) }
+            else if (length(dataset$data[pos,,m])>2| (monthly_out & length(dataset$data[pos,,m])>12)) { zmean[c,] <- apply(dataset$data[pos,,m,drop=F],2,mean) }
             c=c+1
           }
           latlist <- unique(dataset$lat)[which(which(unique(dataset$lat) > -30) %in%
                                                  which(unique(dataset$lat) < 30))]
           pos3 <- match(round(latlist,digits=8),round(unique(dataset$lat),digits=8))
-          zmean <- zmean[pos3,]
-          itcz_tmp <- apply(zmean[2:(nrow(zmean)-1),],2,min)
+          zmean <- zmean[pos3,,drop=F]
+          itcz_tmp <- apply(zmean[2:(nrow(zmean)-1),,drop=F],2,min)
           dlat <-  mean(latlist[1:(length(latlist)-1)]-latlist[2:(length(latlist))])   
           
           gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(itcz_tmp,digits=8)),each =length(pos3)), nrow=length(pos3))),2,which)
@@ -7183,14 +7391,14 @@ calc_indices<-function(dataset, setname){
             pos2 <- which(dataset$names=='u200')
             pos <- intersect(pos1,pos2)
             if (length(dataset$data[pos,,m])==2 | (monthly_out & length(dataset$data[pos,,m])==12)) { zmean[c,] <- dataset$data[pos,,m] }
-            else if (length(dataset$data[pos,,m])>2| (monthly_out & length(dataset$data[pos,,m])>12)) { zmean[c,] <- apply(dataset$data[pos,,m],2,mean) }
+            else if (length(dataset$data[pos,,m])>2| (monthly_out & length(dataset$data[pos,,m])>12)) { zmean[c,] <- apply(dataset$data[pos,,m,drop=F],2,mean) }
             c=c+1
           }
           latlist <- unique(dataset$lat)[which(which(unique(dataset$lat) > 0) %in%
                                                  which(unique(dataset$lat) < 57))]
           pos3 <- match(round(latlist,digits=8),round(unique(dataset$lat),digits=8))
-          zmean <- zmean[pos3,]
-          sj_tmp <- apply(zmean[2:(nrow(zmean)-1),],2,max) # max uwind
+          zmean <- zmean[pos3,,drop=F]
+          sj_tmp <- apply(zmean[2:(nrow(zmean)-1),,drop=F],2,max) # max uwind
           dlat <-  mean(latlist[1:(length(latlist)-1)]-latlist[2:(length(latlist))])   
           gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(sj_tmp,digits=8)),each =length(pos3)), nrow=length(pos3))),2,which)
           gridmin <- latlist[gridminpos-seq(0,(nseas-1)*length(pos3),by=length(pos3))]
@@ -7210,13 +7418,13 @@ calc_indices<-function(dataset, setname){
             pos2 <- which(dataset$names=='slp')
             pos <- intersect(pos1,pos2)
             if (length(dataset$data[pos,,m])==2 | (monthly_out & length(dataset$data[pos,,m])==12)) { zmean[c,] <- dataset$data[pos,,m] }
-            else if (length(dataset$data[pos,,m])>2| (monthly_out & length(dataset$data[pos,,m])>12)) { zmean[c,] <- apply(dataset$data[pos,,m],2,mean) }
+            else if (length(dataset$data[pos,,m])>2| (monthly_out & length(dataset$data[pos,,m])>12)) { zmean[c,] <- apply(dataset$data[pos,,m,drop=F],2,mean) }
             c=c+1
           }
           latlist <- unique(dataset$lat)[which(which(unique(dataset$lat) > 0) %in% which(unique(dataset$lat) < 57))]
           pos3 <- match(round(latlist,digits=8),round(unique(dataset$lat),digits=8))
-          zmean <- zmean[pos3,]
-          sj_tmp <- apply(zmean[2:(nrow(zmean)-1),],2,max) # max slp
+          zmean <- zmean[pos3,,drop=F]
+          sj_tmp <- apply(zmean[2:(nrow(zmean)-1),,drop=F],2,max) # max slp
           dlat <-  mean(latlist[1:(length(latlist)-1)]-latlist[2:(length(latlist))])   
           
           gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(sj_tmp,digits=8)),each =length(pos3)), nrow=length(pos3))),2,which)
@@ -7321,7 +7529,11 @@ calc_indices<-function(dataset, setname){
     monthly_out<-get("monthly_out")
     #load validation indices
     load(file=paste0(dataextdir,'vali_data/indices/indices_recon_1900-2000_monthly.Rdata'))
-    if (!monthly_out & !tps_only){
+    if (pseudo_prox) {
+      indann <- matrix(0,6,101)
+      for(i in 1:101){indann[,i]<-apply(indall[,((i-1)*12+1):((i-1)*12+12)],1,mean,na.rm=T)}
+      indall<-indann
+    } else if (!monthly_out & !tps_only){
       indseasonal<-matrix(0,6,200)
       for(i in 1:200){indseasonal[,i]<-apply(indall[,((i-1)*6+10):((i-1)*6+15)],1,mean, na.rm = T)}
       indall<-indseasonal
@@ -7378,14 +7590,20 @@ calc_indices<-function(dataset, setname){
     Hind[34,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'EU'),which(dataset$names=="slp")]
     #      # land sea mask to take care of missing validata in the ocean
     
-    vpos <- which(!is.na(dataset$data[,1]))
+    #vpos <- which(!is.na(dataset$data[,1]))
+    # JF 2019/12
+    vpos <- which(!is.na(rowSums(dataset$ensmean)))
     Hind2 <- Hind[,vpos]
-    validatanona <- dataset$data[vpos,]
+    #validatanona <- dataset$data[vpos,]
+    # JF 2019/12
+    validatanona <- dataset$ensmean[vpos,]
     if(!tps_only){
       ind <- list(data=Hind2 %*% validatanona, names=indices)
-      if (monthly_out){
+      if (pseudo_prox) {
+        ind$data<- rbind(ind$data,indall[,(cyr-1900),drop=F])
+      } else if (monthly_out){
         ind$data<- rbind(ind$data,indall[, ((cyr-1900)*12-2):((cyr-1900)*12+9)])
-      }else{
+      } else {
         ind$data<- rbind(ind$data,indall[,((cyr-1901)*2+1):((cyr-1901)*2+2)])
       }
       ind$names<-c(ind$names,"ind_recon_dimi","ind_recon_z100","ind_recon_z300","ind_recon_pwc","ind_recon_hc","ind_recon_sj")
@@ -7399,7 +7617,7 @@ calc_indices<-function(dataset, setname){
 
 
 
-plot_example_ts<-function(validate,analysis,echam,lonlat,type="absolute",loc="somewhere",ylim_slp=NULL,ylim_p=NULL,ylim_t=NULL){
+plot_example_ts<-function(validate,analysis,echam,lonlat,type="absolute",loc="somewhere",ylim_s=NULL,ylim_p=NULL,ylim_t=NULL){
   # takes validate, analysis and echam and makes time series for summer. Location can be specified by givin the number of the position of a
   # specific lon/lat (lonlat). With loc ="locationname" a name for the plotname can be selected. Ylimits can be specified for each variable
   # independently. for type = anomaly only one ylim each is enough, else it needs a list with two different ylims: One for echam and analysis
@@ -7420,8 +7638,6 @@ plot_example_ts<-function(validate,analysis,echam,lonlat,type="absolute",loc="so
   
   
   if(type!="anomaly"){
-    
-    
     if(lonlat==592){
       loc="sibiria"
       ylim_t=list(c(0,9),c(1.5,10.5))
@@ -7451,7 +7667,6 @@ plot_example_ts<-function(validate,analysis,echam,lonlat,type="absolute",loc="so
       ylim_t=list(c(29,36),c(25,32))
       ylim_p=list(c(-20,80),c(15,115))
       ylim_s=list(c(997,1004),c(998.5,1005.5))
-      
     }
     
     if (monthly_out) {

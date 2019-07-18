@@ -92,6 +92,10 @@ for (cyr in syr2:eyr) {
   } else {
     real_proxies=F
   }
+  if (cyr <= 1900&pseudo_prox) {
+    real_proxies=F
+    stop('DAPS pseudo proxy experiment is currently only working from 1901 onwards')
+  }
   if (cyr <= 1853&import_luca) {
     docum=T                 # read documentary based data
   } else {
@@ -249,13 +253,11 @@ for (cyr in syr2:eyr) {
           echanomallts$ensmean <- echanomallts$ensmean[tpspos,]
           echanomallts$names <- echanomallts$names[tpspos]
         }
-      if (state == "static" & no_forc_big_ens ) {
-        tpspos <- c(which(echam_clim$names!='stream'))
       }
-    }
-    echam_clim$data <- echam_clim$data[tpspos,,]
-    echam_clim$ensmean <- echam_clim$ensmean[tpspos,]
-    echam_clim$names <- echam_clim$names[tpspos]
+      tpspos <- c(which(echam_clim$names!='stream'))
+      echam_clim$data <- echam_clim$data[tpspos,,]
+      echam_clim$ensmean <- echam_clim$ensmean[tpspos,]
+      echam_clim$names <- echam_clim$names[tpspos]
       if (landcorr) {
         landcorrected_anom$data <- landcorrected_anom$data[tpspos,,]
         landcorrected_anom$names <- landcorrected_anom$names[tpspos]
@@ -264,34 +266,7 @@ for (cyr in syr2:eyr) {
       }
     }
   }
-  if (fasttest) {
-    mulc <- 4 # choose every 4th grid box
-    loi <- seq(1:length(echam_anom$lon))
-    lai <- seq(1:length(echam_anom$lat))
-    di <- seq(1:dim(echam_anom$data)[1])
-    ni <- seq(1:length(echam_anom$names))
-    loi <- loi[seq(ceiling(mulc/2),length(loi),mulc)]
-    lai <- lai[seq(ceiling(mulc/2), length(lai),mulc)]
-    di <- di[seq(ceiling(mulc/2), length(di),mulc)]
-    ni <- ni[seq(ceiling(mulc/2), length(ni),mulc)]
-    echam$lon <- echam$lon[loi]
-    echam$lat <- echam$lat[lai]
-    echam$data <- echam$data[di,,]
-    echam$ensmean <- echam$ensmean[di,]
-    echam$names <- echam$names[ni]    
-    if (anomaly_assim){
-      echam_anom$lon <- echam_anom$lon[loi]
-      echam_anom$lat <- echam_anom$lat[lai]
-      echam_anom$data <- echam_anom$data[di,,]
-      echam_anom$ensmean <- echam_anom$ensmean[di,]
-      echam_anom$names <- echam_anom$names[ni]
-      echam_clim$lon <- echam_clim$lon[loi]
-      echam_clim$lat <- echam_clim$lat[lai]
-      echam_clim$data <- echam_clim$data[di,,]
-      echam_clim$ensmean <- echam_clim$ensmean[di,]
-      echam_clim$names <- echam_clim$names[ni]
-    }
-  }
+  
   if (anomaly_assim){
     # new echam_clim made by veronika have correct units
     # error where echam_anom and echam_clim were generated initially: 
@@ -518,6 +493,29 @@ for (cyr in syr2:eyr) {
   
   
   # 1.5 Just leave data for one year in memory and convert to sixmonstatevector data format
+  #     or annual mean for DAPS pseudoproxy experiment
+  if (pseudo_prox) {
+    echam$data <- array(apply(echam$data[,13:24,],c(1,3),mean),dim=c(dim(echam$data)[1],1,dim(echam$data)[3]))  
+    echam$ensmean <- array(apply(echam$ensmean[,13:24],1,mean),dim=c(dim(echam$data)[1],1))    
+    echam$time <- floor(echam$time[13])
+    if (anomaly_assim){
+      echam.anom$data <- array(apply(echam.anom$data[,13:24,],c(1,3),mean),
+                               dim=c(dim(echam.anom$data)[1],1,dim(echam.anom$data)[3]))  
+      echam.anom$ensmean <- array(apply(echam.anom$ensmean[,13:24],1,mean),dim=c(dim(echam.anom$data)[1],1))  
+      echam.anom$time <- floor(echam.anom$time[13]) 
+      echam.clim$data <- array(apply(echam.clim$data[,13:24,],c(1,3),mean),
+                               dim=c(dim(echam.clim$data)[1],1,dim(echam.clim$data)[3]))  
+      echam.clim$ensmean <- array(apply(echam.clim$ensmean[,13:24],1,mean),dim=c(dim(echam.clim$data)[1],1))  
+      echam.clim$time <- floor(echam.clim$time[13]) 
+    }
+    if (state=="changing" & (covarclim > 0)) {
+      echanomallts$data <- array(apply(echanomallts$data[,13:24,],c(1,3),mean),
+                                 dim=c(dim(echanomallts$data)[1],1,dim(echanomallts$data)[3]))    
+      echanomallts$ensmean <- array(apply(echanomallts$ensmean[,13:24],1,mean),dim=c(dim(echanomallts$data)[1],1))      
+      echanomallts$time <- floor(echanomallts$time[13]) 
+    }
+  }
+  
   if (sixmonstatevector) {
     # change array to have 6 months in state vector for winter and summer
     # first winter starts in oct of syr
@@ -596,6 +594,12 @@ for (cyr in syr2:eyr) {
   
   # convert lon, lat, names sixmonstatevector data format
   # ACHTUNG: only 11 vars withOUT stream function included so far
+  if (pseudo_prox) { 
+    one_var_dim<-length(echam$lon)
+    numvar <- length(unique(echam$names)) 
+    echam$lon <-  c(rep(echam$lon, (numvar)))
+    echam$lat <- c(rep(echam$lat, (numvar)))
+  }
   if (sixmonstatevector) {
     if(!(state=="static" & no_forc_big_ens)){
       one_var_dim<-length(echam$lon)
@@ -705,58 +709,48 @@ for (cyr in syr2:eyr) {
         valiall$data <- valiall$data[,,1]
       } else { vali = F }
     
-    # 2.2 Choose which variables want to use from the data set
-    if (tps_only) {
+      # 2.2 Choose which variables want to use from the data set
+      if (tps_only) {
 
-      tpspos2 <- c(which(valiall$names=='temp2'), which(valiall$names=='precip'), 
-                   which(valiall$names=='slp'))
-      valiall$data <- valiall$data[tpspos2,]
-      valiall$names <- valiall$names[tpspos2]
-    } 
-    if (fasttest) {
-      mulc <- 4 # choose every 4th grid box
-      loi <- seq(1:length(valiall$lon))
-      lai <- seq(1:length(valiall$lat))
-      di <- seq(1:dim(valiall$data)[1])
-      ni <- seq(1:length(valiall$names))
-      loi <- loi[seq(ceiling(mulc/2),length(loi),mulc)]
-      lai <- lai[seq(ceiling(mulc/2), length(lai),mulc)]
-      di <- di[seq(ceiling(mulc/2), length(di),mulc)]
-      ni <- ni[seq(ceiling(mulc/2), length(ni),mulc)]
-      valiall$lon <- valiall$lon[loi]
-      valiall$lat <- valiall$lat[lai]
-      valiall$data <- valiall$data[di,,]
-      valiall$names <- valiall$names[ni]
-    }
+        tpspos2 <- c(which(valiall$names=='temp2'), which(valiall$names=='precip'), 
+                     which(valiall$names=='slp'))
+        valiall$data <- valiall$data[tpspos2,]
+        valiall$names <- valiall$names[tpspos2]
+      } 
     
-    # 2.3 Cut out the 24 months around current year 
-    valiall.allts=valiall
-
+      # 2.3 Cut out the 24 months around current year 
+      valiall.allts=valiall
       ti=which(floor(valiall$time)==(cyr-1) | floor(valiall$time)==cyr) 
       sts=ti[1]
       ets=ti[length(ti)]
       valiall$data=valiall$data[,sts:ets]
       valiall$time=valiall$time[sts:ets]
       
-      
-      # 2.4 Convert it to 2 season per year
-      if (!recon_vali) {
-        tmp21 <- array(valiall$data,c(dim(valiall$data)[1]*dim(valiall$data)[2]))
-        tmp22 <- tmp21[((9*dim(valiall$data)[1]+1):(dim(tmp21)[1]-(3*dim(valiall$data)[1])))] 
-        valiall$data <- array(tmp22,c(dim(tmp22)[1]/(((dim(valiall$data)[2]/12)-1)*2),
-                                      (((dim(valiall$data)[2]/12)-1)*2))) # reconvert to 2 seasons per year
-        valiall$time <- seq((floor(valiall$time[1])+1),
-                            (floor(valiall$time[length(valiall$time)])+0.5),0.5) 
-        valiall$names <- rep(valiall$names,6) 
-        valiall$lon <- rep(valiall$lon,6) 
-        valiall$lat <- rep(valiall$lat,6) 
-        rm(tmp21);rm(tmp22)
+      # 2.4 Convert it to 2 season per year or annual in case of DAPS pseudoproxy experiment
+      if (pseudo_prox) {
+        valiall$data <- array(apply(valiall$data[,13:24],1,mean,na.rm=T),dim=c(dim(valiall$data)[1],1))
+        valiall$time <- floor(valiall$time[13])
       }
-      if (recon_vali) {
-        # only keep winter and summer season from luterbacher and co and remove spring and autumn
-        pos <- sort(c(agrep('.042',as.character(valiall$time)), agrep('.542',as.character(valiall$time))))
-        valiall$time <- round(valiall$time[pos],digits=1)
-        valiall$data <- valiall$data[,pos]      
+      # MISSING part for not sixmonstatevector or DAPS part of monthly analysis with 1-mon statevector
+      if (sixmonstatevector) {
+        if (!recon_vali) {
+          tmp21 <- array(valiall$data,c(dim(valiall$data)[1]*dim(valiall$data)[2]))
+          tmp22 <- tmp21[((9*dim(valiall$data)[1]+1):(dim(tmp21)[1]-(3*dim(valiall$data)[1])))] 
+          valiall$data <- array(tmp22,c(dim(tmp22)[1]/(((dim(valiall$data)[2]/12)-1)*2),
+                                        (((dim(valiall$data)[2]/12)-1)*2))) # reconvert to 2 seasons per year
+          valiall$time <- seq((floor(valiall$time[1])+1),
+                              (floor(valiall$time[length(valiall$time)])+0.5),0.5) 
+          valiall$names <- rep(valiall$names,6) 
+          valiall$lon <- rep(valiall$lon,6) 
+          valiall$lat <- rep(valiall$lat,6) 
+          rm(tmp21);rm(tmp22)
+        }
+        if (recon_vali) {
+          # only keep winter and summer season from luterbacher and co and remove spring and autumn
+          pos <- sort(c(agrep('.042',as.character(valiall$time)), agrep('.542',as.character(valiall$time))))
+          valiall$time <- round(valiall$time[pos],digits=1)
+          valiall$data <- valiall$data[,pos]      
+        }
       }
       
       # 2.5 Warning message
@@ -785,6 +779,7 @@ for (cyr in syr2:eyr) {
   # 3. Real Proxy Part
   # 3.1 Loading proxy data
   # 3.2 Screen the proxy data: more than 5 std. dev. from mean
+  # 3.2.1 Only use best proxies per grid cell, i.e. smallest residuals
   # 3.3 Convert to 2 season per year
   # 3.4 Calculate the anomalies
   # 3.5 Create a list named proxies ("combine assimilation data")
@@ -793,10 +788,10 @@ for (cyr in syr2:eyr) {
   
   # 3.1 Loading proxy data
   if (real_proxies){
-    if (!generate_PROXIES) {
-      load(paste0(dataextdir,"assimil_data/rdata_files/real_proxies_",fsyr,"-",feyr,".Rdata")) 
+    if (pseudo_prox) {
+      load(file=paste0("../data/proxies/DAPS_pseudoproxies_",fsyr,"-",feyr,".Rdata"))
     } else {
-      load(paste0("../data/proxies/real_proxies_",fsyr,"-",feyr,".Rdata"))
+      load(paste0("../data/proxies/real_proxies_",expname,"_",fsyr,"-",feyr,".Rdata"))
     }
     
     # 3.2 Screen the proxy data
@@ -806,63 +801,169 @@ for (cyr in syr2:eyr) {
       # in this case treated as outlier and set to NA
       realprox <- screenstd(realprox,cyr=cyr,source="proxy")
       realprox$data <- t(realprox$data)
+    }
+    
+    # 3.2.1 Only use best proxies per grid cell, i.e. smallest residuals
+    if (best_prox_per_grid) {
+      res=bestproxres
+      newgrid <- echam.sd
+      newgrid$ensmean <- NULL
+      #newgrid$lon <- echam.sd$lon[seq(1,length(echam.sd$lon),res)]
+      #newgrid$lat <- echam.sd$lat[seq(1,length(echam.sd$lat),res)]
+      lons <- seq((-180+(res/20)),(180-(res/20)),res)
+      lats <- seq((-90+(res/20)),(90-(res/20)),res)
+      newgrid$lon <- rep(lons, length(lats))
+      newgrid$lat <- rep(lats, each=length(lons))
+      newgrid$data <- as.matrix(rep(NA,length(newgrid$lon)))
       
-      # 3.3 Convert to 2 season per year
-      # no scaling because regresion takes care of it
+      tmp_prox <- realprox
+      tmp_vec <- vector()
+      for (i in 1:ncol(tmp_prox$data)) {
+        if (i %% 1000 == 0) {
+          print(paste('Remove duplicate proxies, i.e. best_prox_per_grid. Number:', i))
+        }
+        pos <- which(newgrid$lon>(tmp_prox$lon[i]-(2*res))&newgrid$lon<(tmp_prox$lon[i]+(2*res))&
+                        newgrid$lat>(tmp_prox$lat[i]-(2*res))&newgrid$lat<(tmp_prox$lat[i]+(2*res))) 
+        dist <- compute_dist(newgrid$lon[pos], newgrid$lat[pos], tmp_prox$lon[i], tmp_prox$lat[i])
+        tmp_vec[i] <- pos[which.min(dist)]
+      }
+      #n_prox_per_grid <- apply(tmp_array, 2, sum)
+      #Hproxy <- compute_H(tmp_prox, newgrid, threshold=(700*res))  
+      #n_prox_per_grid <- apply(Hproxy, 2, sum)
+      removepos=NULL
+      tiv=which(floor(realprox$time)==cyr)
+      for (i in unique(tmp_vec)) {
+        pos <- which(tmp_vec==i)
+        if (length(pos) > 1) {
+      #for (i in 1:ncol(Hproxy)){
+      #  if (n_prox_per_grid[i] > 1) {
+      #    pos <- which(Hproxy[,i]>0) # find prox in same grid box
+          posnotna <- !is.na(realprox$data[tiv,pos])
+          pos2 <- pos[posnotna]
+          pos_t <- rep(NA,length=length(pos2))
+          pos_n <- rep(NA,length=length(pos2))
+          # split into rather t and p sensitive
+          for (j in 1:length(pos2)) {
+            pos_t[j] <- (length(which(!is.na(realprox$mr[pos2[j],2:7])))>length(which(!is.na(realprox$mr[pos2[j],8:13]))))
+            pos_n[j] <- (length(which(!is.na(realprox$mr[pos2[j],2:7])))<length(which(!is.na(realprox$mr[pos2[j],8:13]))))
+          }
+          if (all(is.na(realprox$var_residu[pos2]))) {
+            removepos <- c(removepos,pos)
+          } else if (any(pos_t) & any(pos_n)) {
+            removepos <- c(removepos,pos[-c(which(realprox$var_residu[pos]==min(realprox$var_residu[pos2[pos_t]],na.rm=T)),
+                                            which(realprox$var_residu[pos]==min(realprox$var_residu[pos2[pos_n]],na.rm=T)))])
+          } else if (any(pos_t) & !any(pos_n)) {
+            removepos <- c(removepos,pos[-which(realprox$var_residu[pos]==min(realprox$var_residu[pos2[pos_t]],na.rm=T))])
+          } else if (!any(pos_n) & any(pos_n)) {
+            removepos <- c(removepos,pos[-which(realprox$var_residu[pos]==min(realprox$var_residu[pos2[pos_n]],na.rm=T))])
+          }   
+        }
+      }
+      # remove stations, will not be shown on station map 
+      # realprox$lon <- realprox$lon[-removepos] 
+      # realprox$lat <- realprox$lat[-removepos] 
+      # realprox$data <- realprox$data[,-removepos] 
+      # realprox$names <- realprox$names[-removepos]
+      # realprox$mr <- realprox$mr[-removepos,]
+      # realprox$var_residu <- realprox$var_residu[-removepos] 
+      # set NA to keep station map symbol instead of removing
+      realprox$data[tiv,removepos] <- NA
+      realprox$mr[removepos,] <- NA
+      realprox$var_residu[removepos] <- NA
+    }
+    
+    # 3.3 Convert to 2 season per year or leave annual average for DAPS pseudoproxy exp.
+    # no scaling because regresion takes care of it
       
+    if (pseudo_prox) { # i.e. just only value representing the annual mean and not the growing season
+      realprox.allts <- realprox
+      realprox.allts$data <- t(realprox.allts$data) 
+      ti=which(floor(realprox.allts$time)==cyr)
+      realprox$time <- realprox.allts$time[ti]
+      realprox$data <- realprox.allts$data[,ti,drop=F]
+    } else {
+      # treat corals with seasonal and trees with annual values separately
+      #coral_pos <- which(realprox$archivetype=='coral')
+      # should we have them completely separate?
+      # how does pages data files look with combined corals and trees, trees T; and P, corals only T?
       
       # the function takes realprox and output is 2 season conversion and realprox.allts(which is needed below)
       listoftwo <-convert_to_2_seasons(realprox,source="proxy")
       realprox.allts <- listoftwo$x.allts
       realprox <- listoftwo$x
-      
-      # 3.4 Calculate the anomalies
-      if (anomaly_assim){
-        ti=which(floor(realprox.allts$time)>=(cyr-35) &
-                   floor(realprox.allts$time)<=(cyr+35))
-        sts=ti[1]
-        ets=ti[length(ti)]
-        realprox.tmp=realprox.allts
-        realprox.tmp$data=realprox.allts$data[,sts:ets]
-        realprox.tmp$time=realprox.allts$time[sts:ets]
-        realprox.anom <- realprox
-        realprox.anom$data <- (realprox$data - (apply(array(realprox.tmp$data,
-                                                            c(nrow(realprox.tmp$data), 2, ncol(realprox.tmp$data)/2)), 1:2, mean,na.rm=T)))
-        realprox <- realprox.anom
-      }
-      
-      
-      # 3.5 Create a list named proxies
-      # real trw proxy multiple regression approach
-      if (!instrumental) {
-        realprox$sour <- rep('prox',length(realprox$lon))
-        realprox.allts$sour <- rep('prox',length(realprox$lon))
-        if (reduced_proxies) {
-          every <- 12
-          redpos <-seq(1,length(realprox$lon),every)
-          realprox$lon <- realprox$lon[redpos]
-          realprox$lat <- realprox$lat[redpos]
-          realprox$data <- realprox$data[redpos,]
-          realprox$names <- realprox$names[redpos]
-          realprox$sour <- realprox$sour[redpos]
-          realprox.allts$lon <- realprox.allts$lon[redpos]
-          realprox.allts$lat <- realprox.allts$lat[redpos]
-          realprox.allts$data <- realprox.allts$data[redpos,]
-          realprox.allts$names <- realprox.allts$names[redpos]
-          realprox.allts$sour <- realprox.allts$sour[redpos]
-        }
-        proxies<-list(data=realprox$data, lon=realprox$lon,
-                      lat=realprox$lat, names=realprox$names, sour=realprox$sour,
-                      height=realprox$elevation, time=realprox$time,
-                      mr=realprox$mr, var_residu=realprox$var_residu,
-                      numavg=rep(1,length(realprox$lon)))
-      }
-      
-      
-      # 3.6 Set real_proxies to FALSE if there is no data
-      if (dim(realprox$data)[1]==0) { real_proxies=F }
     }
     
+    # 3.4 Calculate the anomalies
+    if (anomaly_assim){
+      ti=which(floor(realprox.allts$time)>=(cyr-35) &
+               floor(realprox.allts$time)<=(cyr+35))
+      sts=ti[1]
+      ets=ti[length(ti)]
+      realprox.tmp=realprox.allts
+      realprox.tmp$data=realprox.allts$data[,sts:ets]
+      realprox.tmp$time=realprox.allts$time[sts:ets]
+      realprox.anom <- realprox
+      if (pseudo_prox) {
+        realprox.anom$data <- (realprox$data - apply(realprox.tmp$data,1,mean,na.rm=T))
+      } else {
+        realprox.anom$data <- (realprox$data - (apply(array(realprox.tmp$data,
+                               c(nrow(realprox.tmp$data), 2, ncol(realprox.tmp$data)/2)), 
+                               1:2, mean,na.rm=T)))
+      }
+      realprox <- realprox.anom
+    }
+    
+    # 3.4.5 Sort proxies by residuals 
+    if (best2worst) {
+      pos <- order(realprox$var_residu)
+    } else {
+      pos <- rev(order(realprox$var_residu))
+    }
+    if (pseudo_prox) {
+      realprox$data <- realprox$data[pos]
+    } else {
+      realprox$data <- realprox$data[pos,]
+    }
+    realprox$lon <- realprox$lon[pos]
+    realprox$lat <- realprox$lat[pos]
+    realprox$archivetype <- NULL
+    realprox$elevation <- NULL
+    realprox$parameter <- NULL
+    realprox$mr <- realprox$mr[pos,]
+    realprox$names <- realprox$names[pos]
+    realprox$var_residu <- realprox$var_residu[pos]
+ 
+      
+    # 3.5 Create a list named proxies
+    # real trw proxy multiple regression approach
+    if (!instrumental) {
+      realprox$sour <- rep('prox',length(realprox$lon))
+      realprox.allts$sour <- rep('prox',length(realprox$lon))
+      if (reduced_proxies) {
+        every <- 12
+        redpos <-seq(1,length(realprox$lon),every)
+        realprox$lon <- realprox$lon[redpos]
+        realprox$lat <- realprox$lat[redpos]
+        realprox$data <- realprox$data[redpos,]
+        realprox$names <- realprox$names[redpos]
+        realprox$sour <- realprox$sour[redpos]
+        realprox.allts$lon <- realprox.allts$lon[redpos]
+        realprox.allts$lat <- realprox.allts$lat[redpos]
+        realprox.allts$data <- realprox.allts$data[redpos,]
+        realprox.allts$names <- realprox.allts$names[redpos]
+        realprox.allts$sour <- realprox.allts$sour[redpos]
+      }
+      proxies<-list(data=realprox$data, lon=realprox$lon,
+                    lat=realprox$lat, names=realprox$names, sour=realprox$sour,
+                    height=realprox$elevation, time=realprox$time,
+                    mr=realprox$mr, var_residu=realprox$var_residu,
+                    numavg=rep(1,length(realprox$lon)))
+    }
+    
+    # 3.6 Set real_proxies to FALSE if there is no data  
+    if (!pseudo_prox) {  
+      if (dim(realprox$data)[1]==0) { real_proxies=F }
+    }
   }
   
   
@@ -975,7 +1076,7 @@ for (cyr in syr2:eyr) {
   # 5.2 Qualtiy check of the data
   # 5.3 Calculating the anomalies and transforming them to Oct-Sept time period
   # 5.4 Treat multiple data in the same grid box
-  # 5.5 Combaining all type of instrumental data
+  # 5.5 Combining all type of instrumental data
   # 5.6 Mask other data if there is instrumental data in same grid box at that time
   # 5.7 Use every ??th (see code below) proxy record
   # 5.8 Add data source
@@ -1174,8 +1275,8 @@ for (cyr in syr2:eyr) {
     }
     
     # 5.4.2 First proxy per echam grid box
-    if (first_obs_per_grid) {
-      res <- firstproxres
+    if (first_inst_per_grid) {
+      res <- firstinstres
       newgrid <- echam
       newgrid$data <- NULL
       newgrid$ensmean <- NULL
@@ -1214,7 +1315,7 @@ for (cyr in syr2:eyr) {
       }
       
       if (real_proxies) {
-        print("DON'T USE FIRST_OBS_PER_GRID IF YOU WANT TO INCLUDE REAL PROXY DATA AND 
+        print("DON'T USE FIRST_INST_PER_GRID IF YOU WANT TO INCLUDE REAL PROXY DATA AND 
               INSTRUMENTALS AT THE SAME TIME")
       }  
       }
@@ -1292,7 +1393,7 @@ for (cyr in syr2:eyr) {
       }
     } 
     
-    # 5.5 Combaining all type of instrumental data
+    # 5.5 Combining all type of instrumental data
     if (ghcn_prec) {
       inst<-list(data=t(cbind(inst_t$data,inst_p$data,inst_slp$data)),
                  lon=c(inst_t$lon,inst_p$lon,inst_slp$lon),
@@ -1461,7 +1562,7 @@ for (cyr in syr2:eyr) {
                     mr=rbind(proxies$mr,tmpmr), var_residu=c(realprox$var_residu,tmpres),
                     numavg=c(proxies$numavg,tmpnum3))
     }
-    } # end "if (instrumental)"
+  } # end "if (instrumental)"
   
   
   
@@ -1482,8 +1583,19 @@ for (cyr in syr2:eyr) {
   # 7. Compute H (forward operator)
   #########################################################################################
   if ((real_proxies) & (!instrumental) & (!docum) & (!sixmonstatevector)) {
-    Hcal <- Matrix(compute_H_proxy(realprox, echam, realprox$mr, threshold=700), 
-                   sparse=T)
+    if (pseudo_prox) {
+      Hcal <- compute_Hi_Hredux_pseudoproxy(realprox, echam, realprox$mr, threshold=700)
+      H.i <- array(NA,c(nrow(Hcal),(ncol(Hcal))/2))
+      Hredux <- H.i
+      H.i[1:nrow(Hcal),]<-Hcal[,seq(1,ncol(Hcal),2)] 
+      Hredux[1:nrow(Hcal),]<-Hcal[,seq(2,ncol(Hcal),2)] 
+      H.i[H.i==0] <- NA
+      Hredux[Hredux==0] <- NA
+    } else {
+      # does this work with Hi and Hredox already? Guess not
+      Hcal <- Matrix(compute_H_proxy(realprox, echam, realprox$mr, threshold=700), 
+                     sparse=T)
+    }
   }
   if (sixmonstatevector) {  
     # next 3 lines: solve problem of distance calc with NA in compute_dist function
@@ -1560,17 +1672,20 @@ for (cyr in syr2:eyr) {
     # R is simply the squared random error assumed for instr. data because we assume
     # the error would be spatially uncorrelated
     # set squared error R to 1 for 1degC measurement error
-    if (sixmonstatevector) {
+    if (sixmonstatevector | pseudo_prox) {
       if ((real_proxies) & ((instrumental) | (docum))) { 
         Rcal <- c(temp2=0.9, precip=50, slp=10)[calibrate$names]
         #        if (avg_prox_per_grid) {Rcal <- Rcal*(1/calibrate$numavg)}
         Rcal[calibrate$names=="prox"] <- realprox$var_residu
+        Rcal[calibrate$sour=="prox"] <- realprox$var_residu
         # previously used residuals/2 for 1. paper version to give proxies more weight
         # better delete "/2"
         # probably should have given instrumentals more error instead!
         Rcal[calibrate$sour=="doc"] <- 0.25 # equals 0.5 std. dev.
       } else if ((real_proxies) & (!instrumental) & (!docum)) { 
-        Rcal <- realprox$var_residu #/ 10 # devision to make proxy error smaller and update larger
+        Rcal <- realprox$var_residu # *2 to increase the possibly underestimated 
+        # error and prohibit overcorrection if using thousands of proxy records
+        #/ 10 # devision to make proxy error smaller and update larger
         Rcal[which(is.na(Rcal))] <- 0
       } else if (((instrumental) | (docum)) & (!real_proxies)) { 
         Rcal <- c(temp2=0.9, precip=50, slp=10)[calibrate$names]
@@ -1590,13 +1705,13 @@ for (cyr in syr2:eyr) {
         ananomallts = echanomallts
         ananomallts$data <- echanomallts$data - as.vector(echanomallts$ensmean)
       }
-      nmonths <- 6
+      #nmonths <- 6
       ndim <- nrow(analysis$data)
       ntim <- ncol(analysis$data)
       nens <- dim(analysis$data)[3]
-      nprox <- nrow(calibrate$data) 
-      ndimold <- length(echam$lon) / nmonths
-      itime <- rep(1:nmonths, each=ndimold)
+      nprox <- nrow(calibrate$data)  
+      #ndimold <- length(echam$lon) / nmonths
+      #itime <- rep(1:nmonths, each=ndimold)
       if (landcorr) {
         corland_analysis <- landcorrected.anom
       }
@@ -1821,13 +1936,13 @@ for (cyr in syr2:eyr) {
             looanalysis <- echam
             # take anomalies
             looanalysis$data <- echam$data - as.vector(echam$ensmean)
-            nmonths <- 6
+            #nmonths <- 6
             ndim <- nrow(looanalysis$data)
             ntim <- ncol(looanalysis$data)
             nens <- dim(looanalysis$data)[3]
             nprox <- nrow(loocalibrate$data) 
-            ndimold <- length(echam$lon) / nmonths
-            itime <- rep(1:nmonths, each=ndimold)
+            #ndimold <- length(echam$lon) / nmonths
+            #itime <- rep(1:nmonths, each=ndimold)
             i=1
             # compute loop over obs first to minimize repetition of computation (e.g. H and weights)
             for (j in 1:nprox){
@@ -1961,16 +2076,17 @@ for (cyr in syr2:eyr) {
         print(proc.time() - ptm2)
       } # end loo if
       
-    } else {      
-      R = array(1,c(nrow(Hcal), s))
-      R[calibrate$names=='precip',]<-try(abs(calibrate$data[calibrate$names=='precip',]
-                                             *0.5))  
-      R[calibrate$names=='slp',]<-try(abs(calibrate$data[calibrate$names=='slp',]
-                                          *0.1))  
-      R[which(is.na(R))] <- 0
-      if (fortran_ensrf) {calibrate$data[is.na(calibrate$data)]=9e36}  
-      analysis <- EnSRF_new(echam, calibrate,  R=R, Hcal=Hcal, weights=d.weights_all)
-      #      analysis <- EnSRF4(echam, calibrate,  R=R, Hcal=Hcal, weights=d.weights_all)
+    } else {  
+      stop('old fortran function not tested for a long time')
+      # R = array(1,c(nrow(Hcal), s))
+      # R[calibrate$names=='precip',]<-try(abs(calibrate$data[calibrate$names=='precip',]
+      #                                        *0.5))  
+      # R[calibrate$names=='slp',]<-try(abs(calibrate$data[calibrate$names=='slp',]
+      #                                     *0.1))  
+      # R[which(is.na(R))] <- 0
+      # if (fortran_ensrf) {calibrate$data[is.na(calibrate$data)]=9e36}  
+      # analysis <- EnSRF_new(echam, calibrate,  R=R, Hcal=Hcal, weights=d.weights_all)
+      # #      analysis <- EnSRF4(echam, calibrate,  R=R, Hcal=Hcal, weights=d.weights_all)
       if (vali) {
         if (every2grid){
           save(analysis,echam,validate,calibrate, #calibrate.allts,

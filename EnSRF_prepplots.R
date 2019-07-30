@@ -12,11 +12,11 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 syr=1902 #1902 #1941
-eyr=1990 #2003 #1970
+eyr=2000 #2003 #1970
 
 # syrtot and eyrtot are only used for the total 400 yr indices time series 
-syrtot=1902 #set to the same syr and eyr of the prepplots script (default 1602)
-eyrtot=1990 #(default 2000) 
+#syrtot=1902 #set to the same syr and eyr of the prepplots script (default 1602)
+#eyrtot=1905 #(default 2000) 
 
 
 # read syr and eyr from Rscript parameters entered in bash and 
@@ -838,275 +838,275 @@ if (write_netcdf) {
 
 
 
-
-# loads yearly saved indices and merges timesteps (for whole period e.g. 1600-2004 should not generate to huge files)
-if (mergetime_indices){
-  print('mergetime_indices')
-  allvindts<-list()
-  
-  for (cyr in syrtot:(eyrtot)) {
-    #print(paste('year',cyr))
-    if (cyr >= min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)]) & cyr<=max(c(eyr_cru,eyr_twentycr,eyr_recon)[c(vali_cru, vali_twentycr, vali_recon)])) {        # if we don't use reconvali, the eyr here should be changed (Error in valiall : object 'valiall' not found) -> but then instead of the eyr we should use cyr
-      vali=T                 # switch off prepplot if no vali data selected
-    } else {
-      vali=F
-    }
-    if ((cyr > syr_cru) & (cyr <=eyr_cru) & vali_cru) {
-      cru_vali=T             # monthly CRU TS3 temp, precip and HADSLP2 gridded instrumentals (1901-2004)
-      #  ind_recon=T            # Stefan's reconstructed indices until 1948 and NCAR reanalysis later added to CRU
-    } else {
-      cru_vali=F 
-      #  ind_recon=F
-    }
-    if ((cyr > syr_twentycr) & (cyr <=eyr_twentycr)& vali_twentycr) {
-      twentycr_vali=T             
-    } else {
-      twentycr_vali=F 
-    }
-    
-    if ((cyr > syr_recon) & (cyr <=eyr_recon) & vali_recon) {
-      recon_vali=T           # seasonal luterbacher, pauling, kuettel recons (1750-1999)
-    } else {
-      recon_vali=F
-    }
-    #print(paste("recon_vali=",recon_vali))
-    #print(paste("vali=",vali))
-    
-    if (every2grid) {
-      load(file=paste0(prepplotdir,'analysis_',cyr,'_2ndgrid.Rdata')) 
-    } else {
-      load(file=paste0(prepplotdir,'analysis_',cyr,'.Rdata')) 
-    }
-    rm(analysis,analysis.anom,calibrate,echam,echam.anom,validate)
-    if (tps_only) {
-      eind<-convert_to_tps_only(eind)
-      aind<-convert_to_tps_only(aind)
-      eind.anom<-convert_to_tps_only(eind.anom)
-      aind.anom<-convert_to_tps_only(aind.anom)
-      if (vali){
-        valiname = names(vind)
-        vind_init <- vind
-        vind_all <- list()
-        l=0
-        for (v in valiname){  ## for multiple vali data sets
-          l=l+1
-          #print(v)
-          vind<-vind_init[[v]]
-          vind<-convert_to_tps_only(vind)
-          vind_all[[l]]<-vind
-        }
-        names(vind_all)<-valiname
-        vind<-vind_all
-      }
-    }
-    
-    # merges timesteps into allts variables
-    if (cyr == syr) {
-      aind.allts=aind
-      eind.allts=eind
-      c.allts<-eind.anom
-      aind.anom.allts<-aind.anom
-      eind.anom.allts<-eind.anom
-      if (monthly_out) {
-        aind.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
-        eind.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
-        aind.anom.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
-        eind.anom.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
-      } else {
-        aind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
-        eind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
-        aind.anom.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
-        eind.anom.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
-      }
-    } else {
-      aind.allts$data=abind(aind.allts$data,aind$data,along=2)
-      aind.allts$ensmean=cbind(aind.allts$ensmean,aind$ensmean)
-      eind.allts$data=abind(eind.allts$data,eind$data,along=2)
-      eind.allts$ensmean=cbind(eind.allts$ensmean,eind$ensmean)
-      aind.anom.allts$data=abind(aind.anom.allts$data,aind.anom$data,along=2)
-      aind.anom.allts$ensmean=cbind(aind.anom.allts$ensmean,aind.anom$ensmean)
-      eind.anom.allts$data=abind(eind.anom.allts$data,eind.anom$data,along=2)
-      eind.anom.allts$ensmean=cbind(eind.anom.allts$ensmean,eind.anom$ensmean)
-      
-      if (monthly_out) {
-        aind.allts$time=c(aind.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
-        eind.allts$time=c(eind.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
-        aind.anom.allts$time=c(aind.anom.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
-        eind.anom.allts$time=c(eind.anom.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
-      } else {
-        aind.allts$time=c(aind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
-        eind.allts$time=c(eind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
-        aind.anom.allts$time=c(aind.anom.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
-        eind.anom.allts$time=c(eind.anom.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
-      }
-    }
-    
-    # adapted by Nevin: 
-    # looks complicated but only combines the yearly data into allts variables
-    # control flows are complicated because of possible different time periods of validation sets which are combined together into one list (called validate and vind)
-    # only tested for CRU and 20CR combined
-    
-    # asks whether the cyr is a starting year of a validation dataset
-    if (cyr %in% c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)]|((syr==cyr)&syr>= min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)]))){
-      valiname = names(vind)
-      vind_init<-vind
-      # it still can jump into this part even when one validation set already is running. Here it checks if it's the first time a validation set is started.
-      if (exists("vind.allts")){
-        vind.allts_init<-vind.allts
-      } else {
-        vind.allts_init<-vind
-      }
-      vind_all<-list()
-      vind.allts_all<- list()
-      l=0
-      for (v in valiname){  ## for multiple vali data sets
-        l=l+1
-        #print(v)
-        vind<-vind_init[[v]]
-        # if one vali set already runs and a new one starts now it checks here if v is the new one or not.
-        if (v %in% names(allvindts)) {
-          vind.allts<-vind.allts_init[[v]]
-          vind.allts$data=cbind(vind.allts$data,vind$data)
-          vind.allts$ensmean=cbind(vind.allts$ensmean,vind$ensmean)
-          if (monthly_out) {
-            vind.allts$time=c(vind.allts$time,seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
-          } else {
-            vind.allts$time=c(vind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
-          }
-        } else {
-          vind.allts<-vind_init[[v]]
-          if (monthly_out) {
-            vind.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
-          } else {
-            vind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
-          }
-        }
-        vind_all[[l]] <- vind
-        vind.allts_all[[l]] <- vind.allts
-      }
-      names(vind_all) <- valiname
-      vind <- vind_all
-      names(vind.allts_all) <- valiname
-      vind.allts <- vind.allts_all
-      
-    } else if (vali) {
-      valiname <- names(vind)
-      vind_init <- vind
-      vind.allts_init <- vind.allts
-      vind_all <- list()
-      vind.allts_all <- list()
-      l=0
-      for (v in valiname) {  ## for multiple vali data sets
-        l=l+1
-        #print(v)
-        vind <- vind_init[[v]]
-        vind.allts <- vind.allts_init[[v]]
-        vind.allts$data <- cbind(vind.allts$data,vind$data)
-        vind.allts$ensmean <- cbind(vind.allts$ensmean,vind$ensmean)
-        if (monthly_out) {
-          vind.allts$time=c(vind.allts$time,seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
-        } else {
-          vind.allts$time=c(vind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
-        }
-        # if yearly output of indices is wanted this can be uncommented
-        # if(yearly_out){
-        #   vind.allts<-convert_to_yearly(vind.allts,s)
-        # }
-        vind_all[[l]] <- vind
-        vind.allts_all[[l]] <- vind.allts
-      }
-      names(vind_all) <- valiname
-      vind <- vind_all
-      names(vind.allts_all) <- valiname
-      vind.allts <- vind.allts_all
-    }
-    # stores validate.allts into allvalits for the next year to check then whether the validation set already was running in the previous year
-    if(vali){
-      allvindts <- vind.allts
-    }
-  } # end loop over years
-  
-  # JF 01/2019: calc vind.anom
-  vind.anom <- vind.clim <- vind.allts 
-  l=0
-  for (v in valiname) {  ## for multiple vali data sets
-    l=l+1
-    winpos <- seq(1,ncol(vind.allts[[l]]$data),2)
-    sumpos <- seq(2,ncol(vind.allts[[l]]$data),2)
-    vind.clim[[l]]$ensmean[,winpos] <- vind.clim[[l]]$data[,winpos] <- apply(vind.allts[[l]]$data[,winpos],1,mean,na.rm=T)
-    vind.clim[[l]]$ensmean[,sumpos] <- vind.clim[[l]]$data[,sumpos] <- apply(vind.allts[[l]]$data[,sumpos],1,mean,na.rm=T)
-    vind.anom[[l]]$ensmean <- vind.anom[[l]]$data <- vind.allts[[l]]$data - vind.clim[[l]]$data
-  }
-  vind.tot <- vind.allts
-  vind.anom.tot <- vind.anom
-  aind.tot <- aind.allts
-  eind.tot <- eind.allts
-  eind.anom.tot <- eind.anom.allts
-  aind.anom.tot <- aind.anom.allts
-  if (monthly_out) {
-    stop("insert spos and epos for monthly plots! Not coded yet")
-  } else if (pseudo_prox) {
-    spos <- which(vind.tot[[1]]$time == syrtot)
-    epos <- which(vind.tot[[1]]$time == eyrtot)
-  } else {
-    spos <- which(vind.tot[[1]]$time == syrtot)
-    epos <- which(vind.tot[[1]]$time == paste0(eyrtot,'.5'))
-  }
-  vind <- vind.tot
-  vind.anom <- vind.anom.tot
-  l=0
-  for (v in valiname) {  ## for multiple vali data sets
-    l=l+1
-    vind[[l]]$ensmean <- vind[[l]]$data <- vind.tot[[l]]$data[,spos:epos]
-    vind.anom[[l]]$ensmean <- vind.anom[[l]]$data <- vind.anom.tot[[l]]$data[,spos:epos]
-  }
-  vind.anom$time <- vind$time <- vind.tot$time[spos:epos]
-  
-  eind$ensmean <- eind.allts$ensmean[,spos:epos]
-  eind$data <- eind.tot$data[,spos:epos,]
-  eind$time <- eind.allts$time[spos:epos]
-  eind.anom$ensmean <- eind.anom.allts$ensmean[,spos:epos]
-  eind.anom$data <- eind.anom.allts$data[,spos:epos,]
-  eind.anom$time <- eind.allts$time[spos:epos]
-  
-  aind$ensmean <- aind.allts$ensmean[,spos:epos]
-  aind$data <- aind.tot$data[,spos:epos,]
-  aind$time <- aind.allts$time[spos:epos]
-  aind.anom$ensmean <- aind.anom.allts$ensmean[,spos:epos]
-  aind.anom$data <- aind.anom.allts$data[,spos:epos,]
-  aind.anom$time <- aind.allts$time[spos:epos] 
-  
-  if (every2grid) {
-    if (monthly_out) {
-      save(aind,vind,eind,aind.anom,eind.anom,vind.anom,
-           aind.tot,vind.tot,eind.tot,aind.anom.tot,eind.anom.tot,vind.anom.tot,
-           file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syr,"-",eyr,"_monthly_2ndgrid.Rdata"))
-    } else if (pseudo_prox) {
-      save(aind,vind,eind,aind.anom,eind.anom,vind.anom, 
-           aind.tot,vind.tot,eind.tot,aind.anom.tot,eind.anom.tot,vind.anom.tot,
-           file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syr,"-",eyr,"_annual_2ndgrid.Rdata"))
-    } else {
-      save(aind,vind,eind,aind.anom,eind.anom,vind.anom, 
-           aind.tot,vind.tot,eind.tot,aind.anom.tot,eind.anom.tot,vind.anom.tot,
-           file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
-    }  
-  } else {
-    if (monthly_out) {
-      save(aind,vind,eind,aind.anom,eind.anom,vind.anom,
-           aind.tot,vind.tot,eind.tot,aind.anom.tot,eind.anom.tot,vind.anom.tot,
-           file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syr,"-",eyr,"_monthly.Rdata"))
-    } else if (pseudo_prox) {
-      save(aind,vind,eind,aind.anom,eind.anom,vind.anom,
-           aind.tot,vind.tot,eind.tot,aind.anom.tot,eind.anom.tot,vind.anom.tot,
-           file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syr,"-",eyr,"_annual.Rdata"))  
-    } else {
-      save(aind,vind,eind,aind.anom,eind.anom,vind.anom,
-           aind.tot,vind.tot,eind.tot,aind.anom.tot,eind.anom.tot,vind.anom.tot,
-           file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syr,"-",eyr,"_seasonal.Rdata"))
-    }
-  }
-  rm(allvindts,vind.allts,eind.allts,aind.allts)
-} # end mergetime_indices
+# 
+# # loads yearly saved indices and merges timesteps (for whole period e.g. 1600-2004 should not generate too huge files)
+# if (mergetime_indices){
+#   print('mergetime_indices')
+#   allvindts<-list()
+#   
+#   for (cyr in syrtot:(eyrtot)) {
+#     #print(paste('year',cyr))
+#     if (cyr >= min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)]) & cyr<=max(c(eyr_cru,eyr_twentycr,eyr_recon)[c(vali_cru, vali_twentycr, vali_recon)])) {        # if we don't use reconvali, the eyr here should be changed (Error in valiall : object 'valiall' not found) -> but then instead of the eyr we should use cyr
+#       vali=T                 # switch off prepplot if no vali data selected
+#     } else {
+#       vali=F
+#     }
+#     if ((cyr > syr_cru) & (cyr <=eyr_cru) & vali_cru) {
+#       cru_vali=T             # monthly CRU TS3 temp, precip and HADSLP2 gridded instrumentals (1901-2004)
+#       #  ind_recon=T            # Stefan's reconstructed indices until 1948 and NCAR reanalysis later added to CRU
+#     } else {
+#       cru_vali=F 
+#       #  ind_recon=F
+#     }
+#     if ((cyr > syr_twentycr) & (cyr <=eyr_twentycr)& vali_twentycr) {
+#       twentycr_vali=T             
+#     } else {
+#       twentycr_vali=F 
+#     }
+#     
+#     if ((cyr > syr_recon) & (cyr <=eyr_recon) & vali_recon) {
+#       recon_vali=T           # seasonal luterbacher, pauling, kuettel recons (1750-1999)
+#     } else {
+#       recon_vali=F
+#     }
+#     #print(paste("recon_vali=",recon_vali))
+#     #print(paste("vali=",vali))
+#     
+#     if (every2grid) {
+#       load(file=paste0(prepplotdir,'analysis_',cyr,'_2ndgrid.Rdata')) 
+#     } else {
+#       load(file=paste0(prepplotdir,'analysis_',cyr,'.Rdata')) 
+#     }
+#     rm(analysis,analysis.anom,calibrate,echam,echam.anom,validate)
+#     if (tps_only) {
+#       eind<-convert_to_tps_only(eind)
+#       aind<-convert_to_tps_only(aind)
+#       eind.anom<-convert_to_tps_only(eind.anom)
+#       aind.anom<-convert_to_tps_only(aind.anom)
+#       if (vali){
+#         valiname = names(vind)
+#         vind_init <- vind
+#         vind_all <- list()
+#         l=0
+#         for (v in valiname){  ## for multiple vali data sets
+#           l=l+1
+#           #print(v)
+#           vind<-vind_init[[v]]
+#           vind<-convert_to_tps_only(vind)
+#           vind_all[[l]]<-vind
+#         }
+#         names(vind_all)<-valiname
+#         vind<-vind_all
+#       }
+#     }
+#     
+#     # merges timesteps into allts variables
+#     if (cyr == syrtot) {
+#       aind.allts=aind
+#       eind.allts=eind
+#       c.allts<-eind.anom
+#       aind.anom.allts<-aind.anom
+#       eind.anom.allts<-eind.anom
+#       if (monthly_out) {
+#         aind.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
+#         eind.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
+#         aind.anom.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
+#         eind.anom.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
+#       } else {
+#         aind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
+#         eind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
+#         aind.anom.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
+#         eind.anom.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
+#       }
+#     } else {
+#       aind.allts$data=abind(aind.allts$data,aind$data,along=2)
+#       aind.allts$ensmean=cbind(aind.allts$ensmean,aind$ensmean)
+#       eind.allts$data=abind(eind.allts$data,eind$data,along=2)
+#       eind.allts$ensmean=cbind(eind.allts$ensmean,eind$ensmean)
+#       aind.anom.allts$data=abind(aind.anom.allts$data,aind.anom$data,along=2)
+#       aind.anom.allts$ensmean=cbind(aind.anom.allts$ensmean,aind.anom$ensmean)
+#       eind.anom.allts$data=abind(eind.anom.allts$data,eind.anom$data,along=2)
+#       eind.anom.allts$ensmean=cbind(eind.anom.allts$ensmean,eind.anom$ensmean)
+#       
+#       if (monthly_out) {
+#         aind.allts$time=c(aind.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+#         eind.allts$time=c(eind.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+#         aind.anom.allts$time=c(aind.anom.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+#         eind.anom.allts$time=c(eind.anom.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+#       } else {
+#         aind.allts$time=c(aind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+#         eind.allts$time=c(eind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+#         aind.anom.allts$time=c(aind.anom.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+#         eind.anom.allts$time=c(eind.anom.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+#       }
+#     }
+#     
+#     # adapted by Nevin: 
+#     # looks complicated but only combines the yearly data into allts variables
+#     # control flows are complicated because of possible different time periods of validation sets which are combined together into one list (called validate and vind)
+#     # only tested for CRU and 20CR combined
+#     
+#     # asks whether the cyr is a starting year of a validation dataset
+#     if (cyr %in% c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)]|((syrtot==cyr)&syrtot>= min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)]))){
+#       valiname = names(vind)
+#       vind_init<-vind
+#       # it still can jump into this part even when one validation set already is running. Here it checks if it's the first time a validation set is started.
+#       if (exists("vind.allts")){
+#         vind.allts_init<-vind.allts
+#       } else {
+#         vind.allts_init<-vind
+#       }
+#       vind_all<-list()
+#       vind.allts_all<- list()
+#       l=0
+#       for (v in valiname){  ## for multiple vali data sets
+#         l=l+1
+#         #print(v)
+#         vind<-vind_init[[v]]
+#         # if one vali set already runs and a new one starts now it checks here if v is the new one or not.
+#         if (v %in% names(allvindts)) {
+#           vind.allts<-vind.allts_init[[v]]
+#           vind.allts$data=cbind(vind.allts$data,vind$data)
+#           vind.allts$ensmean=cbind(vind.allts$ensmean,vind$ensmean)
+#           if (monthly_out) {
+#             vind.allts$time=c(vind.allts$time,seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+#           } else {
+#             vind.allts$time=c(vind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+#           }
+#         } else {
+#           vind.allts<-vind_init[[v]]
+#           if (monthly_out) {
+#             vind.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
+#           } else {
+#             vind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
+#           }
+#         }
+#         vind_all[[l]] <- vind
+#         vind.allts_all[[l]] <- vind.allts
+#       }
+#       names(vind_all) <- valiname
+#       vind <- vind_all
+#       names(vind.allts_all) <- valiname
+#       vind.allts <- vind.allts_all
+#       
+#     } else if (vali) {
+#       valiname <- names(vind)
+#       vind_init <- vind
+#       vind.allts_init <- vind.allts
+#       vind_all <- list()
+#       vind.allts_all <- list()
+#       l=0
+#       for (v in valiname) {  ## for multiple vali data sets
+#         l=l+1
+#         #print(v)
+#         vind <- vind_init[[v]]
+#         vind.allts <- vind.allts_init[[v]]
+#         vind.allts$data <- cbind(vind.allts$data,vind$data)
+#         vind.allts$ensmean <- cbind(vind.allts$ensmean,vind$ensmean)
+#         if (monthly_out) {
+#           vind.allts$time=c(vind.allts$time,seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+#         } else {
+#           vind.allts$time=c(vind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+#         }
+#         # if yearly output of indices is wanted this can be uncommented
+#         # if(yearly_out){
+#         #   vind.allts<-convert_to_yearly(vind.allts,s)
+#         # }
+#         vind_all[[l]] <- vind
+#         vind.allts_all[[l]] <- vind.allts
+#       }
+#       names(vind_all) <- valiname
+#       vind <- vind_all
+#       names(vind.allts_all) <- valiname
+#       vind.allts <- vind.allts_all
+#     }
+#     # stores validate.allts into allvalits for the next year to check then whether the validation set already was running in the previous year
+#     if(vali){
+#       allvindts <- vind.allts
+#     }
+#   } # end loop over years
+#   
+#   # JF 01/2019: calc vind.anom
+#   vind.anom <- vind.clim <- vind.allts 
+#   l=0
+#   for (v in valiname) {  ## for multiple vali data sets
+#     l=l+1
+#     winpos <- seq(1,ncol(vind.allts[[l]]$data),2)
+#     sumpos <- seq(2,ncol(vind.allts[[l]]$data),2)
+#     vind.clim[[l]]$ensmean[,winpos] <- vind.clim[[l]]$data[,winpos] <- apply(vind.allts[[l]]$data[,winpos],1,mean,na.rm=T)
+#     vind.clim[[l]]$ensmean[,sumpos] <- vind.clim[[l]]$data[,sumpos] <- apply(vind.allts[[l]]$data[,sumpos],1,mean,na.rm=T)
+#     vind.anom[[l]]$ensmean <- vind.anom[[l]]$data <- vind.allts[[l]]$data - vind.clim[[l]]$data
+#   }
+#   vind.tot <- vind.allts
+#   vind.anom.tot <- vind.anom
+#   aind.tot <- aind.allts
+#   eind.tot <- eind.allts
+#   eind.anom.tot <- eind.anom.allts
+#   aind.anom.tot <- aind.anom.allts
+#   if (monthly_out) {
+#     stop("insert spos and epos for monthly plots! Not coded yet")
+#   } else if (pseudo_prox) {
+#     spos <- which(vind.tot[[1]]$time == syrtot)
+#     epos <- which(vind.tot[[1]]$time == eyrtot)
+#   } else {
+#     spos <- which(vind.tot[[1]]$time == syrtot)
+#     epos <- which(vind.tot[[1]]$time == paste0(eyrtot,'.5'))
+#   }
+#   vind <- vind.tot
+#   vind.anom <- vind.anom.tot
+#   l=0
+#   for (v in valiname) {  ## for multiple vali data sets
+#     l=l+1
+#     vind[[l]]$ensmean <- vind[[l]]$data <- vind.tot[[l]]$data[,spos:epos]
+#     vind.anom[[l]]$ensmean <- vind.anom[[l]]$data <- vind.anom.tot[[l]]$data[,spos:epos]
+#   }
+#   vind.anom$time <- vind$time <- vind.tot$time[spos:epos]
+#   
+#   eind$ensmean <- eind.allts$ensmean[,spos:epos]
+#   eind$data <- eind.tot$data[,spos:epos,]
+#   eind$time <- eind.allts$time[spos:epos]
+#   eind.anom$ensmean <- eind.anom.allts$ensmean[,spos:epos]
+#   eind.anom$data <- eind.anom.allts$data[,spos:epos,]
+#   eind.anom$time <- eind.allts$time[spos:epos]
+#   
+#   aind$ensmean <- aind.allts$ensmean[,spos:epos]
+#   aind$data <- aind.tot$data[,spos:epos,]
+#   aind$time <- aind.allts$time[spos:epos]
+#   aind.anom$ensmean <- aind.anom.allts$ensmean[,spos:epos]
+#   aind.anom$data <- aind.anom.allts$data[,spos:epos,]
+#   aind.anom$time <- aind.allts$time[spos:epos] 
+#   
+#   if (every2grid) {
+#     if (monthly_out) {
+#       save(aind,vind,eind,aind.anom,eind.anom,vind.anom,
+#            aind.tot,vind.tot,eind.tot,aind.anom.tot,eind.anom.tot,vind.anom.tot,
+#            file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_monthly_2ndgrid.Rdata"))
+#     } else if (pseudo_prox) {
+#       save(aind,vind,eind,aind.anom,eind.anom,vind.anom, 
+#            aind.tot,vind.tot,eind.tot,aind.anom.tot,eind.anom.tot,vind.anom.tot,
+#            file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_annual_2ndgrid.Rdata"))
+#     } else {
+#       save(aind,vind,eind,aind.anom,eind.anom,vind.anom, 
+#            aind.tot,vind.tot,eind.tot,aind.anom.tot,eind.anom.tot,vind.anom.tot,
+#            file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_seasonal_2ndgrid.Rdata"))
+#     }  
+#   } else {
+#     if (monthly_out) {
+#       save(aind,vind,eind,aind.anom,eind.anom,vind.anom,
+#            aind.tot,vind.tot,eind.tot,aind.anom.tot,eind.anom.tot,vind.anom.tot,
+#            file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_monthly.Rdata"))
+#     } else if (pseudo_prox) {
+#       save(aind,vind,eind,aind.anom,eind.anom,vind.anom,
+#            aind.tot,vind.tot,eind.tot,aind.anom.tot,eind.anom.tot,vind.anom.tot,
+#            file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_annual.Rdata"))  
+#     } else {
+#       save(aind,vind,eind,aind.anom,eind.anom,vind.anom,
+#            aind.tot,vind.tot,eind.tot,aind.anom.tot,eind.anom.tot,vind.anom.tot,
+#            file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_seasonal.Rdata"))
+#     }
+#   }
+#   rm(allvindts,vind.allts,eind.allts,aind.allts)
+# } # end mergetime_indices
 
 
 
@@ -1135,7 +1135,7 @@ if (mergetime_fields){
   if(syr<=min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)])){
     syr<-min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)])+1
   }
-  for (cyr in syr:(eyr)) {
+  for (cyr in syr:eyr) {
     if (cyr %% 10 == 0) {
       print(paste('load year',cyr))
     }
@@ -1170,6 +1170,12 @@ if (mergetime_fields){
     } else {
       load(file=paste0(prepplotdir,'analysis_',cyr,'.Rdata')) 
     }
+    
+    # remove next "if" again: just for 1. pseudoprox stat. offl. exp with transposed calibrate$data bug
+    if (pseudo_prox & expname=="DAPS_pseudoprox_stat_offl") {
+      calibrate$data=t(calibrate$data[,,drop=F])
+    }
+    
     cali<-calibrate # 
     if (tps_only) {
       echam<-convert_to_tps_only(echam)
@@ -1177,17 +1183,17 @@ if (mergetime_fields){
       analysis<-convert_to_tps_only(analysis)
       analysis.anom<-convert_to_tps_only(analysis.anom)
       # commented JF 01/2018
-      # eind<-convert_to_tps_only(eind)
-      # aind<-convert_to_tps_only(aind)
-      # eind.anom<-convert_to_tps_only(eind.anom)
-      # aind.anom<-convert_to_tps_only(aind.anom)
+      eind<-convert_to_tps_only(eind)
+      aind<-convert_to_tps_only(aind)
+      eind.anom<-convert_to_tps_only(eind.anom)
+      aind.anom<-convert_to_tps_only(aind.anom)
       if (vali) {
         valiname <- names(validate)
         validate_init <- validate
         validate_all <- list()
         # commented JF 01/2018
-        # vind_init <- vind
-        # vind_all <- list()
+        vind_init <- vind
+        vind_all <- list()
         l=0
         for (v in valiname) {  ## for multiple vali data sets
           l=l+1
@@ -1196,16 +1202,16 @@ if (mergetime_fields){
           validate<-convert_to_tps_only(validate)
           validate_all[[l]] <-validate
           # commented JF 01/2018
-          #vind<-vind_init[[v]]
-          #vind<-convert_to_tps_only(vind)
-          #vind_all[[l]]<-vind
+          vind<-vind_init[[v]]
+          vind<-convert_to_tps_only(vind)
+          vind_all[[l]]<-vind
         }
         names(validate_all)<-valiname
         # commented JF 01/2018
-        #names(vind_all)<-valiname
+        names(vind_all)<-valiname
         validate <- validate_all
         # commented JF 01/2018
-        #vind<-vind_all
+        vind<-vind_all
       }
     }
     
@@ -1290,24 +1296,24 @@ if (mergetime_fields){
       analysis.allts <- analysis
       analysis.anom.allts <- analysis.anom
       # commented JF 01/2018
-      #aind.allts=aind
-      #aind.anom.allts<-aind.anom
+      aind.allts=aind
+      aind.anom.allts<-aind.anom
       echam.allts <- echam
       echam.anom.allts <- echam.anom
       # commented JF 01/2018
-      # eind.allts=eind
-      # eind.anom.allts<-eind.anom
-      # if(monthly_out){
-      #   aind.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
-      #   eind.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
-      #   aind.anom.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
-      #   eind.anom.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
-      # }else{
-      #   aind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
-      #   eind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
-      #   aind.anom.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
-      #   eind.anom.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
-      # }
+      eind.allts=eind
+      eind.anom.allts<-eind.anom
+      if(monthly_out){
+        aind.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
+        eind.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
+        aind.anom.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
+        eind.anom.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
+      }else{
+        aind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
+        eind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
+        aind.anom.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
+        eind.anom.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
+      }
       
       # only instr. calibration data for period with fixed network
       # because proxies not in fixed grid format. Hence number of records
@@ -1327,7 +1333,7 @@ if (mergetime_fields){
         calibrate.allts$names=as.matrix(cali$names[pos])
         calibrate.allts$sour=as.matrix(cali$sour[pos])
       } else {
-        calibrate.allts$data=calibrate$data[pos,,drop=F]
+        calibrate.allts$data=calibrate$data[pos,,drop=F]  
         calibrate.allts$lon=as.matrix(calibrate$lon[pos])
         calibrate.allts$lat=as.matrix(calibrate$lat[pos])
         if (!pseudo_prox) {
@@ -1355,21 +1361,25 @@ if (mergetime_fields){
       echam.anom.allts$ensmean=cbind(echam.anom.allts$ensmean,echam.anom$ensmean)
       echam.anom.allts$time=c(echam.anom.allts$time,echam.anom$time)
       # commented JF 01/2018
-      # eind.allts$data=abind(eind.allts$data,eind$data,along=2)
-      # eind.allts$ensmean=cbind(eind.allts$ensmean,eind$ensmean)
-      # eind.anom.allts$data=abind(eind.anom.allts$data,eind.anom$data,along=2)
-      # eind.anom.allts$ensmean=cbind(eind.anom.allts$ensmean,eind.anom$ensmean)
-      # if(monthly_out){
-      #   aind.allts$time=c(aind.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
-      #   eind.allts$time=c(eind.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
-      #   aind.anom.allts$time=c(aind.anom.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
-      #   eind.anom.allts$time=c(eind.anom.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
-      # } else {
-      #   aind.allts$time=c(aind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
-      #   eind.allts$time=c(eind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
-      #   aind.anom.allts$time=c(aind.anom.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
-      #   eind.anom.allts$time=c(eind.anom.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
-      # }
+      eind.allts$data=abind(eind.allts$data,eind$data,along=2)
+      eind.allts$ensmean=cbind(eind.allts$ensmean,eind$ensmean)
+      eind.anom.allts$data=abind(eind.anom.allts$data,eind.anom$data,along=2)
+      eind.anom.allts$ensmean=cbind(eind.anom.allts$ensmean,eind.anom$ensmean)
+      aind.allts$data=abind(aind.allts$data,aind$data,along=2)
+      aind.allts$ensmean=cbind(aind.allts$ensmean,aind$ensmean)
+      aind.anom.allts$data=abind(aind.anom.allts$data,aind.anom$data,along=2)
+      aind.anom.allts$ensmean=cbind(aind.anom.allts$ensmean,aind.anom$ensmean)
+      if(monthly_out){
+        aind.allts$time=c(aind.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+        eind.allts$time=c(eind.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+        aind.anom.allts$time=c(aind.anom.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+        eind.anom.allts$time=c(eind.anom.allts$time, seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+      } else {
+        aind.allts$time=c(aind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+        eind.allts$time=c(eind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+        aind.anom.allts$time=c(aind.anom.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+        eind.anom.allts$time=c(eind.anom.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+      }
       
       if (all(calibrate$sour=="prox")) {
         pos <- which(calibrate$sour=="prox")
@@ -1417,72 +1427,71 @@ if (mergetime_fields){
       valiname = names(validate)
       validate_init <- validate
       # commented JF 01/2018
-      #vind_init<-vind
+      vind_init<-vind
       
       # it still can jump into this part even when one validation set already is running. Here it checks if it's the first time a validation set is started.
       if (exists("validate.allts")){
         validate.allts_init <- validate.allts
         # commented JF 01/2018
-        #  vind.allts_init<-vind.allts
+         vind.allts_init<-vind.allts
       } else {
         validate.allts_init <- validate
         # commented JF 01/2018
-        # vind.allts_init<-vind
+        vind.allts_init<-vind
       }
       validate_all <- list()
       validate.allts_all <- list()
       # commented JF 01/2018
-      # vind_all<-list()
-      # vind.allts_all<- list()
+      vind_all<-list()
+      vind.allts_all<- list()
       l=0
       for (v in valiname){  ## for multiple vali data sets
         l=l+1
         #print(v)
         validate<-validate_init[[v]]
         # commented JF 01/2018
-        # vind<-vind_init[[v]]
+        vind<-vind_init[[v]]
         # if one vali set already runs and a new one starts now it checks here if v is the new one or not.
         if (v %in% names(allvalits)){
           validate.allts <- validate.allts_init[[v]]
           # commented JF 01/2018
-          # vind.allts<-vind.allts_init[[v]]
+          vind.allts<-vind.allts_init[[v]]
           validate.allts$data=cbind(validate.allts$data,validate$data)
           validate.allts$ensmean=cbind(validate.allts$ensmean,validate$ensmean)
           validate.allts$time=c(validate.allts$time,validate$time)
           # commented JF 01/2018
-          # vind.allts$data=cbind(vind.allts$data,vind$data)
-          # vind.allts$ensmean=cbind(vind.allts$ensmean,vind$ensmean)
-          # if(monthly_out){
-          #   vind.allts$time=c(vind.allts$time,seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
-          # }else{
-          #   vind.allts$time=c(vind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
-          # }
+          vind.allts$data=cbind(vind.allts$data,vind$data)
+          vind.allts$ensmean=cbind(vind.allts$ensmean,vind$ensmean)
+          if(monthly_out){
+            vind.allts$time=c(vind.allts$time,seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+          }else{
+            vind.allts$time=c(vind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+          }
         } else {
           validate.allts <- validate_init[[v]]
           # commented JF 01/2018
-          # vind.allts<-vind_init[[v]]
-          # if(monthly_out){
-          #   vind.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
-          # }else{
-          #   vind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
-          # }
+          vind.allts<-vind_init[[v]]
+          if(monthly_out){
+            vind.allts$time=seq(cyr-1,cyr+1,by=(1/nseas))[10:21]
+          }else{
+            vind.allts$time=seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)]
+          }
         }
         validate_all[[l]] <-validate
         validate.allts_all[[l]] <- validate.allts
         # commented JF 01/2018
-        # vind_all[[l]]<-vind
-        # vind.allts_all[[l]]<-vind.allts
+        vind_all[[l]]<-vind
+        vind.allts_all[[l]]<-vind.allts
       }
       names(validate_all)<-valiname
       validate <- validate_all
       names(validate.allts_all)<- valiname
       validate.allts <- validate.allts_all
       # commented JF 01/2018
-      # names(vind_all)<-valiname
-      # vind<-vind_all
-      # names(vind.allts_all)<-valiname
-      # vind.allts<-vind.allts_all
-      
+      names(vind_all)<-valiname
+      vind<-vind_all
+      names(vind.allts_all)<-valiname
+      vind.allts<-vind.allts_all
     } else if (vali){
       valiname = names(validate)
       validate_init <- validate
@@ -1490,10 +1499,10 @@ if (mergetime_fields){
       validate_all <- list()
       validate.allts_all <- list()
       # commented JF 01/2018
-      # vind_init<-vind
-      # vind.allts_init<-vind.allts
-      # vind_all<-list()
-      # vind.allts_all<- list()
+      vind_init<-vind
+      vind.allts_init<-vind.allts
+      vind_all<-list()
+      vind.allts_all<- list()
       l=0
       for (v in valiname){  ## for multiple vali data sets
         l=l+1
@@ -1501,35 +1510,34 @@ if (mergetime_fields){
         validate<-validate_init[[v]]
         validate.allts <- validate.allts_init[[v]]
         # commented JF 01/2018
-        # vind<-vind_init[[v]]
-        # vind.allts<-vind.allts_init[[v]]
+        vind<-vind_init[[v]]
+        vind.allts<-vind.allts_init[[v]]
         validate.allts$data=cbind(validate.allts$data,validate$data)
         validate.allts$ensmean=cbind(validate.allts$ensmean,validate$ensmean)
         validate.allts$time=c(validate.allts$time,validate$time)
         # commented JF 01/2018
-        # vind.allts$data=cbind(vind.allts$data,vind$data)
-        # vind.allts$ensmean=cbind(vind.allts$ensmean,vind$ensmean)
-        # if(monthly_out){
-        #   vind.allts$time=c(vind.allts$time,seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
-        # }else{
-        #   vind.allts$time=c(vind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
-        # }
-        
+        vind.allts$data=cbind(vind.allts$data,vind$data)
+        vind.allts$ensmean=cbind(vind.allts$ensmean,vind$ensmean)
+        if(monthly_out){
+          vind.allts$time=c(vind.allts$time,seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+        }else{
+          vind.allts$time=c(vind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+        }
         validate_all[[l]] <-validate
         validate.allts_all[[l]] <- validate.allts
         # commented JF 01/2018
-        # vind_all[[l]]<-vind
-        # vind.allts_all[[l]]<-vind.allts
+        vind_all[[l]]<-vind
+        vind.allts_all[[l]]<-vind.allts
       }
       names(validate_all)<-valiname
       validate <- validate_all
       names(validate.allts_all)<- valiname
       validate.allts <- validate.allts_all
       # commented JF 01/2018
-      # names(vind_all)<-valiname
-      # vind<-vind_all
-      # names(vind.allts_all)<-valiname
-      # vind.allts<-vind.allts_all
+      names(vind_all)<-valiname
+      vind<-vind_all
+      names(vind.allts_all)<-valiname
+      vind.allts<-vind.allts_all
     }
     # stores validate.allts into allvalits for the next year to check then whether the validation set already was running in the previous year
     allvalits<-validate.allts
@@ -1539,31 +1547,31 @@ if (mergetime_fields){
   # following part until save.image belongs to mergetime_fields
   echam <- echam.allts
   # commented JF 01/2018
-  # eind<-eind.allts
+  eind<-eind.allts
   echam.anom <- echam.anom.allts
   # commented JF 01/2018
-  # eind.anom<-eind.anom.allts
+  eind.anom<-eind.anom.allts
   
   #ech_ind <- ech_ind.allts
   # rm(ech_ind.allts)
   rm(echam.allts,echam.anom.allts) #, eind.allts)
   analysis <- analysis.allts
   # commented JF 01/2018
-  # aind<-aind.allts
+  aind<-aind.allts
   analysis.anom <- analysis.anom.allts
   # commented JF 01/2018
-  # aind.anom<-aind.anom.allts
+  aind.anom<-aind.anom.allts
   
   #ana_ind <- ana_ind.allts
   # rm(ana_ind.allts)
   
-  rm(analysis.allts,analysis.anom.allts) #,aind.allts,aind.anom.allts,eind.anom.allts)
+  rm(analysis.allts,analysis.anom.allts,aind.allts,aind.anom.allts,eind.anom.allts)
   
   calibrate <- calibrate.allts
   if (vali) {
     validate <- validate.allts
     # commented JF 01/2018
-    # vind<-vind.allts
+    vind<-vind.allts
     
     #  vali_ind <- vali_ind.allts
     # rm(vali_ind.allts)
@@ -1610,10 +1618,10 @@ if (mergetime_fields){
   valiname = names(validate.anom)
   validate.anom_init <- validate.anom
   # commented JF 01/2018
-  # vind.anom_all <- list()
-  # vind.anom<-list()
+  vind.anom_all <- list()
+  vind.anom<-list()
   # vind.anom.tot<-list()
-  # vanom.yrly<-list()
+  vanom.yrly<-list()
   l=1
   for (v in valiname){
     validate.anom<-validate.anom_init[[v]]
@@ -1621,39 +1629,45 @@ if (mergetime_fields){
     validate.anom$ensmean<-array(validate.anom$ensmean,c(dim(validate.anom$ensmean)[1],s,dim(validate.anom$ensmean)[2]/s))
     validate.anom$time<-array(validate.anom$time,c(s,length(validate.anom$time)/s))
     # commented JF 01/2018
-    # valitmp<-validate.anom
-    # for (i in 1:dim(validate.anom$time)[2]){
-    #   valitmp$data<-validate.anom$data[,,i]
-    #   valitmp$ensmean<-validate.anom$ensmean[,,i]
-    #   valitmp$lon<-validate.anom$lon
-    #   valitmp$lat<-validate.anom$lat
-    #   valitmp$time<-validate.anom$time[,i]
-    #   valitmp$names<-validate.anom$names
-    #   vanom.yrly[[i]]<-valitmp
-    # }
-    # vind.anom_all<-lapply(vanom.yrly,calc_indices,setname=v)
-    # vindtmp<-vind.anom_all[[1]]
-    # vindtmp$time<-validate.anom$time[,1]
-    # for(i in 2:length(vind.anom_all)){
-    #   vindtmp$data<-cbind(vindtmp$data,vind.anom_all[[i]]$data)
-    #   vindtmp$ensmean<-cbind(vindtmp$ensmean,vind.anom_all[[i]]$ensmean)
-    #   vindtmp$time<-c(vindtmp$time,validate.anom$time[,i])
-    # }
-    # if (!tps_only) {
-    #   vind.clim<-apply(vindtmp$data[35:40,],1,mean)
-    #   vindtmp$data[35:40]<-vindtmp$data[35:40,]-vind.clim
-    #   vindtmp$ensmean[35:40]<-vindtmp$ensmean[35:40,]-vind.clim 
-    # }
-    # vind.anom[[l]]<-vindtmp
-    # vind.anom.tot[[l]]<-vindtmp
+    valitmp<-validate.anom
+    for (i in 1:dim(validate.anom$time)[2]){
+      if (dim(validate.anom$data)[2]==1) {
+        valitmp$data<- t(t(validate.anom$data[,,i]))
+        valitmp$ensmean<-t(t(validate.anom$ensmean[,,i]))
+      } else {
+        valitmp$data<-validate.anom$data[,,i]
+        valitmp$ensmean<-validate.anom$ensmean[,,i]
+      }
+      valitmp$lon<-validate.anom$lon
+      valitmp$lat<-validate.anom$lat
+      valitmp$time<-validate.anom$time[,i]
+      valitmp$names<-validate.anom$names
+      vanom.yrly[[i]]<-valitmp
+    }
+    vind.anom_all<-lapply(vanom.yrly,calc_indices,setname=v)
+    vindtmp<-vind.anom_all[[1]]
+    vindtmp$time<-validate.anom$time[,1]
+    for(i in 2:length(vind.anom_all)){
+      vindtmp$data<-cbind(vindtmp$data,vind.anom_all[[i]]$data)
+      vindtmp$ensmean<-cbind(vindtmp$ensmean,vind.anom_all[[i]]$ensmean)
+      vindtmp$time<-c(vindtmp$time,validate.anom$time[,i])
+    }
+    if (!tps_only) {
+      vind.clim<-apply(vindtmp$data[35:40,],1,mean)
+      vindtmp$data[35:40]<-vindtmp$data[35:40,]-vind.clim
+      vindtmp$ensmean[35:40]<-vindtmp$ensmean[35:40,]-vind.clim
+    }
+    vind.anom[[l]]<-vindtmp
+    #vind.anom.tot[[l]]<-vindtmp
     l=l+1
   }
   validate.anom<-validate.anom_init
   # commented JF 01/2018
-  #names(vind.anom)<-valiname
+  names(vind.anom)<-valiname
   #names(vind.anom.tot)<-valiname
   #print("calc anomalies")
-  rm(v,valiname,validate_all,validate_init,validate.allts_all,validate.allts_init,validate.anom_all,validate.clim_all,validate.anom_init) #,vind.anom_all) ## commented JF 01/2018 ,vanom.yrly)
+  rm(v,valiname,validate_all,validate_init,validate.allts_all,validate.allts_init,validate.anom_all,
+     validate.clim_all,validate.anom_init,vanom.yrly)
   
   if (every2grid) {
     if (monthly_out) {
@@ -1708,29 +1722,29 @@ if (load_images){
   
   if (every2grid) {
     if (monthly_out) {
-      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syr,"-",eyr,"_monthly_2ndgrid.Rdata"))
+#      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_monthly_2ndgrid.Rdata"))
       load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
                       "_monthly_2ndgrid.Rdata",sep=""))  
     } else if (pseudo_prox) {
-      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syr,"-",eyr,"_annual_2ndgrid.Rdata"))
+#      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_annual_2ndgrid.Rdata"))
       load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
                       "_annual_2ndgrid.Rdata",sep=""))
     } else {
-      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
+#      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_seasonal_2ndgrid.Rdata"))
       load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
                       "_seasonal_2ndgrid.Rdata",sep=""))
     }  
   } else {
     if (monthly_out) {
-      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syr,"-",eyr,"_monthly.Rdata"))
+#      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_monthly.Rdata"))
       load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
                       "_monthly.Rdata",sep=""))
     } else if (pseudo_prox) {
-      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syr,"-",eyr,"_annual.Rdata"))
+#      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_annual.Rdata"))
       load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
                       "_annual.Rdata",sep=""))
     } else {
-      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syr,"-",eyr,"_seasonal.Rdata"))
+#      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syr,"-",eyr,"_seasonal.Rdata"))
       load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
                       "_seasonal.Rdata",sep=""))
     }
@@ -1840,8 +1854,8 @@ if (calc_vali_stat) {
   valiname = names(validate)
   validate_init <- validate
   validate.anom_init <- validate.anom
-  vind_init<-vind.anom.tot
-  
+  vind_init<-vind #.anom.tot
+  vind.anom_init<-vind.anom
   
   for (v in valiname){  ## for multiple vali data sets ## v -> to vname because image is imported where v might be different
     #print(v)
@@ -1858,6 +1872,7 @@ if (calc_vali_stat) {
     validate<-validate_init[[v]]
     validate.anom <- validate.anom_init[[v]]
     vind <- vind_init[[v]]
+    vind.anom <- vind.anom_init[[v]]
     
     if (nrow(echam$data)!=nrow(validate$data)) { # when 20cr_vali then nrow should be different when v="cru_vali"
       # probably could use here the shorten_func as well
@@ -1958,12 +1973,12 @@ if (calc_vali_stat) {
     bias.ech <- bias_fun(echam, y=validate, seas=s.plot)
     
     # compute validation statistics on indices
-    ecorr.ind <- corr_fun(eind.anom.allts, vind, seas=s.plot)
-    acorr.ind <- corr_fun(aind.anom.allts, vind, seas=s.plot)
-    ermse.ind <- rmse_fun(eind.anom.allts, vind, seas=s.plot)
-    armse.ind <- rmse_fun(aind.anom.allts, vind, seas=s.plot)
-    ebias.ind <- bias_fun(eind.anom.allts, vind, seas=s.plot)
-    abias.ind <- bias_fun(aind.anom.allts, vind, seas=s.plot)
+    ecorr.ind <- corr_fun(eind.anom, vind.anom, seas=s.plot)
+    acorr.ind <- corr_fun(aind.anom, vind.anom, seas=s.plot)
+    ermse.ind <- rmse_fun(eind.anom, vind.anom, seas=s.plot)
+    armse.ind <- rmse_fun(aind.anom, vind.anom, seas=s.plot)
+    ebias.ind <- bias_fun(eind.anom, vind.anom, seas=s.plot)
+    abias.ind <- bias_fun(aind.anom, vind.anom, seas=s.plot)
     RE.ind <- RE_fun(armse.ind, y=ermse.ind)
     
     if (!landcorr) {
@@ -2126,8 +2141,9 @@ if (calc_vali_stat) {
     
     validate <- validate_init
     validate.anom <- validate.anom_init
-    #vind<-vind_init
-    rm(allvalits,cali,cru4_may_sep,cru4_oct_apr,v.sum,v.win,vind,vind.allts_all,
+    vind<-vind_init
+    vind.anom<-vind.anom_init
+    rm(allvalits,cali,cru4_may_sep,cru4_oct_apr,v.sum,v.win,vind.allts_all,
        a.sum, a.win,atala,atmp,atmp2,e.abs.ll,etala,etmp,etmp2,land,landll,
        landpos,landpos2,landposv,rdat,vtmp)
     print(paste("saving",v,"..."))
@@ -2169,7 +2185,7 @@ if (calc_vali_stat) {
   } # end multiple validation data sets loop
     rm(validate.anom_init,validate_init,analysis.anom.init,analysis.init,
        calibrate.anom.init,calibrate.clim.init,calibrate.init,echam.anom.init,echam.init,
-       vind.allts_init,vind.tot.init,landpos_init)
+       vind.allts_init,landpos_init) # ,vind.tot.init
 } # end calc_vali_stat
 
 

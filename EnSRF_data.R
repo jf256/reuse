@@ -201,8 +201,6 @@ for (cyr in syr2:eyr) {
     echam_clim = echam_clim_400yr
     echam_clim$ensmean = echam_clim_400yr$data
     echam_clim$data = array(echam_clim$data, c(dim(echam_clim$data),1))
-    print(state)
-    print(echam_anom$data[1,1,])
   }
   
   
@@ -266,7 +264,7 @@ for (cyr in syr2:eyr) {
       }
     }
   }
-  
+
   if (anomaly_assim){
     # new echam_clim made by veronika have correct units
     # error where echam_anom and echam_clim were generated initially: 
@@ -283,7 +281,7 @@ for (cyr in syr2:eyr) {
           echanomallts$data[echanomallts$names=='slp',,] <- echanomallts$data[echanomallts$names=='slp',,]/100
           echanomallts$ensmean[echanomallts$names=='slp',] <- echanomallts$ensmean[echanomallts$names=='slp',]/100
         }
-    }else{
+    } else {
       echam.anom<-echam_anom
     }
     if (no_forc_big_ens) {
@@ -302,7 +300,9 @@ for (cyr in syr2:eyr) {
     } else {
       echam_clim_mon_ensmean <- echam_clim$ensmean[,c(10,11,12,1,2,3,4,5,6,7,8,9)]
     }
-    if (state=="changing") { # Roni: why I delete it only if state = "changing ?? -> I think because if it is "static" I need it in the background_matrix function
+    if (state=="changing") { # Roni: why I delete it only if state = "changing ?? 
+                             # -> I think because if it is "static" I need it in 
+                             #    the background_matrix function
       rm (echam_anom)
     }
     rm(echam_clim)
@@ -318,6 +318,7 @@ for (cyr in syr2:eyr) {
       rm(landcorrected_anom,landcorrected_clim)
     }
   }
+  print('calc time reading echam and ev. calc anom.')
   print(proc.time() - ptm1)
   
   
@@ -498,15 +499,28 @@ for (cyr in syr2:eyr) {
     echam$data <- array(apply(echam$data[,13:24,],c(1,3),mean),dim=c(dim(echam$data)[1],1,dim(echam$data)[3]))  
     echam$ensmean <- array(apply(echam$ensmean[,13:24],1,mean),dim=c(dim(echam$data)[1],1))    
     echam$time <- floor(echam$time[13])
-    if (anomaly_assim){
+    if (anomaly_assim) {
       echam.anom$data <- array(apply(echam.anom$data[,13:24,],c(1,3),mean),
                                dim=c(dim(echam.anom$data)[1],1,dim(echam.anom$data)[3]))  
       echam.anom$ensmean <- array(apply(echam.anom$ensmean[,13:24],1,mean),dim=c(dim(echam.anom$data)[1],1))  
       echam.anom$time <- floor(echam.anom$time[13]) 
-      echam.clim$data <- array(apply(echam.clim$data[,13:24,],c(1,3),mean),
-                               dim=c(dim(echam.clim$data)[1],1,dim(echam.clim$data)[3]))  
-      echam.clim$ensmean <- array(apply(echam.clim$ensmean[,13:24],1,mean),dim=c(dim(echam.clim$data)[1],1))  
-      echam.clim$time <- floor(echam.clim$time[13]) 
+      if (no_forc_big_ens) {
+        echam.clim$data <- array(apply(echam.clim$data[,1:12,],1,mean),
+                                 dim=c(dim(echam.clim$data)[1],1,dim(echam.clim$data)[3])) 
+        #echam.clim.tmp=echam.clim$data
+        #for (i in 1:29) {
+        #  echam.clim.tmp=abind(echam.clim.tmp,echam.clim$data,along=3)
+        #}
+        #echam.clim$data <- echam.clim.tmp
+        #rm(echam.clim.tmp)
+        echam.clim$ensmean <- array(apply(echam.clim$ensmean[,1:12],1,mean),dim=c(dim(echam.clim$data)[1],1))  
+        echam.clim$time <- cyr 
+      } else {
+        echam.clim$data <- array(apply(echam.clim$data[,13:24,],c(1,3),mean),
+                                 dim=c(dim(echam.clim$data)[1],1,dim(echam.clim$data)[3]))  
+        echam.clim$ensmean <- array(apply(echam.clim$ensmean[,13:24],1,mean),dim=c(dim(echam.clim$data)[1],1))  
+        echam.clim$time <- floor(echam.clim$time[13]) 
+      }
     }
     if (state=="changing" & (covarclim > 0)) {
       echanomallts$data <- array(apply(echanomallts$data[,13:24,],c(1,3),mean),
@@ -919,11 +933,11 @@ for (cyr in syr2:eyr) {
     } else {
       pos <- rev(order(realprox$var_residu))
     }
-    if (pseudo_prox) {
-      realprox$data <- realprox$data[pos]
-    } else {
-      realprox$data <- realprox$data[pos,]
-    }
+    #if (pseudo_prox) {
+    realprox$data <- realprox$data[pos,,drop=F]
+    #} else {
+    #  realprox$data <- realprox$data[pos,]
+    #}
     realprox$lon <- realprox$lon[pos]
     realprox$lat <- realprox$lat[pos]
     realprox$archivetype <- NULL
@@ -1572,7 +1586,12 @@ for (cyr in syr2:eyr) {
   #########################################################################################
   
   calibrate <- proxies
-  print(paste('number of proxies/observations:',dim(calibrate$data)[1]))
+  if (is.null(dim(proxies$data))) {
+    calibrate$data <- t(proxies$data)
+    print(paste('number of proxies/observations:',length(calibrate$data)))
+  } else {
+    print(paste('number of proxies/observations:',dim(calibrate$data)[1]))  
+  }
   print("calc time preparing proxies")
   print(proc.time() - ptm1)
   
@@ -1709,7 +1728,11 @@ for (cyr in syr2:eyr) {
       ndim <- nrow(analysis$data)
       ntim <- ncol(analysis$data)
       nens <- dim(analysis$data)[3]
-      nprox <- nrow(calibrate$data)  
+      #if (pseudo_prox) {
+      #  nprox <- length(calibrate$data)  
+      #} else {
+      nprox <- nrow(calibrate$data)    
+      #}
       #ndimold <- length(echam$lon) / nmonths
       #itime <- rep(1:nmonths, each=ndimold)
       if (landcorr) {

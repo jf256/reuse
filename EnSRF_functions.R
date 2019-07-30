@@ -3933,7 +3933,8 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$en
                         addcontours=F, contvarname='gph500', conttype='data', contcol='black',
                         contlev=levs, addvectors=F, vecnames=NULL, #vectortype='data',
                         veccol='black', veclen=0.03, vecscale=0.3, vecwd=0.75, every_x_vec=4,
-                        wcol='black', zonalmean=F, zmvarname='gph500', colorbar=T,NHseason,plotname,paper,diff_map=FALSE, valimask=FALSE){
+                        wcol='black', zonalmean=F, zmvarname='gph500', colorbar=T,NHseason,
+                        plotname,paper,diff_map=FALSE, valimask=FALSE){
 
    oldpar <- par(no.readonly=TRUE)
   if (monthly_out & s.plot==12 & length(ti)==24){
@@ -4068,7 +4069,7 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$en
     if (monthly_out){
       pdf(paste( get("figpath"),plotname,sep='/'), width=width, height=height, paper=paper)
     }else{           
-      pdf(paste( get("figpath"),plotname,sep='/'), width=width, height=height, paper= paper)
+      pdf(paste( get("figpath"),plotname,sep='/'), width=width, height=height, paper=paper)
     }
     
     dd <- lcm(2)
@@ -7033,12 +7034,12 @@ convert_to_tps_only<-function(dataset){
     tpspos <- sort(c(which(dataset$names=='temp2'), which(dataset$names=='precip'), which(dataset$names=='slp'), which(dataset$names=='bias')))
   }
   if(length(dim(dataset$data))==3){
-    dataset$data <- dataset$data[tpspos,,]
+    dataset$data <- dataset$data[tpspos,,,drop=F]
   }else{
-    dataset$data <- dataset$data[tpspos,]
+    dataset$data <- dataset$data[tpspos,,drop=F]
   }
   if("ensmean" %in% names(dataset)){
-    dataset$ensmean <- dataset$ensmean[tpspos,]
+    dataset$ensmean <- dataset$ensmean[tpspos,,drop=F]
   }
   if("lat" %in% names(dataset)){
     dataset$lon <- dataset$lon[tpspos]
@@ -7050,11 +7051,12 @@ convert_to_tps_only<-function(dataset){
 }
 
 calc_indices<-function(dataset, setname){
-  #takes either echam2, analysis2 or validate2 for both anom and abs and gives back a matrix with the indices (monthly or seasonal)
-  #the 2 in the variablenames is because the datasets could be adapted for indicescalc (e.g. landonly) but have to be as before for further code in prepplot
-  #look at giorgi.names for the index names
-  #when calling the fct set setname to either "echam2", "analysis2", "cru2" or "twentycr2" corresponding to the dataset
-  #(code was given, I (nevin) only changed it into a fct to shorten the indices calculation in prepplot)
+  # takes either echam2, analysis2 or validate2 for both anom and abs and gives back a matrix 
+  # with the indices (monthly or seasonal) the 2 in the variablenames is because the datasets 
+  # could be adapted for indicescalc (e.g. landonly) but have to be as before for further code 
+  # in prepplotlook at giorgi.names for the index names when calling the fct set setname to 
+  # either "echam2", "analysis2", "cru_vali" or "twentycr_vali" corresponding to the dataset
+  # (code was given, I (nevin) only changed it into a fct to shorten the indices calculation in prepplot)
   giorgi<-get("giorgi")
   H.giorgi <- compute_giorgi_H_v2(giorgi, dataset)
   if(setname=="echam2" | setname=="analysis2" | setname=="twentycr_vali"){
@@ -7591,7 +7593,7 @@ calc_indices<-function(dataset, setname){
     #      # land sea mask to take care of missing validata in the ocean
     
     #vpos <- which(!is.na(dataset$data[,1]))
-    # JF 2019/12
+    # JF 2018/12
     vpos <- which(!is.na(rowSums(dataset$ensmean)))
     Hind2 <- Hind[,vpos]
     #validatanona <- dataset$data[vpos,]
@@ -7617,7 +7619,8 @@ calc_indices<-function(dataset, setname){
 
 
 
-plot_example_ts<-function(validate,analysis,echam,lonlat,type="absolute",loc="somewhere",ylim_s=NULL,ylim_p=NULL,ylim_t=NULL){
+plot_example_ts<-function(validate,analysis,echam,lonlat,type="absolute",loc="somewhere",
+                          ylim_s=NULL,ylim_p=NULL,ylim_t=NULL){
   # takes validate, analysis and echam and makes time series for summer. Location can be specified by givin the number of the position of a
   # specific lon/lat (lonlat). With loc ="locationname" a name for the plotname can be selected. Ylimits can be specified for each variable
   # independently. for type = anomaly only one ylim each is enough, else it needs a list with two different ylims: One for echam and analysis

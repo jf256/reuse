@@ -142,7 +142,7 @@ if (generate_LUTPAULKUT){
 if (generate_GHCN){
   print("generate_GHCN")
   # created only once for the full period and then cut after loading
-  ghcn <- read_ghcn_refyr(1600,2005,1600,1869)
+  ghcn <- read_ghcn_refyr(1600,2005,1600,statyr)
   # create table of assimilated data including first and last year with data
   fyr <- lyr <- vector()
   for (i in 1:ncol(ghcn$data)) {
@@ -160,7 +160,7 @@ if (generate_GHCN){
 if (generate_GHCN_precip){
   print("generate_GHCN_precip")
   # created only once for the full period and then cut after loading
-  ghcn_precip <- read_ghcn_refyr_precip(1600,2005,1600,1869)
+  ghcn_precip <- read_ghcn_refyr_precip(1600,2005,1600,statyr)
   ghcn_precip$data <- ghcn_precip$data / 10 # to make units echam conform
   ghcn_precip$names <-rep('precip',length(ghcn_precip$names))
   save(ghcn_precip, file=paste0("../assim_data/ghcn/ghcn_precip_",fsyr,"-",feyr,".Rdata")) 

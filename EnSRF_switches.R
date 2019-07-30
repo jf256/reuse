@@ -2,7 +2,7 @@
 ################################ EnSRF_switches.R ####################################
 ######################################################################################
 
-expname="PAGES_corals_only_p05AIC_T_HADSST_vali"
+expname="DAPS_pseudoprox_stat_offl"
 
 version="v1.3"    # set code version number for experiment and netcdf file names
 # v1.1 at DKRZ is experiment 1.2 here!
@@ -67,8 +67,9 @@ generate_ind_recon=F            # read Stefan's indices 1900-2000 from .txt to .
 # use scripts in data_yuri to generate .Rdata files 
 generate_t_yuri=F               # if TRUE -> yuri's temp. data collection including HISTALP is read
 generate_slp_yuri=F             # if TRUE -> yuri's slp data collection is read
-generate_GHCN=F                 # if TRUE -> orig. GHCN stat. data is read; 
-generate_GHCN_precip=F          # if FALSE -> ghcn.Rdata 
+statyr=1905                     # 1941 1850/69 year, when GHCN/ISTI station network is kept constant
+ generate_GHCN=F                 # if TRUE -> orig. GHCN stat. data is read; 
+ generate_GHCN_precip=F          # if FALSE -> ghcn.Rdata 
 generate_DOCUM=F                # if TRUE -> yuri's docu. data collection is read 
 # do we still need next 3 lines? why after generate_proxies in EnSRF_generate?
 generate_PAGES=F                # using the screened PAGES proxy dataset
@@ -87,7 +88,7 @@ generate_PSEUDO=F               # DAPS PSEUDO PROXY EXPERIMENT: Set pseudo_prox 
 #                  die colnames nicht Sinn!!!!! Zb Zeile:
 #                  Weil in Pages sind es nicht dieselben
 
-generate_PROXIES=T
+generate_PROXIES=F
 # for multiple parallel runs generate_PROXIES only has to be true for the first run
 # once they are create they can be loaded with this switch=F
 # NOTE: The proxy data set switches need to remain to automatically set real_prox=T in EnSRF data script
@@ -159,7 +160,7 @@ import_luca=F                   # old and new docu data
 #trw_only=F                      # Petra's 35 best TRW only
 #mxd_only=F                      # Use only MXD tree ring proxies, NOT Petra's TRW
 #schweingr_only=F                # Use Schweingruber MXD grid only
-pseudo_prox=F                    # use DAPS Pseudo-Proxies and annual resolution Jan-Dez
+pseudo_prox=T                    # use DAPS Pseudo-Proxies and annual resolution Jan-Dez
 if (pseudo_prox) {
   if (generate_PROXIES==T) {stop("pseudo_prox and generate_PROXIES cannot be used together")}
   sixmonstatevector=F    # using annual mean
@@ -183,7 +184,7 @@ if (pseudo_prox) {
 
 #################
 # To use a bigger ensemble for the background
-no_forc_big_ens= F      # use all years as one big ensemble regardless of forcing like LMR
+no_forc_big_ens= T      # use all years as one big ensemble regardless of forcing like LMR
                         # ONLY works with next option load_71yr_anom=T
 covarclim=0            # set 50 or 100 [%] how much echam climatology covariance should be used
                             # default=0, i.e. current year covar from ECHAM ensemble
@@ -255,7 +256,7 @@ shape_wgt = "circle"          # can be "circle" or "ellipse" depends on how we w
 landcorr = F                  # use simulation WITHOUT land use bug if TRUE
 
 # how to treat multiple input series in same grid box
-best2worst=F           # order proxies from best first to worst last based on residuals
+best2worst=T           # order proxies from best first to worst last based on residuals
                        # if FALSE then worst first and best last
 best_prox_per_grid=F   # use only one real proxy record with lowest residuals per grid cell 
   bestproxres=0.1      # generates lon/lat grid with set resolution 0.1 mean only best proxy in ~10km2 grid
@@ -326,7 +327,7 @@ monthly_out=F                   # if sixmonstatevector=T output is backtransform
 # yearly out is old switch from nevin. annual output automatically if pseudo_prox=T
   yearly_out=F                    # if both false, plots seasonal averages are calculated
                                 # average or monthly data if monthly_out=T 
-temporal_postproc=T             # save half year averages calc from monthly data into /prepplot folder
+temporal_postproc=F             # save half year averages calc from monthly data into /prepplot folder
 mergetime_indices=T             # if TRUE: indices are combined to allts variables for whole period 
                                 # (e.g. also for 1604-2004) and saved into image folder for TS-plots
 # run next option "load_prepplot" for entire validation period, usually 
@@ -354,7 +355,6 @@ if (!monthly_out & write_netcdf) {
   write_netcdf=F
   print('ACHTUNG: write_netcdf set to FALSE because monthly_out=F')
 }
-statyr=1905                     # 1941 1850/69 year, when station network is kept constant
 
 #####################################################################################
 
@@ -366,6 +366,7 @@ statyr=1905                     # 1941 1850/69 year, when station network is kep
 #####################################################################################
 
 monthly=F
+station_yr=1905                # specific year to plot the station locations (syr>=station_yr<=eyr)
 #pseudoproxy=F                 # old from Nevin pseudoproxy try
 #plot_dweights=F
 #write_nc=F

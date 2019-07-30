@@ -23,12 +23,12 @@ if (generate_ECHAM_anom){
               landonly=land_only, std=T)
 }
 
-if (generate_ECHAM_1901_70){
-  print("generate_ECHAM_1901_70")
-  # ECHAM data for bias calculation with real proxy data
-  echam1901_70 <- read_echam_ensmean('EnSRF', timlim=c(1901,1970),small=F)
-  save(echam1901_70, file="../data/echam_1911-70.Rdata")
-} 
+# if (generate_ECHAM_1901_70){
+#   print("generate_ECHAM_1901_70")
+#   # ECHAM data for bias calculation with real proxy data
+#   echam1901_70 <- read_echam_ensmean('EnSRF', timlim=c(1901,1970),small=F)
+#   save(echam1901_70, file="../data/echam_1911-70.Rdata")
+# } 
 
 if (generate_ECHAM_103){
   print("generate_ECHAM ens. mem. 103")
@@ -100,7 +100,7 @@ if (generate_ind_recon){
 if (generate_CRUALLVAR) {
   print("generate_CRUALLVAR")
   #  see script in EnSRF/script/merge_cru.sh for regridding and co of orig. cru data set
-  cruall <- read_echam1('cru_allvar_abs_1901-2004.nc',timlim=c(syr_cru,eyr_cru),
+  cruall <- read_echam1('cru_allvar_abs_1901-2004_v2019.nc',timlim=c(syr_cru,eyr_cru),
                         path=crupath,small=every2grid,landonly=land_only)
   if (every2grid) {
     save(cruall, file=paste0(dataintdir,"cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid.Rdata"))
@@ -144,6 +144,16 @@ if (generate_GHCN){
   print("generate_GHCN")
   # created only once for the full period and then cut after loading
   ghcn <- read_ghcn_refyr(1600,2005,1600,1869)
+  # create table of assimilated data including first and last year with data
+  fyr <- lyr <- vector()
+  for (i in 1:ncol(ghcn$data)) {
+    pos <- which(!is.na(ghcn$data[,i]))
+    fyr[i] <- floor(ghcn$time[pos[1]])
+    lyr[i] <- floor(ghcn$time[pos[length(pos)]])
+  }
+  ghcn_tab <- cbind(ghcn$id,ghcn$names,ghcn$lon,ghcn$lat,fyr,lyr)
+  write.table(ghcn_tab,file='EKF400_v1_assim_GHCN.txt')
+  
   ghcn$names <-rep('temp2',length(ghcn$names))
   save(ghcn, file=paste0("../assim_data/ghcn/ghcn_temp",fsyr,"-",feyr,".Rdata"))
 }
@@ -176,17 +186,25 @@ if (generate_DOCUM){
   source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_AMJJA.R"))
 }
 
-if (generate_PROXIESnew){
-  
- 
-  
-  print("generate_PROXIESnew")
-  read.these <- c("trw","mxd","schweingr","pages","ntrend","trw_petra")[c(TRW,MXD,SCHWEINGR,PAGES,NTREND,TRW_PETRA)]
+# generate PAGES v2 from Raphi's 2018/01 export (version 1.6.1 from Raphi's data base):
+#   /tank/exports/giub/EKF400/assimil_data/proxies/PAGES/read_pages_2018.R # Skript from Veronika
+
+# generate NTREND
+#   /tank/exports/giub/EKF400/assimil_data/proxies/NTREND/N-Trend.R        # Skript from Veronika
+
+# generate petra, schweingr, mxd, etc. missing
+
+if (generate_PROXIES){
+  print("generate_PROXIES")
+  #read.these <- c("trw","mxd","schweingr","ntrend","pages","trw_petra")[c(TRW,MXD,SCHWEINGR,NTREND,PAGES,TRW_PETRA)]
+  read.these <- c("ntrend","pages","trw_petra","mxd","schweingr","trw")[c(NTREND,PAGES,TRW_PETRA,MXD,SCHWEINGR,TRW)]
   if(exists("realprox")){rm(realprox)}
   for (varname in read.these){
     if (varname=="trw") {
-      print("reading trw")
+      print("reading Petra's 35 best TRW records used in first EKF400 version")
       trwprox <- read_proxy2(fsyr,feyr)
+      trwprox$archivetype <- rep('tree',length(trwproxd$lon))
+      trwprox$datasource <- rep('mxdprox',length(trwprox$lon))
       realprox<-trwprox
       # NEW VERSION VERONIKA: PLEASE CHECK IF YOUR VERSION IS CORRECT
       ############# # because the dim is not equal, the year for trwprox stops in 1970, other two in 2005
@@ -196,17 +214,19 @@ if (generate_PROXIESnew){
     }
     
     if (varname=="mxd") {
-      
       print("reading mxd")
       mxdprox <- read_proxy_mxd(fsyr,feyr)
+      mxdprox$archivetype <- rep('tree',length(mxdproxd$lon))
+      mxdprox$datasource <- rep('mxdprox',length(mxdprox$lon))
       
       if (exists("realprox")){
-        
         realprox$data <- cbind(realprox$data, mxdprox$data)
         realprox$lon <- c(realprox$lon, mxdprox$lon)
         realprox$lat <- c(realprox$lat, mxdprox$lat)
         realprox$mr <- rbind(realprox$mr, mxdprox$mr)
         realprox$var_residu <- c(realprox$var_residu, mxdprox$var_residu)
+        realprox$archivetype <- c(realprox$archivetype,mxdprox$archivetype)
+        realprox$datasource <- c(realprox$datasource,mxdprox$datasource)
         
       } else { realprox<-mxdprox}
     }
@@ -215,6 +235,8 @@ if (generate_PROXIESnew){
       
       print("reading schweingr")
       schprox <- read_proxy_schweingr(fsyr,feyr)
+      schprox$archivetype <- rep('tree',length(schproxd$lon))
+      schprox$datasource <- rep('schweingruber_mxd',length(schprox$lon))
       
       if (exists("realprox")){
         
@@ -223,13 +245,34 @@ if (generate_PROXIESnew){
         realprox$lat <- c(realprox$lat, schprox$lat)
         realprox$mr <- rbind(realprox$mr, schprox$mr)
         realprox$var_residu <- c(realprox$var_residu, schprox$var_residu)
+        realprox$archivetype <- c(realprox$archivetype,schprox$archivetype)
+        realprox$datasource <- c(realprox$datasource,schprox$datasource)
         
       } else { realprox<-schprox}
     }
     
+    if (varname=="ntrend") {
+      print("reading ntrend")
+      ntrend = read_ntrend(fsyr,feyr, validate=lm_fit_data)
+      ntrend$archivetype <- rep('tree',length(ntrend$lon))
+      ntrend$datasource <- rep('ntrend',length(ntrend$lon))
+      
+      if (exists("realprox")){
+        realprox$data <- cbind(realprox$data, ntrend$data)
+        realprox$lon <- c(realprox$lon, ntrend$lon)
+        realprox$lat <- c(realprox$lat, ntrend$lat)
+        realprox$mr <- rbind(realprox$mr, ntrend$mr)
+        realprox$var_residu <- c(realprox$var_residu, ntrend$var_residu)
+        realprox$archivetype <- c(realprox$archivetype,ntrend$archivetype)
+        realprox$datasource <- c(realprox$datasource,ntrend$datasource)
+        
+      } else { realprox<-ntrend}
+    }
+    
     if (varname=="pages") {
       print("reading pages")
-      pagesprox <- setup_read_pages(type) 
+      pagesprox <- setup_read_pages(type)
+      pagesprox$datasource <- rep('pages_db',length(pagesprox$lon))
       
       if (exists("realprox")){
         
@@ -238,28 +281,18 @@ if (generate_PROXIESnew){
         realprox$lat <- c(realprox$lat, pagesprox$lat)
         realprox$mr <- rbind(realprox$mr, pagesprox$mr)
         realprox$var_residu <- c(realprox$var_residu, pagesprox$var_residu)
+        realprox$archivetype <- c(realprox$archivetype,pagesprox$archivetype)
+        realprox$datasource <- c(realprox$datasource,pagesprox$datasource)
         
       } else { realprox<-pagesprox}
      
     }
     
-    if (varname=="ntrend") {
-      print("reading ntrend")
-      ntrend = read_ntrend(fsyr,feyr, validate=pages_lm_fit)
-      
-      if (exists("realprox")){
-        
-        realprox$data <- cbind(realprox$data, ntrend$data)
-        realprox$lon <- c(realprox$lon, ntrend$lon)
-        realprox$lat <- c(realprox$lat, ntrend$lat)
-        realprox$mr <- rbind(realprox$mr, ntrend$mr)
-        realprox$var_residu <- c(realprox$var_residu, ntrend$var_residu)
-        
-      } else { realprox<-ntrend}
-    }
     if (varname=="trw_petra") {
       print("reading trw_petra")
-      trw_petra <- read_trw_petra(fsyr,feyr, validate=pages_lm_fit) 
+      trw_petra <- read_trw_petra(fsyr,feyr, validate=lm_fit_data) 
+      trw_petra$archivetype <- rep('tree',length(trw_petra$lon))
+      trw_petra$datasource <- rep('ntrend',length(trw_petra$lon))
       
       if (exists("realprox")){
         
@@ -268,117 +301,24 @@ if (generate_PROXIESnew){
         realprox$lat <- c(realprox$lat, trw_petra$lat)
         realprox$mr <- rbind(realprox$mr, trw_petra$mr)
         realprox$var_residu <- c(realprox$var_residu, trw_petra$var_residu)
+        realprox$archivetype <- c(realprox$archivetype,trw_petra$archivetype)
+        realprox$datasource <- c(realprox$datasource,trw_petra$datasource)
         
       } else { realprox<-trw_petra}
     }
   }
-  save(realprox, file=paste0("../data/proxies/real_proxies_",fsyr,"-",feyr,".Rdata"))
+  save(realprox, file=paste0("../data/proxies/real_proxies_",expname,"_",fsyr,"-",feyr,".Rdata"))
 }
 
-if (generate_PROXIES){
-  print("generate_PROXIES")
-  # real trw proxy multiple regression approach
-  # only with monthly state vector of 6 months
-  if (trw_only) {
-    realprox <- read_proxy2(fsyr,feyr)
-  } else if (schweingr_only) {
-    realprox <- read_proxy_schweingr(fsyr,feyr)
-  } else if (mxd_only) {
-    realprox <- read_proxy_mxd(fsyr,feyr)
-  } else {
-    schprox <- read_proxy_schweingr(fsyr,feyr)
-    mxdprox <- read_proxy_mxd(fsyr,feyr)
-    trwprox <- read_proxy2(fsyr,feyr)
-    # ORIG VERSION JOERG -> I think both versions are correct, just as far as I remember in the old script that i Used this line was not included
-    ## add NA for TRW data that ends 1970
-    #trwprox$data <- rbind(trwprox$data,matrix(NA,nrow=length(seq(1971,2004)),
-    #                  ncol=dim(trwprox$data)[2]))
-    # NEW VERSION VERONIKA: PLEASE CHECK IF YOUR VERSION IS CORRECT
-    ############# # because the dim is not equal, the year for trwprox stops in 1970, other two in 2005
-    trwprox$data <- rbind(trwprox$data,matrix(data=NA, nrow=dim(mxdprox$data)[1]-
-                                                dim(trwprox$data)[1], ncol=dim(trwprox$data)[2]))
-    #############
-    trwprox$time <- c(trwprox$time,seq(1971,2004))
-    realprox <- list()
-    realprox$data <- cbind(mxdprox$data, schprox$data, trwprox$data)
-    realprox$lon <- c(mxdprox$lon, schprox$lon, trwprox$lon)
-    realprox$lat <- c(mxdprox$lat, schprox$lat, trwprox$lat)
-    realprox$time <- mxdprox$time
-    realprox$mr <- rbind(mxdprox$mr, schprox$mr, trwprox$mr)
-    realprox$var_residu <- c(mxdprox$var_residu, schprox$var_residu, trwprox$var_residu)
-  }
-  save(realprox, file=paste0("../data/proxies/real_proxies_",fsyr,"-",feyr,".Rdata"))
-} 
-
-
-# Pathes can be modified
-if (generate_PAGES) {
-  if (any(!is.na(match(type, "tree"))) & all(is.na(match(type, "coral"))) ) {
-    print("generate_PAGES_tree")
-    p_tree = read_pages(fsyr,feyr, archivetype ="tree", validate=pages_lm_fit)
-    realprox = p_tree
-    save(realprox, file=paste0(workdir,"../pages_tree_",fsyr,"-",feyr,"_",pages_lm_fit,".Rdata"))
-  } 
-  if (any(!is.na(match(type, "coral"))) & all(is.na(match(type, "tree"))) ) {
-    print("generate_PAGES_coral")
-    p_coral = read_pages(fsyr,feyr, archivetype ="coral",validate=pages_lm_fit)
-    realprox = p_coral
-    save(realprox, file=paste0(workdir,"../pages_coral_",fsyr,"-",feyr,"_",pages_lm_fit,".Rdata"))
-  } 
-  if (any(!is.na(match(type, "documents")))) {
-    print("generate_PAGES_docu")
-    p_docu = read_pages(fsyr,feyr, archivetype ="documents",validate=pages_lm_fit) # validate doesnt matter
-    save(p_docu, file=paste0(workdir,"../pages_docu_",fsyr,"-",feyr,".Rdata"))
-  } 
-  if (any(!is.na(match(type, "instrumental")))) {
-    print("generate_PAGES_inst")
-    p_inst = read_pages(fsyr,feyr, archivetype ="instrumental", validate=pages_lm_fit) # validate doesnt matter
-    save(p_inst, file=paste0(workdir,"../pages_inst_",fsyr,"-",feyr,".Rdata"))
-  } 
-  if (any(!is.na(match(type, "tree"))) & any(!is.na(match(type, "coral"))) )  {
-    print("generate_PAGES_tree_&_coral")
-    p_tree = read_pages(fsyr,feyr, archivetype ="tree", validate=pages_lm_fit)
-    p_coral = read_pages(fsyr,feyr, archivetype ="coral", validate=pages_lm_fit)
-    realprox <- list()
-    realprox$data <- cbind(p_tree$data, p_coral$data)
-    realprox$lon <- c(p_tree$lon, p_coral$lon)
-    realprox$lat <- c(p_tree$lat, p_coral$lat)
-    realprox$time <-p_tree$time
-    if (ncol(p_tree$mr) == ncol(p_coral$mr)) {
-      realprox$mr <- rbind(p_tree$mr, p_coral$mr)
-    } else {
-      maxcol = max(ncol(p_tree$mr), ncol(p_coral$mr))
-      if (ncol(p_tree$mr) == maxcol) {
-        p_tree$mr =  p_tree$mr
-      } else {
-        plus_col = matrix(NA, nrow(p_tree$mr), ncol=(maxcol - ncol(p_tree$mr)))
-        p_tree$mr = cbind(p_tree$mr, plus_col)
-      }
-      if (ncol(p_coral$mr) == maxcol) {
-        p_coral$mr = p_coral$mr
-      } else {
-        plus_col = matrix(NA, nrow(p_coral$mr), ncol=(maxcol - ncol(p_coral$mr)))
-        p_coral$mr = cbind(p_coral$mr, plus_col)
-      }
-    }
-    realprox$mr <- rbind(p_tree$mr, p_coral$mr)
-    colnames(realprox$mr) <- c('Intercept','unabt4','unabt5','unabt6','unabt7','unabt8','unabt9','unabt10','unabt11','unabt12','unabt1','unabt2','unabt3')
-    realprox$var_residu <- c(p_tree$var_residu, p_coral$var_residu)
-    save(realprox, file=paste0(workdir,"../pages_tree_&_coral_",fsyr,"-",feyr,"_",pages_lm_fit,".Rdata"))
-  }
+if (pseudo_prox) {
+  if (generate_PSEUDO){
+    print("generate_PSEUDO")
+    pseudoprox<-read_pseudo()
+    realprox<-pseudoprox
+    save(realprox, file=paste0("../data/proxies/DAPS_pseudoproxies_",fsyr,"-",feyr,".Rdata"))
+  # } else {
+  #   # load DAPS pseudo proxies in object called 'realprox'
+  #   load(file=paste0("../data/proxies/DAPS_pseudoproxies_",fsyr,"-",feyr,".Rdata"))
+  }  
 }
 
-# Pathes can be modified
-if (generate_NTREND) {
-  print("generate_N-TREND")
-  ntrend = read_ntrend(fsyr,feyr, validate=pages_lm_fit)
-  realprox = ntrend
-  save(realprox, file=paste0(workdir,"../n-trend_",fsyr,"-",feyr,"_",pages_lm_fit,".Rdata"))
-}
-
-if (generate_PSEUDO){
-  print("generate_PSEUDO")
-  pseudoprox<-read_pseudo()
-  realprox<-pseudoprox
-  save(realprox, file=paste0("../data/proxies/real_proxies_",fsyr,"-",feyr,".Rdata"))
-}

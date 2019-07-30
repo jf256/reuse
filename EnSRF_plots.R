@@ -33,6 +33,7 @@ eyr=1990
 # already set in switches
 station_yr=1905 # specific year to plot the station locations (syr>=station_yr<=eyr)
 
+
 user <- system("echo $USER",intern=T)
 print(paste('User:',user))
 if (user=="veronika") {
@@ -76,6 +77,7 @@ pnames <- paste(c('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'), ')', s
 ################################################################################
 ################## Figs.01: Count Series and Station Locations #################
 ################################################################################
+
 
 
 
@@ -137,11 +139,10 @@ if (countseries & !pseudo_prox) {
 }
 
 
-
-
 ################################################################################
 ############################## Validation Plots ################################
 ################################################################################
+
 
 for (v in validation_set){
   # loop over all validation datasets in validation_set, specified in the SWITCHES script.
@@ -1449,8 +1450,10 @@ for (v in validation_set){
 # plot(density(RE.anom$ensmean[which(RE.anom$names  == varname),i],na.rm=T,weights=area_wgt[!is.na(RE.anom$ensmean[which(RE.anom$names  == varname),i])]))
 
 
+
   validate <- validate.init
 } #end validation_set for loop
+
   
   #############################################################################
   
@@ -1536,5 +1539,6 @@ for (v in validation_set){
   # dev.off()
   # }
   
+
 
 

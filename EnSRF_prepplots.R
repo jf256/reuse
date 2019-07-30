@@ -11,12 +11,14 @@ rm(list=ls())
 #}
 
 # enter syr ane eyr manually
+
 syr=1902 #1902 #1941
 eyr=2000 #2003 #1970
 
 # syrtot and eyrtot are only used for the total 400 yr indices time series 
 #syrtot=1902 #set to the same syr and eyr of the prepplots script (default 1602)
 #eyrtot=1905 #(default 2000) 
+
 
 
 # read syr and eyr from Rscript parameters entered in bash and 
@@ -407,6 +409,7 @@ if (temporal_postproc) {
         landpos <- c(landpos,(landpos_init+ngrid*i))
       }
       
+
       echam2.anom$data <- echam.anom$data[landpos,,]
       echam2.anom$ensmean <- echam.anom$ensmean[landpos,]
       echam2.anom$lon <- echam.anom$lon[landpos]
@@ -838,6 +841,7 @@ if (write_netcdf) {
 
 
 
+
 # 
 # # loads yearly saved indices and merges timesteps (for whole period e.g. 1600-2004 should not generate too huge files)
 # if (mergetime_indices){
@@ -1107,6 +1111,7 @@ if (write_netcdf) {
 #   }
 #   rm(allvindts,vind.allts,eind.allts,aind.allts)
 # } # end mergetime_indices
+
 
 
 
@@ -1702,6 +1707,7 @@ if (mergetime_fields){
 
 
 
+
 # ------------------------------------------------------------------------------
 # Compute validation statistics
 #
@@ -2125,7 +2131,6 @@ if (calc_vali_stat) {
       for (j in 1:dim(analysis.anom$data[,,])[2]) {
         if (is.even(j)) {k=2} else {k=1}
         rdat[,j,] <- rnorm(dim(obs_sd)[1]*dim(analysis.anom$data)[3],mean=0,sd=as.vector(obs.sd.nona[,k]))
-        
       }
       atala <- analysis.anom$data[which(analysis.anom$names=="temp2"),,] + rdat
       etala <- echam.anom$data[which(echam.anom$names=="temp2"),,] + rdat
@@ -2200,3 +2205,4 @@ if (vali_plots) {
 
 warnings()
 #quit(save='no')
+

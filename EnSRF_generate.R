@@ -7,16 +7,17 @@ if (generate_ECHAM){
   # create ECHAM .RData from .nc
   # ACHTUNG: members 001 to 030 with land surface bug, 103 and 2xx without
   # for 60 ensm: timlim=c(1941,1970)
-  read_echam4('EnSRF.ccc400_0', timlim=c(1601,2005), small=every2grid, landonly=land_only)
+  # read_echam4('EnSRF.ccc400_0', timlim=c(1601,2005), small=every2grid, landonly=land_only) # original
+  read_echam4('EnSRF', timlim=c(1601,2004), small=every2grid, landonly=land_only)
 } 
 
 if (generate_ECHAM_anom){
   # read echam 71yr anom, clim and sd calculated with cdo from .nc files to .RData
   # for 60 ensm: timlim=c(1941,1970)
   print("generate_ECHAM_anom") 
-  read_echam4('ano', path=echanompath, timlim=c(1601,2005), small=every2grid, 
+  read_echam4('EnSRF', path=echanompath, timlim=c(1601,2004), small=every2grid, # originally was 'ano', path=echanompath, timlim=c(1601,2005)
               landonly=land_only, anom=T)
-  read_echam4('EnSRF', path=echclimpath, timlim=c(1635,1970), small=every2grid, 
+  read_echam4('EnSRF', path=echclimpath, timlim=c(1601,2004), small=every2grid, # originally was timlim=c(1635,1970)
               landonly=land_only, clim=T)
   read_echam4('EnSRF', path=echsdpath, timlim=c(1601,2005), small=every2grid, 
               landonly=land_only, std=T)
@@ -163,7 +164,8 @@ if (generate_GHCN_precip){
   ghcn_precip <- read_ghcn_refyr_precip(1600,2005,1600,statyr)
   ghcn_precip$data <- ghcn_precip$data / 10 # to make units echam conform
   ghcn_precip$names <-rep('precip',length(ghcn_precip$names))
-  save(ghcn_precip, file=paste0("../assim_data/ghcn/ghcn_precip_",fsyr,"-",feyr,".Rdata")) 
+  # old: save(ghcn_precip, file=paste0("../assim_data/ghcn/ghcn_precip_",fsyr,"-",feyr,".Rdata")) 
+  save(ghcn_precip, file=paste0("../assimil_data/ghcn/ghcn_precip_1600-2005.Rdata")) 
 }
 
 if (generate_t_yuri){

@@ -114,7 +114,9 @@ generate_PROXIES=F
   PAGES=T        # PAGESdata base version 2 from 01/2018
   TRW_PETRA=F    # all TRW series from ITRDB and recalibrated by Petra
   #################
-  
+
+
+
   # ATTENTION: precip. forward model only works with CRU and NOT GISS
   lm_fit_data = "GISS"          # can be CRU or GISS to calculate the reg coeff-s (GISS is land+ocean temp only)
   type = c("coral")              # only works with tree and coral (and both indiviually as well)
@@ -143,24 +145,34 @@ generate_PROXIES=F
   # from trees of the same dataset ->if all 3 datasets are used it can occur, that still 3 averaged 
   # trees are in one gridbox.
 
-########
 
 #### Instrumental Data ####
+old_statvec = F
+new_statvec = T      # has +: wetdays, block, cycfreq; -: v200, t500
+
 yuri_temp=F                     # yuri's data compilation, SLP always loaded
 yuri_slp=F
+ inst_slp_err = sqrt(10) # instrumental slp error (10 is the variance of slp error)
 ghcn_temp=F
+ inst_t_err = sqrt(0.9)  # instrumental temp error (0.9 is the variance of temp error)
 isti_instead_ghcn=F             # switch from ghcn to isti (ghcn_temp must still be set to TRUE)
 ghcn_prec=F
+ghcn_p_err = 0.3   # error in percent (based on US stations estimation should be 30%)
+ghcn_p_min = 10    # minimum error 10 mm
+precip_ratio= F      # if T assimilating ratio, if F assimilating the difference
+gauss_ana =F         # use Gaussian anamorphosis for precipitation ratio
+check_norm = F       # check whether the GA transformed values normally distributed and use only those that are
+ghcn_wday =F         # assimilating wetdays calculated from daily precip ghcn data
+ghnc_w_err = 2     # error number of days (based on US stations estimation should be 2 days)
+
 
 #### Documentary Data ####
+import_luca=F        # new docu data, if it is T then docum part is T
+docu_err= sqrt(0.25) # equals 0.5 std. dev.
 
-import_luca=F                   # old and new docu data 
 
-#### Proxy Data ####
-#trw_only=F                      # Petra's 35 best TRW only
-#mxd_only=F                      # Use only MXD tree ring proxies, NOT Petra's TRW
-#schweingr_only=F                # Use Schweingruber MXD grid only
-pseudo_prox=T                    # use DAPS Pseudo-Proxies and annual resolution Jan-Dez
+#### Pseudo Proxy Data ####
+pseudo_prox=F                    # use DAPS Pseudo-Proxies and annual resolution Jan-Dez
 if (pseudo_prox) {
   if (generate_PROXIES==T) {stop("pseudo_prox and generate_PROXIES cannot be used together")}
   sixmonstatevector=F    # using annual mean
@@ -221,7 +233,8 @@ loc=T                           # T = WITH localization, F without
 if (loc) {
   l_dist_temp2=1000*1.5         # factor *1.5 after stefans recommendation
   l_dist_slp=1800*1.5
-  l_dist_precip=300*1.5
+  #l_dist_precip=300*1.5
+  l_dist_precip=900
   l_dist_gph500=1800*1.5
   l_dist_gph100=2500*1.5
   l_dist_u850=1200*1.5
@@ -232,6 +245,12 @@ if (loc) {
   # l_dist_t850=1000*1.5 #Roni: in the echam there is no t850 but t500. They refer to the same level but I forgot which one is the correct one
   l_dist_t500=1000*1.5
   l_dist_ind=999999 # precalculated indices should be removed
+  #l_dist_wdays = 300*1.5
+  l_dist_wdays = 900
+  l_dist_blocks = 1800*1.5
+  l_dist_cycfreq = 1800*1.5
+
+
 
 } else {
   l_dist_temp2=999999
@@ -273,6 +292,7 @@ reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=F            # calc on land only
 tps_only=T             # only use temp, precip and slp in state vector, remove other vars
+tpsw_only=F            # only use temp, precip, slp and wetdays in state vector, remove other vars
 no_stream=F            # all echam vars but stream function as there is problem with 
 #                       # 5/9 levels, which are in lat dimension before and after 1880
 loo=F                  # leave-one-out validation 
@@ -357,7 +377,6 @@ if (!monthly_out & write_netcdf) {
 }
 
 #####################################################################################
-
 
 
 

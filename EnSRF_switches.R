@@ -1,5 +1,7 @@
 # expname = "test"
-expname="EKF400_v1.3_merged_covarclim50_ncovar250_changing_update_PHclim_noloc_inst" # EKF400_v1.3_merged_only_inst_with_temp_loc
+#expname="assim_precip_c250_Pc50uploc_R10_timeloc" # EKF400_v1.3_merged_only_inst_with_temp_loc
+#expname="EKF400_v1.3_assim_ghcn_d_better_precip_R30_L900_timeloc"
+expname="EKF400_v1.3_merged_covarclim0_circle_wgt"
 
 # TODO
 #  "mon_from_seas"               # can we get monthly res from seasonal proxies, 
@@ -204,16 +206,28 @@ NTREND=F
 generate_PAGES = F      # using the screened PAGES proxy dataset
 generate_NTREND = F
 
+old_statvec = F
+new_statvec = T      # has +: wetdays, block, cycfreq; -: v200, t500
 
 
 
-
-yuri_temp=T          # yuri's data compilation, SLP always loaded
-yuri_slp=T
-ghcn_temp=T
+yuri_temp=F          # yuri's data compilation, SLP always loaded
+yuri_slp=F
+  inst_slp_err = sqrt(10) # instrumental slp error (10 is the variance of slp error)
+ghcn_temp=F
+  inst_t_err = sqrt(0.9)  # instrumental temp error (0.9 is the variance of temp error)
 isti_instead_ghcn=F  # switch from ghcn to isti (ghcn_temp must still be set to TRUE)
-ghcn_prec=F
-import_luca=F        # new docu data 
+ghcn_prec=T
+  ghcn_p_err = 0.3   # error in percent (based on US stations estimation should be 30%)
+  ghcn_p_min = 10    # minimum error 10 mm
+precip_ratio= F      # if T assimilating ratio, if F assimilating the difference
+gauss_ana =F         # use Gaussian anamorphosis for precipitation ratio
+check_norm = F       # check whether the GA transformed values normally distributed and use only those that are
+ghcn_wday =F         # assimilating wetdays calculated from daily precip ghcn data
+ ghnc_w_err = 2      # error number of days (based on US stations estimation should be 2 days)
+docum=F             # switch to use docu data, only works with combination inst or/and proxy
+ import_luca=F        # new docu data 
+ docu_err= sqrt(0.25) # equals 0.5 std. dev.
 trw_only=F           # Petra's TRW only
 mxd_only=F           # Use only MXD tree ring proxies, NOT Petra's TRW
 schweingr_only=F     # Use Schweingruber MXD grid only
@@ -239,17 +253,17 @@ if (generate_PROXIESnew){
 # To use a bigger ensemble for the background
 no_forc_big_ens= F      # use all years as one big ensemble regardless of forcing like LMR
                         # ONLY works with next option load_71yr_anom=T
-covarclim=50             # set 50 or 100 [%] how much echam climatology covariance should be used
+covarclim=0             # set 50 or 100 [%] how much echam climatology covariance should be used
                             # default=0, i.e. current year covar from ECHAM ensemble
 cov_inflate = F         # inflate the PB matrix
 inflate_fac = 1.02      # the factor of covariance inflation
 # Only used if no_forx_big_ens=T or covarclim>0
 state = "changing"        # can be "static" or "changing" (static = the same big ens used for all year, changing = it is recalculated for every year)
-n_covar=250             # set sample size for covar calc or for no_forc LMR like experiment, e.g. 250 or 500
+n_covar=0             # set sample size for covar calc or for no_forc LMR like experiment, e.g. 250 or 500
 PHclim_loc = F          # whether we want to localize the PHclim, only works if covarclim > 0
-PHclim_lvec_factor = 2  # if PHclim_loc=T, we can use eg. 2times the distances as in the 30 ensemble member, at the moment only works for shape_wgt= "circle"
+PHclim_lvec_factor = 1  # if PHclim_loc=T, we can use eg. 2times the distances as in the 30 ensemble member, at the moment only works for shape_wgt= "circle"
 mixed_loc = F           # first combining Pb and Pclim then localizing
-update_PHclim = T       # whether PHclim should be updtaed assimilating observation-by-observation
+update_PHclim = F       # whether PHclim should be updtaed assimilating observation-by-observation
 save_ananomallts = F    # in the covarclim exps if we update the climatology part -> whether to save the "climatological" analysis or not
 
 # Calculate decorr length -> was done already
@@ -268,7 +282,8 @@ loc=T      # T = WITH localization, F without
 if (loc) {
   l_dist_temp2=1000*1.5  # factor *1.5 after stefans recommendation
   l_dist_slp=1800*1.5
-  l_dist_precip=300*1.5
+  #l_dist_precip=300*1.5
+  l_dist_precip=900
   l_dist_gph500=1800*1.5
   l_dist_gph100=2500*1.5
   l_dist_u850=1200*1.5
@@ -279,6 +294,10 @@ if (loc) {
   # l_dist_t850=1000*1.5 #Roni: in the echam there is no t850 but t500. They refer to the same level but I forgot which one is the correct one
   l_dist_t500=1000*1.5
   l_dist_ind=999999 # precalculated indices should be removed
+  #l_dist_wdays = 300*1.5
+  l_dist_wdays = 900
+  l_dist_blocks = 1800*1.5
+  l_dist_cycfreq = 1800*1.5
 } else {
   l_dist_temp2=999999
   l_dist_slp=999999
@@ -305,13 +324,14 @@ first_prox_per_grid=F  # first proxy per echam grid box ATTENTION: only this
   firstproxres=10      # grid resolution for instr. stations (5 = echamgrid/5)
 avg_prox_per_grid=T    # average more than one proxy per echam grid box 
                        # and calc proxy vs echam correlation
-ins_tim_loc = F        # whether the instrumental obs-s should be localized in time or not
+ins_tim_loc = T        # whether the instrumental obs-s should be localized in time or not
 instmaskprox=F         # remove proxy data from grid boxes that have instr. data
 reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=F            # calc on land only
 fasttest=F             # use even less data
 tps_only=T             # only use temp, precip and slp in state vector, remove other vars
+tpsw_only=F            # only use temp, precip, slp and wetdays in state vector, remove other vars
 no_stream=F            # all echam vars but stream function as there is problem with 
 #                       # 5/9 levels, which are in lat dimension before and after 1880
 loo=F                  # leave-one-out validation 
@@ -384,7 +404,7 @@ if (!monthly_out & write_netcdf) {
 # 1902-2003, because it creates time series
 load_prepplot=F  # ATTENTION check if folder prepplot on scratch contains monthly or seasonal data!
                  # saves image and only needs to be run once, afterward set "load_image=T" 
-statyr=1904      # 1941 1850/69 year, when station network is kept constant
+statyr=1955      # 1941 1850/69 year, when station network is kept constant
 load_image=T     # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
 calc_vali_stat=T # calculate validation statistics after preparation (set "load_image=T")
 CRPS = TRUE      # calculate Continuous Ranked Probability Score

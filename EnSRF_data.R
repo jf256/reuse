@@ -17,8 +17,8 @@ rm(list=ls())
 
 
 
-syr=1901
-eyr=1990
+syr=1950
+eyr=1951
 
 
 # read syr and eyr from Rscript parameters entered in bash and 
@@ -749,6 +749,7 @@ for (cyr in syr2:eyr) {
       if (every2grid) {
         if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,"_2ndgrid.Rdata",sep=""))
         } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid.Rdata",sep=""))
+        # } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid_v2017.Rdata",sep=""))
         } else if (twentycr_vali){load(paste0(twentycrpath,"twentycr_allvar_",syr_twentycr,"-",eyr_twentycr,"_2ndgrid.Rdata"))}
       } else {
         if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,".Rdata",sep=""))
@@ -1175,7 +1176,7 @@ for (cyr in syr2:eyr) {
     
     # 5.2 Qualtiy check of the data
     if (check_assimdata) {
-      if (ghcn_prec) { # uncomment it temporarily
+      if (ghcn_prec) { 
         if (ghcn_temp & yuri_slp) {
           varlist <- c("inst_t","inst_slp","ghcn","ghcn_precip")
         } else {
@@ -1570,7 +1571,7 @@ for (cyr in syr2:eyr) {
         print("DON'T USE FIRST_INST_PER_GRID IF YOU WANT TO INCLUDE REAL PROXY DATA AND 
               INSTRUMENTALS AT THE SAME TIME")
       }  
-      }
+    }
     
     # 5.4.3 Average more than one proxy per echam grid box 
     if (avg_obs_per_grid) {
@@ -1671,7 +1672,7 @@ for (cyr in syr2:eyr) {
     } 
     
     # 5.5 Combining all type of instrumental data
-    if (ghcn_prec) {
+    if (ghcn_prec & !ghcn_wday) {
       if (ghcn_temp & yuri_slp) { # since the order matters: combine them as: temp, slp, precip
         inst<-list(data=t(cbind(inst_t$data,inst_slp$data,inst_p$data)),
                    error=t(cbind(inst_t$err,inst_slp$err,inst_p$err)), # new define error
@@ -1688,7 +1689,7 @@ for (cyr in syr2:eyr) {
                              names=c(inst_p$names),
                              height=c(inst_p$height), time=inst_p$time)
       }
-    } else if (ghcn_wday) {
+    } else if (ghcn_wday & !ghcn_prec) {
       if (ghcn_temp & yuri_slp) { # since the order matters: combine them as: temp, slp, wdays
         inst<-list(data=t(cbind(inst_t$data,inst_slp$data,inst_w$data)),
                    error=t(cbind(inst_t$err,inst_slp$err,inst_w$err)), # new define error
@@ -2403,15 +2404,14 @@ for (cyr in syr2:eyr) {
                   analysis$ensmean[,i] <- analysis$ensmean[,i] + K[,1] * (calibrate$data[j,i] - GA_ana_ensmean)
                   analysis$data[,i,] <- analysis$data[,i,] - Ktilde %*% GA_ana_data
                 } else { # original
-                analysis$ensmean[,i] <- analysis$ensmean[,i] + K[,1] * (calibrate$data[j,i] -
-                                                                          H %*% analysis$ensmean[h.i,i])
-                analysis$data[,i,] <- analysis$data[,i,] - Ktilde %*% H %*% analysis$data[h.i,i,]
+                  analysis$ensmean[,i] <- analysis$ensmean[,i] + K[,1] * (calibrate$data[j,i] -
+                                                                            H %*% analysis$ensmean[h.i,i])
+                  analysis$data[,i,] <- analysis$data[,i,] - Ktilde %*% H %*% analysis$data[h.i,i,]
                 }
                 if (update_PHclim){
                   ananomallts$ensmean[,i] <- ananomallts$ensmean[,i] + K[,1] * (calibrate$data[j,i] -
                                                                                   H %*% ananomallts$ensmean[h.i,i])
-                    ananomallts$data[,i,] <- ananomallts$data[,i,] - Ktilde %*% H %*% ananomallts$data[h.i,i,]
-                  }
+                  ananomallts$data[,i,] <- ananomallts$data[,i,] - Ktilde %*% H %*% ananomallts$data[h.i,i,]
                 }
               } # end of !is.na(calibrate$data[j,i])
             } # end of ntim

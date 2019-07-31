@@ -2,7 +2,7 @@
 ################################ EnSRF_switches.R ####################################
 ######################################################################################
 
-expname="DAPS_pseudoprox_stat_offl"
+expname="assim_temp_slp_ghcn_d_better_precip_R30_timeloc"
 
 version="v1.3"    # set code version number for experiment and netcdf file names
 # v1.1 at DKRZ is experiment 1.2 here!
@@ -111,7 +111,7 @@ generate_PROXIES=F
   MXD=F          # additional MXD, not gridded Schweizgruber data
   SCHWEINGR=F    # Schweingruber/Briffa MXD grid
   NTREND=F       # NTREND best tree data version 2018 (identical with 2015 paper)
-  PAGES=T        # PAGESdata base version 2 from 01/2018
+  PAGES=F        # PAGESdata base version 2 from 01/2018
   TRW_PETRA=F    # all TRW series from ITRDB and recalibrated by Petra
   #################
 
@@ -150,13 +150,13 @@ generate_PROXIES=F
 old_statvec = F
 new_statvec = T      # has +: wetdays, block, cycfreq; -: v200, t500
 
-yuri_temp=F                     # yuri's data compilation, SLP always loaded
-yuri_slp=F
+yuri_temp=T                     # yuri's data compilation, SLP always loaded
+yuri_slp=T
  inst_slp_err = sqrt(10) # instrumental slp error (10 is the variance of slp error)
-ghcn_temp=F
+ghcn_temp=T
  inst_t_err = sqrt(0.9)  # instrumental temp error (0.9 is the variance of temp error)
 isti_instead_ghcn=F             # switch from ghcn to isti (ghcn_temp must still be set to TRUE)
-ghcn_prec=F
+ghcn_prec=T
 ghcn_p_err = 0.3   # error in percent (based on US stations estimation should be 30%)
 ghcn_p_min = 10    # minimum error 10 mm
 precip_ratio= F      # if T assimilating ratio, if F assimilating the difference
@@ -196,7 +196,7 @@ if (pseudo_prox) {
 
 #################
 # To use a bigger ensemble for the background
-no_forc_big_ens= T      # use all years as one big ensemble regardless of forcing like LMR
+no_forc_big_ens= F      # use all years as one big ensemble regardless of forcing like LMR
                         # ONLY works with next option load_71yr_anom=T
 covarclim=0            # set 50 or 100 [%] how much echam climatology covariance should be used
                             # default=0, i.e. current year covar from ECHAM ensemble
@@ -205,10 +205,10 @@ cov_inflate = F         # inflate the PB matrix
 # Only used if no_forc_big_ens=T or covarclim>0
 state = "changing"      # can be "static" or "changing" (static = the same big ens used for all year, changing = it is recalculated for every year)
 n_covar=250             # set sample size for covar calc or for no_forc LMR like experiment, e.g. 250 or 500
-PHclim_loc = T          # whether we want to localize the PHclim, only works if covarclim > 0
+PHclim_loc = F          # whether we want to localize the PHclim, only works if covarclim > 0
 PHclim_lvec_factor = 2  # if PHclim_loc=T, we can use eg. 2times the distances as in the 30 ensemble member, at the moment only works for shape_wgt= "circle"
 mixed_loc = F           # first combining Pb and Pclim then localizing
-update_PHclim = T       # whether PHclim should be updated assimilating observation-by-observation
+update_PHclim = F       # whether PHclim should be updated assimilating observation-by-observation
 save_ananomallts = F    # in the covarclim exps if we update the climatology part -> whether to save the "climatological" analysis or not
 
 
@@ -233,8 +233,8 @@ loc=T                           # T = WITH localization, F without
 if (loc) {
   l_dist_temp2=1000*1.5         # factor *1.5 after stefans recommendation
   l_dist_slp=1800*1.5
-  #l_dist_precip=300*1.5
-  l_dist_precip=900
+  l_dist_precip=300*1.5
+  #l_dist_precip=900
   l_dist_gph500=1800*1.5
   l_dist_gph100=2500*1.5
   l_dist_u850=1200*1.5
@@ -245,8 +245,8 @@ if (loc) {
   # l_dist_t850=1000*1.5 #Roni: in the echam there is no t850 but t500. They refer to the same level but I forgot which one is the correct one
   l_dist_t500=1000*1.5
   l_dist_ind=999999 # precalculated indices should be removed
-  #l_dist_wdays = 300*1.5
-  l_dist_wdays = 900
+  l_dist_wdays = 300*1.5
+  #l_dist_wdays = 900
   l_dist_blocks = 1800*1.5
   l_dist_cycfreq = 1800*1.5
 
@@ -284,7 +284,7 @@ first_inst_per_grid=F  # first instrumental observations per echam grid box
                        # "DON'T USE FIRST_INST_PER_GRID IF YOU WANT TO INCLUDE REAL PROXY DATA AND 
                        # INSTRUMENTALS AT THE SAME TIME")
   firstinstres=1       # grid resolution for instr. stations (5 = echamgrid/5)
-avg_obs_per_grid=F     # average more than one observation per echam grid box 
+avg_obs_per_grid=T     # average more than one observation per echam grid box 
                        # and calc proxy vs echam correlation
 ins_tim_loc = T        # whether the instrumental obs-s should be localized in time or not
 instmaskprox=F         # remove proxy data from grid boxes that have instr. data

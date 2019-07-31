@@ -154,7 +154,7 @@ read_echam4 <- function(filehead, path=echallvarpath, xlim=c(-180,180), ylim=c(-
       names <- NULL
       # T2m (land only), SLP, Precip, Stream (should be zonal mean), GPH500, GPH100,
       # u200, omega500, u850, v850, T850
-
+      
       # old state vector
       # for (varname in c('temp2', 'precip', 'slp', 'geopoth', 'u', 'v', 'omega',
       #                   'st', 'stream')){
@@ -163,283 +163,283 @@ read_echam4 <- function(filehead, path=echallvarpath, xlim=c(-180,180), ylim=c(-
       #   #       'omega' 1=50000
       #   #      'st' 1=85000
       #   #      'stream' 5 lev but just 1 lon (zonal mean) 100000, 85000, 50000, 30000, 20000
-
-        # new state vector
-        for (varname in c('temp2', 'precip', 'slp','wdays','geopoth', 'u', 'v', 'omega',
-                          'blocks', 'cycfreq','stream')){
-          #      'geopoth' 1=50000 2=10000
-          #      'u' 1=85000 2=20000
-          #      'v' 1=85000
-          #      'omega' 1=50000
-          #      'stream' 5 lev but just 1 lon (zonal mean) 100000, 85000, 50000, 30000, 20000
-
-          print(varname)
-          if (varname %in% names(nc$var)){
-            if ((varname=='temp2') || (varname=='precip') || (varname=='slp')) {
-              if (length(nc$var[[varname]]$dim) == 3){
-                data <- ncvar_get(nc, varname, start=c(1,1,min(ti)),
-                                  count=c(-1,-1,length(ti)))[loi, lai,]
-              } else if (length(nc$var[[varname]]$dim) == 4){
-                data <- ncvar_get(nc, varname, start=c(1,1,1,min(ti)),
-                                  count=c(-1,-1,1,length(ti)))[loi, lai,]
-                length(nc$var[[varname]]$dim[[3]]$vals)
-              }
-              if (landonly){
-                data <- array(data, c(length(lsm), dim(data)[3]))[lsm > 0.5, ]
-              } else {
-                data <- array(data, c(dim(data)[1]*dim(data)[2], dim(data)[3]))
-              }
-              if ((path == echpath) || (path == echallvarpath) || (path == echclimpath) ||
-                  (path == echsdpath)) {
-                if (varname == 'temp2') data <- data - 273.15
-                if (varname == 'precip') data <- data * 3600 * 24 * 30
-                if (varname == 'slp') data <- data / 100
-              } else if (path == echanompath) {
-                if (varname == 'precip') data <- data * 3600 * 24 * 30
-                if (varname == 'slp') data <- data / 100
-              }
-              print(dim(data))
-              outdata <- rbind(outdata, data)
-              names <- c(names, rep(varname, nrow(data)))
-              #          print(names)
-            }
-            
-            if (varname=='geopoth') {
-              data <- ncvar_get(nc, varname, start=c(1,1,1,min(ti)),
-                                count=c(-1,-1,length(nc$var[[varname]]$dim[[3]]$vals),
-                                        length(ti)))[loi, lai,,]
-              data <- array(data,c(dim(data)[1]*dim(data)[2], dim(data)[3], dim(data)[4]))
-              print(dim(data))
-              outdata <- rbind(outdata, data[,1,])
-              outdata <- rbind(outdata, data[,2,])
-              names <- c(names, c(rep('gph500',nrow(data)),rep('gph100',nrow(data))))
-              #          print(names)
-            }
-            if (varname=='u') {
-              data <- ncvar_get(nc, varname, start=c(1,1,1,min(ti)),
-                                count=c(-1,-1,length(nc$var[[varname]]$dim[[3]]$vals),
-                                        length(ti)))[loi, lai,,]
-              data <- array(data,c(dim(data)[1]*dim(data)[2], dim(data)[3], dim(data)[4]))
-              print(dim(data))
-              outdata <- rbind(outdata, data[,1,])
-              outdata <- rbind(outdata, data[,2,])
-              names <- c(names, c(rep('u850',nrow(data)),rep('u200',nrow(data))))
-              #         print(names)
-            }
-            if (varname=='v') {
-              data <- ncvar_get(nc, varname, start=c(1,1,1,min(ti)),
-                                count=c(-1,-1,length(nc$var[[varname]]$dim[[3]]$vals),
-                                        length(ti)))[loi, lai,] # originalyy it was [loi, lai,,]
-              # data <- array(data,c(dim(data)[1]*dim(data)[2], dim(data)[3], dim(data)[4]))# old state vector
-              # print(dim(data))
-              # outdata <- rbind(outdata, data[,1,]) # old state vector
-              # outdata <- rbind(outdata, data[,2,]) # old state vector
-              # names <- c(names, c(rep('v850',nrow(data)),rep('v200',nrow(data)))) # old state vector
-              data <- array(data,c(dim(data)[1]*dim(data)[2], dim(data)[3]))
-              print(dim(data))
-              outdata <- rbind(outdata, data)
-              names <- c(names, c(rep('v850',nrow(data)))) # new state vector
-              #          print(names)
-            }
-            if (varname=='blocks') {
+      
+      # new state vector
+      for (varname in c('temp2', 'precip', 'slp','wdays','geopoth', 'u', 'v', 'omega',
+                        'blocks', 'cycfreq','stream')){
+        #      'geopoth' 1=50000 2=10000
+        #      'u' 1=85000 2=20000
+        #      'v' 1=85000
+        #      'omega' 1=50000
+        #      'stream' 5 lev but just 1 lon (zonal mean) 100000, 85000, 50000, 30000, 20000
+        
+        print(varname)
+        if (varname %in% names(nc$var)){
+          if ((varname=='temp2') || (varname=='precip') || (varname=='slp')) {
+            if (length(nc$var[[varname]]$dim) == 3){
               data <- ncvar_get(nc, varname, start=c(1,1,min(ti)),
                                 count=c(-1,-1,length(ti)))[loi, lai,]
-              data <- array(data, c(dim(data)[1]*dim(data)[2], dim(data)[3]))
-              print(dim(data))
-              outdata <- rbind(outdata, data)
-              names <- c(names, c(rep('blocks',nrow(data))))
-              #          print(names)
-            }
-            if (varname=='cycfreq') {
-              data <- ncvar_get(nc, varname, start=c(1,1,min(ti)),
-                                count=c(-1,-1,length(ti)))[loi, lai,]
-              data <- array(data, c(dim(data)[1]*dim(data)[2], dim(data)[3]))
-              print(dim(data))
-              outdata <- rbind(outdata, data)
-              names <- c(names, c(rep('cycfreq',nrow(data))))
-              #          print(names)
-            }
-            if (varname=='wdays') {
-              data <- ncvar_get(nc, varname, start=c(1,1,min(ti)),
-                                count=c(-1,-1,length(ti)))[loi, lai,]
-              data <- array(data, c(dim(data)[1]*dim(data)[2], dim(data)[3]))
-              print(dim(data))
-              outdata <- rbind(outdata, data)
-              names <- c(names, c(rep('wdays',nrow(data))))
-              #          print(names)
-            }
-            if (varname=='omega') {
+            } else if (length(nc$var[[varname]]$dim) == 4){
               data <- ncvar_get(nc, varname, start=c(1,1,1,min(ti)),
                                 count=c(-1,-1,1,length(ti)))[loi, lai,]
+              length(nc$var[[varname]]$dim[[3]]$vals)
+            }
+            if (landonly){
+              data <- array(data, c(length(lsm), dim(data)[3]))[lsm > 0.5, ]
+            } else {
               data <- array(data, c(dim(data)[1]*dim(data)[2], dim(data)[3]))
-              print(dim(data))
-              outdata <- rbind(outdata, data)
-              names <- c(names, c(rep('omega500',nrow(data))))
-              #          print(names)
             }
-            # if (varname=='st') {
-            #   data <- ncvar_get(nc, varname, start=c(1,1,1,min(ti)),
-            #                        count=c(-1,-1,1,length(ti)))[loi, lai,]
-            #   data <- array(data, c(dim(data)[1]*dim(data)[2], dim(data)[3]))
-            #   print(dim(data))
-            #   outdata <- rbind(outdata, data)
-            #   names <- c(names, c(rep('t850',nrow(data))))
-            #   #          print(names)
-            # }
-            if (varname=='stream') {
-              data <- ncvar_get(nc, varname, start=c(1,1,1,min(ti)),
-                                count=c(1,-1,1,length(ti)))[laistream,]
-              #          data <- array(data, c(dim(data)[1]*dim(data)[2], dim(data)[3]))
-              print(dim(data))
-              outdata <- rbind(outdata, data)
-              names <- c(names, rep(varname, nrow(data)))
-              #          print(names)
+            if ((path == echpath) || (path == echallvarpath) || (path == echclimpath) ||
+                (path == echsdpath)) {
+              if (varname == 'temp2') data <- data - 273.15
+              if (varname == 'precip') data <- data * 3600 * 24 * 30
+              if (varname == 'slp') data <- data / 100
+            } else if (path == echanompath) {
+              if (varname == 'precip') data <- data * 3600 * 24 * 30
+              if (varname == 'slp') data <- data / 100
             }
+            print(dim(data))
+            outdata <- rbind(outdata, data)
+            names <- c(names, rep(varname, nrow(data)))
+            #          print(names)
           }
           
-          if (anom) {
-            if (small) {
-              save(outdata, file=paste("../data/echam/new_statvec/echam_anom/echam_anom_",num,"_",t,"-",(t+1),
-                                       "_2ndgrid.Rdata",sep=""))
-            } else {
-              save(outdata, file=paste("../data/echam/echam_anom/echam_anom_",num,"_",t,"-",(t+1),
-                                       ".Rdata",sep=""))
-            }
-          } else if (clim) {
-            if (small) {
-              save(outdata, file=paste("../data/echam/new_statvec/echam_clim/echam_clim_",num,"_",t,"-",(t+1),
-                                       "_2ndgrid.Rdata",sep=""))
-            } else {
-              save(outdata, file=paste("../data/echam/echam_clim/echam_clim_",num,"_",t,"-",(t+1),".Rdata",sep=""))
-            }
-          } else if (std) {
-            if (small) {
-              save(outdata, file=paste("../data/echam/echam_sd/echam_sd_",num,"_",t,"-",(t+1),
-                                       "_2ndgrid.Rdata",sep=""))
-            } else {
-              save(outdata, file=paste("../data/echam/echam_sd/echam_sd_",num,"_",t,"-",(t+1),
-                                       ".Rdata",sep=""))
-            }
-          } else {
-            if (small) {
-              save(outdata, file=paste("../data/echam/new_statvec/echam/echam_",num,"_",t,"-",(t+1),
-                                       "_2ndgrid.Rdata",sep=""))
-            } else {
-              save(outdata, file=paste("../data/echam/echam_",num,"_",t,"-",(t+1),".Rdata",sep=""))
-            }
+          if (varname=='geopoth') {
+            data <- ncvar_get(nc, varname, start=c(1,1,1,min(ti)),
+                              count=c(-1,-1,length(nc$var[[varname]]$dim[[3]]$vals),
+                                      length(ti)))[loi, lai,,]
+            data <- array(data,c(dim(data)[1]*dim(data)[2], dim(data)[3], dim(data)[4]))
+            print(dim(data))
+            outdata <- rbind(outdata, data[,1,])
+            outdata <- rbind(outdata, data[,2,])
+            names <- c(names, c(rep('gph500',nrow(data)),rep('gph100',nrow(data))))
+            #          print(names)
           }
-        } # end time loop
-    } # end files loop
-  # put 30 members in 1 file and calc ens mean for each time step
-  # ACHTUNG now starts at timlim[1]+1 = 1601 because some members miss 1600, probably 018  
-  for (t in (timlim[1]+1):(timlim[2]-1)) {
-    ti <- which(tim >= t & tim < (t[1]+2))
-    time <- tim[ti]
-    ensmean <- 0
-    for (i in 1:length(files)) {
-      #       if (small) {
-      #         load(file=paste("../data/echam/echam_",i,'_',t,"-",(t+1),
-      #                         "_3rdgrid.Rdata",sep=""))
-      #         tmp[[i]] <- outdata
-      #       } else {
-      #         load(file=paste("../data/echam/echam_",i,'_',t,"-",(t+1),
-      #                         ".Rdata",sep=""))
-      #         tmp[[i]] <- outdata
-      #       }
-      if (anom) {
-        if (small) {
-          load(file=paste("../data/echam/new_statvec/echam_anom/echam_anom_",i,'_',t,"-",(t+1),
-                                      "_2ndgrid.Rdata",sep=""))
-          tmp[[i]] <- outdata
+          if (varname=='u') {
+            data <- ncvar_get(nc, varname, start=c(1,1,1,min(ti)),
+                              count=c(-1,-1,length(nc$var[[varname]]$dim[[3]]$vals),
+                                      length(ti)))[loi, lai,,]
+            data <- array(data,c(dim(data)[1]*dim(data)[2], dim(data)[3], dim(data)[4]))
+            print(dim(data))
+            outdata <- rbind(outdata, data[,1,])
+            outdata <- rbind(outdata, data[,2,])
+            names <- c(names, c(rep('u850',nrow(data)),rep('u200',nrow(data))))
+            #         print(names)
+          }
+          if (varname=='v') {
+            data <- ncvar_get(nc, varname, start=c(1,1,1,min(ti)),
+                              count=c(-1,-1,length(nc$var[[varname]]$dim[[3]]$vals),
+                                      length(ti)))[loi, lai,] # originalyy it was [loi, lai,,]
+            # data <- array(data,c(dim(data)[1]*dim(data)[2], dim(data)[3], dim(data)[4]))# old state vector
+            # print(dim(data))
+            # outdata <- rbind(outdata, data[,1,]) # old state vector
+            # outdata <- rbind(outdata, data[,2,]) # old state vector
+            # names <- c(names, c(rep('v850',nrow(data)),rep('v200',nrow(data)))) # old state vector
+            data <- array(data,c(dim(data)[1]*dim(data)[2], dim(data)[3]))
+            print(dim(data))
+            outdata <- rbind(outdata, data)
+            names <- c(names, c(rep('v850',nrow(data)))) # new state vector
+            #          print(names)
+          }
+          if (varname=='blocks') {
+            data <- ncvar_get(nc, varname, start=c(1,1,min(ti)),
+                              count=c(-1,-1,length(ti)))[loi, lai,]
+            data <- array(data, c(dim(data)[1]*dim(data)[2], dim(data)[3]))
+            print(dim(data))
+            outdata <- rbind(outdata, data)
+            names <- c(names, c(rep('blocks',nrow(data))))
+            #          print(names)
+          }
+          if (varname=='cycfreq') {
+            data <- ncvar_get(nc, varname, start=c(1,1,min(ti)),
+                              count=c(-1,-1,length(ti)))[loi, lai,]
+            data <- array(data, c(dim(data)[1]*dim(data)[2], dim(data)[3]))
+            print(dim(data))
+            outdata <- rbind(outdata, data)
+            names <- c(names, c(rep('cycfreq',nrow(data))))
+            #          print(names)
+          }
+          if (varname=='wdays') {
+            data <- ncvar_get(nc, varname, start=c(1,1,min(ti)),
+                              count=c(-1,-1,length(ti)))[loi, lai,]
+            data <- array(data, c(dim(data)[1]*dim(data)[2], dim(data)[3]))
+            print(dim(data))
+            outdata <- rbind(outdata, data)
+            names <- c(names, c(rep('wdays',nrow(data))))
+            #          print(names)
+          }
+          if (varname=='omega') {
+            data <- ncvar_get(nc, varname, start=c(1,1,1,min(ti)),
+                              count=c(-1,-1,1,length(ti)))[loi, lai,]
+            data <- array(data, c(dim(data)[1]*dim(data)[2], dim(data)[3]))
+            print(dim(data))
+            outdata <- rbind(outdata, data)
+            names <- c(names, c(rep('omega500',nrow(data))))
+            #          print(names)
+          }
+          # if (varname=='st') {
+          #   data <- ncvar_get(nc, varname, start=c(1,1,1,min(ti)),
+          #                        count=c(-1,-1,1,length(ti)))[loi, lai,]
+          #   data <- array(data, c(dim(data)[1]*dim(data)[2], dim(data)[3]))
+          #   print(dim(data))
+          #   outdata <- rbind(outdata, data)
+          #   names <- c(names, c(rep('t850',nrow(data))))
+          #   #          print(names)
+          # }
+          if (varname=='stream') {
+            data <- ncvar_get(nc, varname, start=c(1,1,1,min(ti)),
+                              count=c(1,-1,1,length(ti)))[laistream,]
+            #          data <- array(data, c(dim(data)[1]*dim(data)[2], dim(data)[3]))
+            print(dim(data))
+            outdata <- rbind(outdata, data)
+            names <- c(names, rep(varname, nrow(data)))
+            #          print(names)
+          }
+        }
+        
+        if (anom) {
+          if (small) {
+            save(outdata, file=paste("../data/echam/new_statvec/echam_anom/echam_anom_",num,"_",t,"-",(t+1),
+                                     "_2ndgrid.Rdata",sep=""))
+          } else {
+            save(outdata, file=paste("../data/echam/echam_anom/echam_anom_",num,"_",t,"-",(t+1),
+                                     ".Rdata",sep=""))
+          }
+        } else if (clim) {
+          if (small) {
+            save(outdata, file=paste("../data/echam/new_statvec/echam_clim/echam_clim_",num,"_",t,"-",(t+1),
+                                     "_2ndgrid.Rdata",sep=""))
+          } else {
+            save(outdata, file=paste("../data/echam/echam_clim/echam_clim_",num,"_",t,"-",(t+1),".Rdata",sep=""))
+          }
+        } else if (std) {
+          if (small) {
+            save(outdata, file=paste("../data/echam/echam_sd/echam_sd_",num,"_",t,"-",(t+1),
+                                     "_2ndgrid.Rdata",sep=""))
+          } else {
+            save(outdata, file=paste("../data/echam/echam_sd/echam_sd_",num,"_",t,"-",(t+1),
+                                     ".Rdata",sep=""))
+          }
         } else {
-          load(file=paste("../data/echam/echam_anom/echam_anom_",i,'_',t,"-",(t+1),".Rdata",sep=""))
-          tmp[[i]] <- outdata
+          if (small) {
+            save(outdata, file=paste("../data/echam/new_statvec/echam/echam_",num,"_",t,"-",(t+1),
+                                     "_2ndgrid.Rdata",sep=""))
+          } else {
+            save(outdata, file=paste("../data/echam/echam_",num,"_",t,"-",(t+1),".Rdata",sep=""))
+          }
+        }
+      } # end time loop
+    } # end files loop
+    # put 30 members in 1 file and calc ens mean for each time step
+    # ACHTUNG now starts at timlim[1]+1 = 1601 because some members miss 1600, probably 018  
+    for (t in (timlim[1]+1):(timlim[2]-1)) {
+      ti <- which(tim >= t & tim < (t[1]+2))
+      time <- tim[ti]
+      ensmean <- 0
+      for (i in 1:length(files)) {
+        #       if (small) {
+        #         load(file=paste("../data/echam/echam_",i,'_',t,"-",(t+1),
+        #                         "_3rdgrid.Rdata",sep=""))
+        #         tmp[[i]] <- outdata
+        #       } else {
+        #         load(file=paste("../data/echam/echam_",i,'_',t,"-",(t+1),
+        #                         ".Rdata",sep=""))
+        #         tmp[[i]] <- outdata
+        #       }
+        if (anom) {
+          if (small) {
+            load(file=paste("../data/echam/new_statvec/echam_anom/echam_anom_",i,'_',t,"-",(t+1),
+                            "_2ndgrid.Rdata",sep=""))
+            tmp[[i]] <- outdata
+          } else {
+            load(file=paste("../data/echam/echam_anom/echam_anom_",i,'_',t,"-",(t+1),".Rdata",sep=""))
+            tmp[[i]] <- outdata
+          }
+        } else if (clim) {
+          if (small) {
+            load(file=paste("../data/echam/new_statvec/echam_clim/echam_clim_",i,'_',t,"-",(t+1),
+                            "_2ndgrid.Rdata",sep=""))
+            tmp[[i]] <- outdata
+          } else {
+            load(file=paste("../data/echam/echam_clim/echam_clim_",i,'_',t,"-",(t+1),".Rdata",sep=""))
+            tmp[[i]] <- outdata
+          }
+        } else if (std) {
+          if (small) {
+            load(file=paste("../data/echam/new_statvec/echam_sd/echam_sd_",i,'_',t,"-",(t+1),
+                            "_2ndgrid.Rdata",sep=""))
+            tmp[[i]] <- outdata
+          } else {
+            load(file=paste("../data/echam/echam_sd/echam_sd_",i,'_',t,"-",(t+1),".Rdata",sep=""))
+            tmp[[i]] <- outdata
+          }
+        } else {
+          if (small) {
+            load(file=paste("../data/echam/new_statvec/echam/echam_",i,'_',t,"-",(t+1),
+                            "_2ndgrid.Rdata",sep=""))
+            tmp[[i]] <- outdata
+          } else {
+            load(file=paste("../data/echam/echam_",i,'_',t,"-",(t+1),".Rdata",sep=""))
+            tmp[[i]] <- outdata
+          }
+        }
+        # if (i != length(files)) ensmean <- ensmean + outdata  
+        if (i <= length(files)) ensmean <- ensmean + outdata 
+      }
+      ensmean <- ensmean/(length(tmp)) #-1) why -1 ???
+      if (landonly) {
+        echam <- list(data=array(unlist(tmp), c(dim(tmp[[1]]), length(files))),
+                      ensmean=ensmean, lon=rep(lon[loi], length(lai))[lsm > 0.5],
+                      lat=rep(lat[lai], each=length(loi))[lsm > 0.5],
+                      lonstream=0,
+                      latstream=rep(latstream[laistream], each=length(loistream)),
+                      height=alt[lsm > 0.5], lsm.i=which(lsm > 0.5),
+                      time=time, names=names)
+      } else {
+        echam <- list(data=array(unlist(tmp), c(dim(tmp[[1]]), length(files))),
+                      ensmean=ensmean, lon=rep(lon[loi], length(lai)),
+                      lat=rep(lat[lai], each=length(loi)),
+                      lonstream=0, latstream=rep(latstream[laistream], each=length(laistream)),
+                      height=alt[lsm > 0.5], lsm.i=which(lsm > 0.5),
+                      #height=rep(-999,(length(loi)*length(lai))),
+                      #lsm.i=rep(-999,(length(loi)*length(lai))), 
+                      time=time, names=names)
+      }
+      if (anom) {
+        echam_anom <- echam
+        if (small) {
+          save(echam_anom, file=paste("../data/echam/new_statvec/echam_anom/echam_anom_",t,"-",(t+1),
+                                      "_2ndgrid.Rdata",sep=""))
+        } else {
+          save(echam_anom, file=paste("../data/echam/echam_anom/echam_anom_",t,"-",(t+1),".Rdata",sep=""))
         }
       } else if (clim) {
+        echam_clim <- echam
         if (small) {
-          load(file=paste("../data/echam/new_statvec/echam_clim/echam_clim_",i,'_',t,"-",(t+1),
+          save(echam_clim, file=paste("../data/echam/new_statvec/echam_clim/echam_clim_",t,"-",(t+1),
                                       "_2ndgrid.Rdata",sep=""))
-          tmp[[i]] <- outdata
         } else {
-          load(file=paste("../data/echam/echam_clim/echam_clim_",i,'_',t,"-",(t+1),".Rdata",sep=""))
-          tmp[[i]] <- outdata
+          save(echam_clim, file=paste("../data/echam/echam_clim/echam_clim_",t,"-",(t+1),".Rdata",sep=""))
         }
       } else if (std) {
+        echam_sd <- echam
         if (small) {
-          load(file=paste("../data/echam/new_statvec/echam_sd/echam_sd_",i,'_',t,"-",(t+1),
+          save(echam_sd, file=paste("../data/echam/echam_sd/echam_sd_",t,"-",(t+1),
                                     "_2ndgrid.Rdata",sep=""))
-          tmp[[i]] <- outdata
         } else {
-          load(file=paste("../data/echam/echam_sd/echam_sd_",i,'_',t,"-",(t+1),".Rdata",sep=""))
-          tmp[[i]] <- outdata
+          save(echam_sd, file=paste("../data/echam/echam_sd/echam_sd_",t,"-",(t+1),".Rdata",sep=""))
         }
       } else {
         if (small) {
-          load(file=paste("../data/echam/new_statvec/echam/echam_",i,'_',t,"-",(t+1),
+          save(echam, file=paste("../data/echam/new_statvec/echam/echam_",t,"-",(t+1),
                                  "_2ndgrid.Rdata",sep=""))
-          tmp[[i]] <- outdata
         } else {
-          load(file=paste("../data/echam/echam_",i,'_',t,"-",(t+1),".Rdata",sep=""))
-          tmp[[i]] <- outdata
+          save(echam, file=paste("../data/echam/echam_",t,"-",(t+1),".Rdata",sep=""))
         }
-      }
-      # if (i != length(files)) ensmean <- ensmean + outdata  
-      if (i <= length(files)) ensmean <- ensmean + outdata 
-    }
-    ensmean <- ensmean/(length(tmp)) #-1) why -1 ???
-    if (landonly) {
-      echam <- list(data=array(unlist(tmp), c(dim(tmp[[1]]), length(files))),
-                    ensmean=ensmean, lon=rep(lon[loi], length(lai))[lsm > 0.5],
-                    lat=rep(lat[lai], each=length(loi))[lsm > 0.5],
-                    lonstream=0,
-                    latstream=rep(latstream[laistream], each=length(loistream)),
-                    height=alt[lsm > 0.5], lsm.i=which(lsm > 0.5),
-                    time=time, names=names)
-    } else {
-      echam <- list(data=array(unlist(tmp), c(dim(tmp[[1]]), length(files))),
-                    ensmean=ensmean, lon=rep(lon[loi], length(lai)),
-                    lat=rep(lat[lai], each=length(loi)),
-                    lonstream=0, latstream=rep(latstream[laistream], each=length(laistream)),
-                    height=alt[lsm > 0.5], lsm.i=which(lsm > 0.5),
-                    #height=rep(-999,(length(loi)*length(lai))),
-                    #lsm.i=rep(-999,(length(loi)*length(lai))), 
-                    time=time, names=names)
-    }
-    if (anom) {
-      echam_anom <- echam
-      if (small) {
-        save(echam_anom, file=paste("../data/echam/new_statvec/echam_anom/echam_anom_",t,"-",(t+1),
-                               "_2ndgrid.Rdata",sep=""))
-      } else {
-        save(echam_anom, file=paste("../data/echam/echam_anom/echam_anom_",t,"-",(t+1),".Rdata",sep=""))
-      }
-    } else if (clim) {
-      echam_clim <- echam
-      if (small) {
-        save(echam_clim, file=paste("../data/echam/new_statvec/echam_clim/echam_clim_",t,"-",(t+1),
-                                    "_2ndgrid.Rdata",sep=""))
-      } else {
-        save(echam_clim, file=paste("../data/echam/echam_clim/echam_clim_",t,"-",(t+1),".Rdata",sep=""))
-      }
-    } else if (std) {
-      echam_sd <- echam
-      if (small) {
-        save(echam_sd, file=paste("../data/echam/echam_sd/echam_sd_",t,"-",(t+1),
-                                  "_2ndgrid.Rdata",sep=""))
-      } else {
-        save(echam_sd, file=paste("../data/echam/echam_sd/echam_sd_",t,"-",(t+1),".Rdata",sep=""))
-      }
-    } else {
-      if (small) {
-        save(echam, file=paste("../data/echam/new_statvec/echam/echam_",t,"-",(t+1),
-                               "_2ndgrid.Rdata",sep=""))
-      } else {
-        save(echam, file=paste("../data/echam/echam_",t,"-",(t+1),".Rdata",sep=""))
       }
     }
   }
-}
-
+} 
 
 
 
@@ -6904,7 +6904,7 @@ screenstd <- function (x,cyr,source) { #sources: proxy/inst
       #rpsd   <- sd(realprox$data[,i],na.rm=T)
       if ((!is.na(rpmean)) & (!is.na(rpsd))) {
         if ((!is.na(x$data[i,tiv])) & ((x$data[i,tiv] < rpmean-5*rpsd)
-                                     | (x$data[i,tiv] > rpmean+5*rpsd))) {
+                                       | (x$data[i,tiv] > rpmean+5*rpsd))) {
           x$data[i,tiv] <- NA
           print(paste('proxy data', i, 'out of range'))
           write(paste('proxy data', i, 'out of range'),file=paste0('../log/',logfn),append=T)
@@ -6942,29 +6942,29 @@ screenstd <- function (x,cyr,source) { #sources: proxy/inst
                   x$data[sts-1+j,i]<-NA
                   print(paste('inst data',varname,'#:',i,'mon:',j,'out of range'))
                   if (exists("logfn")){
-                  write(paste('inst data', varname,'#:',i,'mon:',j,'out of range'),
-                        file=paste0('../log/',logfn),append=T)
-                  write(paste('data lon/lat',var$lon[i],var$lat[i]),
-                        file=paste0('../log/',logfn),append=T)
-                  write(paste('echam lon/lat', echam.sd$lon[m],echam.sd$lat[m]),
-                        file=paste0('../log/',logfn),append=T)
-                  write(paste('bias corr. data', vtmp[j,stsv,i]+biasm),
-                        file=paste0('../log/',logfn),append=T)
-                  write(paste('echam clim', echam_clim_mon_ensmean[m,j]),
-                        file=paste0('../log/',logfn),append=T)
-                  write(paste('echam sd', echam.sd$data[m,j]),
-                        file=paste0('../log/',logfn),append=T)
-                } # was maybe one more bracket above this
+                    write(paste('inst data', varname,'#:',i,'mon:',j,'out of range'),
+                          file=paste0('../log/',logfn),append=T)
+                    write(paste('data lon/lat',var$lon[i],var$lat[i]),
+                          file=paste0('../log/',logfn),append=T)
+                    write(paste('echam lon/lat', echam.sd$lon[m],echam.sd$lat[m]),
+                          file=paste0('../log/',logfn),append=T)
+                    write(paste('bias corr. data', vtmp[j,stsv,i]+biasm),
+                          file=paste0('../log/',logfn),append=T)
+                    write(paste('echam clim', echam_clim_mon_ensmean[m,j]),
+                          file=paste0('../log/',logfn),append=T)
+                    write(paste('echam sd', echam.sd$data[m,j]),
+                          file=paste0('../log/',logfn),append=T)
+                  } # was maybe one more bracket above this
+                }
               }
             }
           }
         }
       }
     }
+    return(x)
   }
-  return(x)
 }
-
 
 
 screendistance <- function (echam.sd,varname) {

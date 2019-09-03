@@ -13,7 +13,7 @@ rm(list=ls())
 # enter syr ane eyr manually
 
 syr=1902 #1902 #1941
-eyr=2000 #2003 #1970
+eyr=1950 #2000 #2003 #1970
 
 # syrtot and eyrtot are only used for the total 400 yr indices time series 
 #syrtot=1902 #set to the same syr and eyr of the prepplots script (default 1602)
@@ -528,7 +528,7 @@ if (temporal_postproc) {
   } # loop over years
   # tps_only is set to F here because if it was T before it's not needed anymore from now on
   # set tps_only = T manually if in mergetime_fields the not-tps-data should be discarded
-  tps_only=F
+  #tps_only=F
   rm(echam.abs2,echam2.abs,echam2.anom,analysis.anom2,echam.anom2,analysis.abs2,analysis2.abs,
      analysis2.anom,validate2,validate2_all,validate2_init,vind_all,validate_all,validate_init)
 } #end temporal_postproc
@@ -1195,21 +1195,33 @@ if (mergetime_fields){
       if (vali) {
         valiname <- names(validate)
         validate_init <- validate
+        #validate.anom_init <- validate.anom
         validate_all <- list()
+        #validate.anom_all <- list()
         # commented JF 01/2018
         vind_init <- vind
+        #vind.anom_init <- vind.anom
         vind_all <- list()
+        #vind.anom_all <- list()
         l=0
         for (v in valiname) {  ## for multiple vali data sets
           l=l+1
           #print(v)
-          validate<-validate_init[[v]]
-          validate<-convert_to_tps_only(validate)
-          validate_all[[l]] <-validate
+          validate <- validate_init[[v]]
+          #validate.anom <- validate.anom_init[[v]]
+          validate <- convert_to_tps_only(validate)
+          #validate.anom <-convert_to_tps_only(validate.anom)
+          validate_all[[l]] <- validate
+          #validate.anom_all <- validate.anom 
+          #JF 08/2019
+          #validate.anom<-convert_to_tps_only(validate.anom)
           # commented JF 01/2018
           vind<-vind_init[[v]]
+          #vind.anom<-vind.anom_init[[v]]
           vind<-convert_to_tps_only(vind)
+          #vind.anom<-convert_to_tps_only(vind.anom)
           vind_all[[l]]<-vind
+          #vind.anom_all[[l]]<-vind.anom
         }
         names(validate_all)<-valiname
         # commented JF 01/2018
@@ -1879,6 +1891,12 @@ if (calc_vali_stat) {
     validate.anom <- validate.anom_init[[v]]
     vind <- vind_init[[v]]
     vind.anom <- vind.anom_init[[v]]
+    
+    # delete next 3 lines again JF 08/2019
+    if (tps_only) {
+      vind.anom <- convert_to_tps_only(vind.anom)  
+    }
+    
     
     if (nrow(echam$data)!=nrow(validate$data)) { # when 20cr_vali then nrow should be different when v="cru_vali"
       # probably could use here the shorten_func as well

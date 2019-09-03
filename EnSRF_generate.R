@@ -42,6 +42,12 @@ if (generate_ECHAM_covar){
   echam_covar(syr=1603,eyr=2004)
 }
 
+if (generate_CCSM_last_mill_ens){
+  # following filehead including "001" just reads first member
+  # only works with landonly=F
+  read_last_mill_ens(filehead="ncar_last_mill_001")
+}
+
 if (generate_ind_recon){
   # read Broennimann et al. 2009 atm. indices from .txt to .Rdata for comparison
   #if (syr<1901){syr_ind=1901} else {syr_ind=syr}
@@ -180,10 +186,14 @@ if (generate_slp_yuri){
 
 if (generate_DOCUM){
   print("generate_DOCUM")
-  source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_seas.R"))
-  source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_monthly.R"))
-  source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_JFMA.R"))
-  source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_AMJJA.R"))
+  # new version 2 with angie's collection
+  # ATTENTION: manually copy generated .Rdata file to climstor!
+  source('read_docum_monthly_v2_2019.R')
+  # old version 1
+  #source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_seas.R"))
+  #source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_monthly.R"))
+  #source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_JFMA.R"))
+  #source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_AMJJA.R"))
 }
 
 # generate PAGES v2 from Raphi's 2018/01 export (version 1.6.1 from Raphi's data base):
@@ -224,7 +234,7 @@ if (generate_PROXIES){
         realprox$lon <- c(realprox$lon, mxdprox$lon)
         realprox$lat <- c(realprox$lat, mxdprox$lat)
         realprox$mr <- rbind(realprox$mr, mxdprox$mr)
-        realprox$var_residu <- c(realprox$var_residu, mxdprox$var_residu)
+        realprox$var_residu <- rbind(realprox$var_residu, mxdprox$var_residu)
         realprox$archivetype <- c(realprox$archivetype,mxdprox$archivetype)
         realprox$datasource <- c(realprox$datasource,mxdprox$datasource)
         
@@ -244,7 +254,7 @@ if (generate_PROXIES){
         realprox$lon <- c(realprox$lon, schprox$lon)
         realprox$lat <- c(realprox$lat, schprox$lat)
         realprox$mr <- rbind(realprox$mr, schprox$mr)
-        realprox$var_residu <- c(realprox$var_residu, schprox$var_residu)
+        realprox$var_residu <- rbind(realprox$var_residu, schprox$var_residu)
         realprox$archivetype <- c(realprox$archivetype,schprox$archivetype)
         realprox$datasource <- c(realprox$datasource,schprox$datasource)
         
@@ -262,7 +272,7 @@ if (generate_PROXIES){
         realprox$lon <- c(realprox$lon, ntrend$lon)
         realprox$lat <- c(realprox$lat, ntrend$lat)
         realprox$mr <- rbind(realprox$mr, ntrend$mr)
-        realprox$var_residu <- c(realprox$var_residu, ntrend$var_residu)
+        realprox$var_residu <- rbind(realprox$var_residu, ntrend$var_residu)
         realprox$archivetype <- c(realprox$archivetype,ntrend$archivetype)
         realprox$datasource <- c(realprox$datasource,ntrend$datasource)
         
@@ -280,7 +290,7 @@ if (generate_PROXIES){
         realprox$lon <- c(realprox$lon, pagesprox$lon)
         realprox$lat <- c(realprox$lat, pagesprox$lat)
         realprox$mr <- rbind(realprox$mr, pagesprox$mr)
-        realprox$var_residu <- c(realprox$var_residu, pagesprox$var_residu)
+        realprox$var_residu <- rbind(realprox$var_residu, pagesprox$var_residu)
         realprox$archivetype <- c(realprox$archivetype,pagesprox$archivetype)
         realprox$datasource <- c(realprox$datasource,pagesprox$datasource)
         
@@ -300,7 +310,7 @@ if (generate_PROXIES){
         realprox$lon <- c(realprox$lon, trw_petra$lon)
         realprox$lat <- c(realprox$lat, trw_petra$lat)
         realprox$mr <- rbind(realprox$mr, trw_petra$mr)
-        realprox$var_residu <- c(realprox$var_residu, trw_petra$var_residu)
+        realprox$var_residu <- rbind(realprox$var_residu, trw_petra$var_residu)
         realprox$archivetype <- c(realprox$archivetype,trw_petra$archivetype)
         realprox$datasource <- c(realprox$datasource,trw_petra$datasource)
         

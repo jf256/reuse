@@ -2,11 +2,11 @@
 ################################ EnSRF_switches.R ####################################
 ######################################################################################
 
-expname="assim_temp_slp_ghcn_d_better_precip_R30_timeloc"
+expname="merged_code_docu_test" 
 
-version="v1.3"    # set code version number for experiment and netcdf file names
+version="v1.4"    # set code version number for experiment and netcdf file names
 # v1.1 at DKRZ is experiment 1.2 here!
-
+# v1.4 after merging JF proxy fixes and VV precip assimilation
 #####################################################################################
 # general switches 
 #####################################################################################
@@ -47,6 +47,7 @@ generate_ECHAM=F                # if TRUE -> orig. echam data is read
 generate_ECHAM_103=F            # ECHAM ens. mem. 103 with corrected land use forcing
 generate_ECHAM_covar=F          # generate_ECHAM all time step array long-term covariance")
 generate_ECHAM_anom=F           # read echam anom, clim and sd from cdo
+generate_CCSM_last_mill_ens=F   # CCSM last millinnium ensemble for DAPS no forc./stat. offline pseudoproxy exp.
 
 # ATTENTION if echam=T the proxy/instr. data have to be generated, too
 
@@ -72,9 +73,9 @@ statyr=1905                     # 1941 1850/69 year, when GHCN/ISTI station netw
  generate_GHCN_precip=F          # if FALSE -> ghcn.Rdata 
 generate_DOCUM=F                # if TRUE -> yuri's docu. data collection is read 
 # do we still need next 3 lines? why after generate_proxies in EnSRF_generate?
-generate_PAGES=F                # using the screened PAGES proxy dataset
+#generate_PAGES=F                # using the screened PAGES proxy dataset
                     # CODE from Roni missing to convert csv to RData 
-generate_NTREND=F   # CODE from Roni missing to convert csv to RData 
+#generate_NTREND=F   # CODE from Roni missing to convert csv to RData 
 # REMEMBER to use 12 months temp. forward model and yearly output for next which
 generate_PSEUDO=F               # DAPS PSEUDO PROXY EXPERIMENT: Set pseudo_prox to T further down (approx Line 145)
                                 # if F but pseudo_prox below is T, then .RData file is loaded
@@ -102,24 +103,27 @@ generate_PROXIES=F
   # PAGES_tree data also consists of location on the SH: if for ex. t4 (is chosen), it takes t10 (t4+6) 
   # for any locations with lat<0. 
   
-  regression_months = c('t.first', 't.second','t.third','t.fourth','t.fifth','t.sixth') 
-  #regression_months = c('t.first', 't.second','t.third','t.fourth','t.fifth','t.sixth', 
-  #                      'p.first', 'p.second','p.third','p.fourth','p.fifth','p.sixth')
+  #regression_months = c('t.first', 't.second','t.third','t.fourth','t.fifth','t.sixth') 
+  regression_months = c('t.first', 't.second','t.third','t.fourth','t.fifth','t.sixth', 
+                        'p.first', 'p.second','p.third','p.fourth','p.fifth','p.sixth')
   
   #### PROXIES ####
-  TRW=F          # 35 best TRW records from Petra's collection
-  MXD=F          # additional MXD, not gridded Schweizgruber data
-  SCHWEINGR=F    # Schweingruber/Briffa MXD grid
   NTREND=F       # NTREND best tree data version 2018 (identical with 2015 paper)
   PAGES=F        # PAGESdata base version 2 from 01/2018
+                 # works only with t and p regression months
   TRW_PETRA=F    # all TRW series from ITRDB and recalibrated by Petra
+  # Following switches have not been adapted to code version 08/2019, 2 col var_residu etc.
+    TRW=F          # 35 best TRW records from Petra's collection
+    MXD=F          # additional MXD, not gridded Schweizgruber data
+    SCHWEINGR=F    # Schweingruber/Briffa MXD grid
   #################
 
 
 
   # ATTENTION: precip. forward model only works with CRU and NOT GISS
-  lm_fit_data = "GISS"          # can be CRU or GISS to calculate the reg coeff-s (GISS is land+ocean temp only)
-  type = c("coral")              # only works with tree and coral (and both indiviually as well)
+  lm_fit_data = "BEST"      # can be BEST, CRU or GISS to calculate the reg coeff-s 
+                            # (BEST has CRU SLP and prec, GISS is land+ocean temp only)
+  type = c("coral","tree")  # only works with tree and coral (and both indiviually as well)
   #}  
   # END if generate_PROXIES
 
@@ -148,31 +152,34 @@ generate_PROXIES=F
 
 #### Instrumental Data ####
 old_statvec = F
-new_statvec = T      # has +: wetdays, block, cycfreq; -: v200, t500
+new_statvec = T          # has +: wetdays, block, cycfreq; -: v200, t500
 
-yuri_temp=T                     # yuri's data compilation, SLP always loaded
-yuri_slp=T
+yuri_temp = F            # yuri's data compilation, SLP always loaded
+yuri_slp = F
  inst_slp_err = sqrt(10) # instrumental slp error (10 is the variance of slp error)
-ghcn_temp=T
+ghcn_temp = F
  inst_t_err = sqrt(0.9)  # instrumental temp error (0.9 is the variance of temp error)
-isti_instead_ghcn=F             # switch from ghcn to isti (ghcn_temp must still be set to TRUE)
-ghcn_prec=T
-ghcn_p_err = 0.3   # error in percent (based on US stations estimation should be 30%)
-ghcn_p_min = 10    # minimum error 10 mm
-precip_ratio= F      # if T assimilating ratio, if F assimilating the difference
-gauss_ana =F         # use Gaussian anamorphosis for precipitation ratio
-check_norm = F       # check whether the GA transformed values normally distributed and use only those that are
-ghcn_wday =F         # assimilating wetdays calculated from daily precip ghcn data
-ghnc_w_err = 2     # error number of days (based on US stations estimation should be 2 days)
+isti_instead_ghcn = F    # switch from ghcn to isti (ghcn_temp must still be set to TRUE)
+ghcn_prec = F
+  ghcn_p_err = 0.3       # error in percent (based on US stations estimation should be 30%)
+  ghcn_p_min = 10        # minimum error 10 mm
+  precip_ratio = F       # if T assimilating ratio, if F assimilating the difference
+  gauss_ana = F          # use Gaussian anamorphosis for precipitation ratio
+  check_norm = F         # check whether the GA transformed values normally distributed and use only those that are
+  ghcn_wday = F          # assimilating wetdays calculated from daily precip ghcn data
+  ghnc_w_err = 2         # error number of days (based on US stations estimation should be 2 days)
 
 
 #### Documentary Data ####
-import_luca=F        # new docu data, if it is T then docum part is T
-docu_err= sqrt(0.25) # equals 0.5 std. dev.
+assim_docu = T           # use docu series from version 1 and series from angie 2019, all monthly resolution only! 
+  docu_err = sqrt(0.25)  # equals 0.5 std. dev.
 
 
 #### Pseudo Proxy Data ####
 pseudo_prox=F                    # use DAPS Pseudo-Proxies and annual resolution Jan-Dez
+  last_mill_prior=F              # use NCAR last Millennium ensemble as prior in stat. offline 
+                                 # DAPS pseudoproxy experiment instead of ECHAM CCC400
+                                 # only works with landonly=F
 if (pseudo_prox) {
   if (generate_PROXIES==T) {stop("pseudo_prox and generate_PROXIES cannot be used together")}
   sixmonstatevector=F    # using annual mean
@@ -249,9 +256,6 @@ if (loc) {
   #l_dist_wdays = 900
   l_dist_blocks = 1800*1.5
   l_dist_cycfreq = 1800*1.5
-
-
-
 } else {
   l_dist_temp2=999999
   l_dist_slp=999999
@@ -277,8 +281,9 @@ landcorr = F                  # use simulation WITHOUT land use bug if TRUE
 # how to treat multiple input series in same grid box
 best2worst=T           # order proxies from best first to worst last based on residuals
                        # if FALSE then worst first and best last
-best_prox_per_grid=F   # use only one real proxy record with lowest residuals per grid cell 
-  bestproxres=0.1      # generates lon/lat grid with set resolution 0.1 mean only best proxy in ~10km2 grid
+best_tree_per_grid=T   # use only one real tree proxy record with lowest residuals per grid cell 
+  besttreeres=0.1      # generates lon/lat grid with set resolution 0.1 mean only best proxy in ~10km2 grid
+                       # NOT for corals that have two values per year because 2nd val would be deleted
 first_inst_per_grid=F  # first instrumental observations per echam grid box 
                        # ATTENTION: only this or second next option (avg_prox_per_grid) can be TRUE
                        # "DON'T USE FIRST_INST_PER_GRID IF YOU WANT TO INCLUDE REAL PROXY DATA AND 
@@ -288,7 +293,6 @@ avg_obs_per_grid=T     # average more than one observation per echam grid box
                        # and calc proxy vs echam correlation
 ins_tim_loc = T        # whether the instrumental obs-s should be localized in time or not
 instmaskprox=F         # remove proxy data from grid boxes that have instr. data
-reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=F            # calc on land only
 tps_only=T             # only use temp, precip and slp in state vector, remove other vars
@@ -347,7 +351,7 @@ monthly_out=F                   # if sixmonstatevector=T output is backtransform
 # yearly out is old switch from nevin. annual output automatically if pseudo_prox=T
   yearly_out=F                    # if both false, plots seasonal averages are calculated
                                 # average or monthly data if monthly_out=T 
-temporal_postproc=F             # save half year averages calc from monthly data into /prepplot folder
+temporal_postproc=T             # save half year averages calc from monthly data into /prepplot folder
 mergetime_indices=T             # if TRUE: indices are combined to allts variables for whole period 
                                 # (e.g. also for 1604-2004) and saved into image folder for TS-plots
 # run next option "load_prepplot" for entire validation period, usually 

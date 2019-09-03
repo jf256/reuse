@@ -81,7 +81,7 @@ for (cyr in syr2:eyr) {
   print(expname)
   print(cyr)
   write(cyr,file=paste0('../log/',logfn),append=T)
-  if (cyr > 1659&(yuri_temp|yuri_slp|ghcn_temp|isti_instead_ghcn|ghcn_prec)) {
+  if (cyr > 1659 & (yuri_temp|yuri_slp|ghcn_temp|isti_instead_ghcn|ghcn_prec)) {
     #Nevin June2018: I added this control sequence instead of the "proxies_only" in the experiment name. Like that: at least one of the instrumental
     #datasets has to be true in the switches such that instrumental = T here. Otherwhise there was an error when only proxies were used.
     instrumental=T        # all instrumental stations 
@@ -94,11 +94,11 @@ for (cyr in syr2:eyr) {
   } else {
     real_proxies=F
   }
-  if (cyr <= 1900&pseudo_prox) {
+  if (cyr <= 1900 & pseudo_prox) {
     real_proxies=F
     stop('DAPS pseudo proxy experiment is currently only working from 1901 onwards')
   }
-  if (cyr <= 1853&import_luca) {
+  if (assim_docu) { # cyr <= 1853 & assim_docu) { #import_luca) {
     docum=T                 # read documentary based data
   } else {
     docum=F
@@ -864,8 +864,8 @@ for (cyr in syr2:eyr) {
     }
     
     # 3.2.1 Only use best proxies per grid cell, i.e. smallest residuals
-    if (best_prox_per_grid) {
-      res=bestproxres
+    if (best_tree_per_grid) {
+      res=besttreeres
       newgrid <- echam.sd
       newgrid$ensmean <- NULL
       #newgrid$lon <- echam.sd$lon[seq(1,length(echam.sd$lon),res)]
@@ -876,60 +876,112 @@ for (cyr in syr2:eyr) {
       newgrid$lat <- rep(lats, each=length(lons))
       newgrid$data <- as.matrix(rep(NA,length(newgrid$lon)))
       
-      tmp_prox <- realprox
-      tmp_vec <- vector()
-      for (i in 1:ncol(tmp_prox$data)) {
-        if (i %% 1000 == 0) {
-          print(paste('Remove duplicate proxies, i.e. best_prox_per_grid. Number:', i))
-        }
-        pos <- which(newgrid$lon>(tmp_prox$lon[i]-(2*res))&newgrid$lon<(tmp_prox$lon[i]+(2*res))&
-                        newgrid$lat>(tmp_prox$lat[i]-(2*res))&newgrid$lat<(tmp_prox$lat[i]+(2*res))) 
-        dist <- compute_dist(newgrid$lon[pos], newgrid$lat[pos], tmp_prox$lon[i], tmp_prox$lat[i])
-        tmp_vec[i] <- pos[which.min(dist)]
+      tpos=which(realprox$archivetype=='tree')
+      cpos=which(realprox$archivetype=='coral')
+      if (length(cpos) > 0) {
+        # save corals
+        coralprox <- realprox
+        coralprox$data <- realprox$data[,cpos]
+        coralprox$lon <- realprox$lon[cpos]
+        coralprox$lat <- realprox$lat[cpos]
+        coralprox$archivetype <- realprox$archivetype[cpos]
+        coralprox$elevation <- realprox$elevation[cpos]
+        coralprox$mr <- realprox$mr[cpos,]
+        coralprox$var_residu <- realprox$var_residu[cpos,]
+        coralprox$datasource <- realprox$datasource[cpos]
       }
-      #n_prox_per_grid <- apply(tmp_array, 2, sum)
-      #Hproxy <- compute_H(tmp_prox, newgrid, threshold=(700*res))  
-      #n_prox_per_grid <- apply(Hproxy, 2, sum)
-      removepos=NULL
-      tiv=which(floor(realprox$time)==cyr)
-      for (i in unique(tmp_vec)) {
-        pos <- which(tmp_vec==i)
-        if (length(pos) > 1) {
-      #for (i in 1:ncol(Hproxy)){
-      #  if (n_prox_per_grid[i] > 1) {
-      #    pos <- which(Hproxy[,i]>0) # find prox in same grid box
-          posnotna <- !is.na(realprox$data[tiv,pos])
-          pos2 <- pos[posnotna]
-          pos_t <- rep(NA,length=length(pos2))
-          pos_n <- rep(NA,length=length(pos2))
-          # split into rather t and p sensitive
-          for (j in 1:length(pos2)) {
-            pos_t[j] <- (length(which(!is.na(realprox$mr[pos2[j],2:7])))>length(which(!is.na(realprox$mr[pos2[j],8:13]))))
-            pos_n[j] <- (length(which(!is.na(realprox$mr[pos2[j],2:7])))<length(which(!is.na(realprox$mr[pos2[j],8:13]))))
+      if (length(tpos) > 0) {
+        # run duplicate removal on trees only
+        treeprox <- realprox
+        treeprox$data <- realprox$data[,tpos]
+        treeprox$lon <- realprox$lon[tpos]
+        treeprox$lat <- realprox$lat[tpos]
+        treeprox$archivetype <- realprox$archivetype[tpos]
+        treeprox$elevation <- realprox$elevation[tpos]
+        treeprox$mr <- realprox$mr[tpos,]
+        treeprox$var_residu <- realprox$var_residu[tpos,]
+        treeprox$datasource <- realprox$datasource[tpos]
+        tmp_prox <- treeprox
+        tmp_vec <- vector()
+        for (i in 1:ncol(tmp_prox$data)) {
+          if (i %% 1000 == 0) {
+            print(paste('Remove duplicate proxies, i.e. best_prox_per_grid. Number:', i))
           }
-          if (all(is.na(realprox$var_residu[pos2]))) {
-            removepos <- c(removepos,pos)
-          } else if (any(pos_t) & any(pos_n)) {
-            removepos <- c(removepos,pos[-c(which(realprox$var_residu[pos]==min(realprox$var_residu[pos2[pos_t]],na.rm=T)),
-                                            which(realprox$var_residu[pos]==min(realprox$var_residu[pos2[pos_n]],na.rm=T)))])
-          } else if (any(pos_t) & !any(pos_n)) {
-            removepos <- c(removepos,pos[-which(realprox$var_residu[pos]==min(realprox$var_residu[pos2[pos_t]],na.rm=T))])
-          } else if (!any(pos_n) & any(pos_n)) {
-            removepos <- c(removepos,pos[-which(realprox$var_residu[pos]==min(realprox$var_residu[pos2[pos_n]],na.rm=T))])
-          }   
+          pos <- which(newgrid$lon>(tmp_prox$lon[i]-(2*res))&newgrid$lon<(tmp_prox$lon[i]+(2*res))&
+                         newgrid$lat>(tmp_prox$lat[i]-(2*res))&newgrid$lat<(tmp_prox$lat[i]+(2*res))) 
+          dist <- compute_dist(newgrid$lon[pos], newgrid$lat[pos], tmp_prox$lon[i], tmp_prox$lat[i])
+          tmp_vec[i] <- pos[which.min(dist)]
         }
+        #n_prox_per_grid <- apply(tmp_array, 2, sum)
+        #Hproxy <- compute_H(tmp_prox, newgrid, threshold=(700*res))  
+        #n_prox_per_grid <- apply(Hproxy, 2, sum)
+        removepos=NULL
+        tiv=which(floor(treeprox$time)==cyr)
+        for (i in unique(tmp_vec)) {
+          pos <- which(tmp_vec==i)
+          if (length(pos) > 1) {
+            #for (i in 1:ncol(Hproxy)){
+            #  if (n_prox_per_grid[i] > 1) {
+            #    pos <- which(Hproxy[,i]>0) # find prox in same grid box
+            posnotna <- !is.na(treeprox$data[tiv,pos])
+            if (treeprox$lat[pos][1] > 0) {
+              tcol=2
+            } else {
+              tcol=1
+            }
+            pos2 <- pos[posnotna]
+            pos_t <- rep(NA,length=length(pos2))
+            pos_n <- rep(NA,length=length(pos2))
+            # split into rather t and p sensitive
+            for (j in 1:length(pos2)) {
+              pos_t[j] <- (length(which(!is.na(treeprox$mr[pos2[j],2:7])))>=
+                             length(which(!is.na(treeprox$mr[pos2[j],8:13]))))
+              pos_n[j] <- (length(which(!is.na(treeprox$mr[pos2[j],2:7])))<
+                             length(which(!is.na(treeprox$mr[pos2[j],8:13]))))
+            }
+            if (all(is.na(treeprox$var_residu[pos2,]))) {
+              removepos <- c(removepos,pos)
+            } else if (any(pos_t) & any(pos_n)) {
+              removepos <- c(removepos,pos[-c(which(treeprox$var_residu[pos2,tcol]==
+                                                      min(treeprox$var_residu[pos2[pos_t],tcol],na.rm=T)),
+                                              which(treeprox$var_residu[pos,tcol]==
+                                                      min(treeprox$var_residu[pos[pos_n],tcol],na.rm=T)))])
+            } else if (any(pos_t) & !any(pos_n)) {
+              removepos <- c(removepos,pos[-which(treeprox$var_residu[pos,tcol]==
+                                                    min(treeprox$var_residu[pos2[pos_t],tcol],na.rm=T))])
+            } else if (!any(pos_n) & any(pos_n)) {
+              removepos <- c(removepos,pos[-which(treeprox$var_residu[pos,tcol]==
+                                                    min(treeprox$var_residu[pos2[pos_n],tcol],na.rm=T))])
+            } 
+          }
+        }
+        # remove stations, will not be shown on station map 
+        # treeprox$lon <- treeprox$lon[-removepos] 
+        # treeprox$lat <- treeprox$lat[-removepos] 
+        # treeprox$data <- treeprox$data[,-removepos] 
+        # treeprox$names <- treeprox$names[-removepos]
+        # treeprox$mr <- treeprox$mr[-removepos,]
+        # treeprox$var_residu <- treeprox$var_residu[-removepos] 
+        # set NA to keep station map symbol instead of removing
+        treeprox$data[tiv,removepos] <- NA
+        treeprox$mr[removepos,] <- NA
+        treeprox$var_residu[removepos,] <- NA
+      } # end if any tree data exists
+      if ((length(cpos) > 0) & (length(tpos) > 0)) {
+        # merge trees and corals to realprox again
+        realprox$data <- cbind(treeprox$data,coralprox$data)
+        realprox$lon <- c(treeprox$lon,coralprox$lon)
+        realprox$lat <- c(treeprox$lat,coralprox$lat)
+        realprox$archivetype <- c(treeprox$archivetype,coralprox$archivetype)
+        realprox$elevation <- c(treeprox$elevation,coralprox$elevation)
+        realprox$mr <- rbind(treeprox$mr,coralprox$mr)
+        realprox$var_residu <- rbind(treeprox$var_residu,coralprox$var_residu)
+        realprox$datasource <- c(treeprox$datasource,coralprox$datasource)
+      } else if (length(tpos) > 0) {
+        realprox <- treeprox
+      } else if (length(cpos) > 0) {
+        realprox <- coralprox
       }
-      # remove stations, will not be shown on station map 
-      # realprox$lon <- realprox$lon[-removepos] 
-      # realprox$lat <- realprox$lat[-removepos] 
-      # realprox$data <- realprox$data[,-removepos] 
-      # realprox$names <- realprox$names[-removepos]
-      # realprox$mr <- realprox$mr[-removepos,]
-      # realprox$var_residu <- realprox$var_residu[-removepos] 
-      # set NA to keep station map symbol instead of removing
-      realprox$data[tiv,removepos] <- NA
-      realprox$mr[removepos,] <- NA
-      realprox$var_residu[removepos] <- NA
     }
     
     # 3.3 Convert to 2 season per year or leave annual average for DAPS pseudoproxy exp.
@@ -975,9 +1027,9 @@ for (cyr in syr2:eyr) {
     
     # 3.4.5 Sort proxies by residuals 
     if (best2worst) {
-      pos <- order(realprox$var_residu)
+      pos <- order(rowMeans(realprox$var_residu,na.rm=T))
     } else {
-      pos <- rev(order(realprox$var_residu))
+      pos <- rev(order(rowMeans(realprox$var_residu,na.rm=T)))
     }
     #if (pseudo_prox) {
     realprox$data <- realprox$data[pos,,drop=F]
@@ -991,32 +1043,17 @@ for (cyr in syr2:eyr) {
     realprox$parameter <- NULL
     realprox$mr <- realprox$mr[pos,]
     realprox$names <- realprox$names[pos]
-    realprox$var_residu <- realprox$var_residu[pos]
- 
-      
+    realprox$var_residu <- realprox$var_residu[pos,]
+    realprox$sour <- rep('prox',length(realprox$lon))
+    realprox.allts$sour <- rep('prox',length(realprox$lon))
+    
     # 3.5 Create a list named proxies
     # real trw proxy multiple regression approach
     if (!instrumental) {
-      realprox$sour <- rep('prox',length(realprox$lon))
-      realprox.allts$sour <- rep('prox',length(realprox$lon))
-      if (reduced_proxies) {
-        every <- 12
-        redpos <-seq(1,length(realprox$lon),every)
-        realprox$lon <- realprox$lon[redpos]
-        realprox$lat <- realprox$lat[redpos]
-        realprox$data <- realprox$data[redpos,]
-        realprox$names <- realprox$names[redpos]
-        realprox$sour <- realprox$sour[redpos]
-        realprox.allts$lon <- realprox.allts$lon[redpos]
-        realprox.allts$lat <- realprox.allts$lat[redpos]
-        realprox.allts$data <- realprox.allts$data[redpos,]
-        realprox.allts$names <- realprox.allts$names[redpos]
-        realprox.allts$sour <- realprox.allts$sour[redpos]
-      }
       proxies<-list(data=realprox$data, lon=realprox$lon,
                     lat=realprox$lat, names=realprox$names, sour=realprox$sour,
                     height=realprox$elevation, time=realprox$time,
-                    mr=realprox$mr, var_residu=realprox$var_residu,
+                    mr=realprox$mr, error=sqrt(realprox$var_residu),
                     numavg=rep(1,length(realprox$lon)))
     }
     
@@ -1036,28 +1073,21 @@ for (cyr in syr2:eyr) {
   # 4.3 Scale the documentary data
   # 4.4 Reconvert to 2 seasons per year
   # 4.5 Combine assimilation data into variable named "proxies"
-  # 4.6 Combine assimilation data into variable named "proxies"
   ##########################################################################################
   
   if (docum) {
-    # 4.1 Loading documentary data
-    # if (import_luca) {
-      load('../assimil_data/t_docu/t_docu_monthly_luca.Rdata')
-    # }else{
-    #   load(paste0(dataextdir,"assimil_data/rdata_files/t_docu_monthly.Rdata"))
-    # }
+    #print('prepare documentary data')
+    # 4.1 Loading documentary data: angie 2019 contains data from v1 + new monthly series
+    load(paste0(dataextdir,'assimil_data/v2/rdata_files/t_docu_monthly_angie2019.Rdata'))
     if (!any(!is.na(t$data))) { docu=F }
-    
     if (sixmonstatevector) {
       
       # 4.2 Calculate the 71 anomaly from cyr-1 October to cyr September
-      
       if (anomaly_assim){
-        # 4.2.1 Calculate the climatology
         
+        # 4.2.1 Calculate the climatology
         t.clim<-calculate_climatology(t,cyr,36,35,source="inst")
         t.clim$data<-t(t.clim$data)
-        
         t.clim$data = apply(array(t.clim$data, c(nrow(t.clim$data), 12, ncol(t.clim$data)/12)), 1:2, mean,na.rm=T)
         
         # 4.2.3 Cut out the cyr-1 and cyr time window
@@ -1094,14 +1124,14 @@ for (cyr in syr2:eyr) {
       }
       
       # 4.4 Reconvert to 2 seasons per year
-      
       listoftwo<-convert_to_2_seasons(doc_t_mon,source="doc")
       doc_t_mon <- listoftwo$x
-      
+      doc_t_mon$sour <- rep('doc',length(doc_t_mon$lon))
+      doc_t_mon$error <- matrix(docu_err,nrow=length(doc_t_mon$lon),ncol=2)
+      docall <- doc_t_mon
     } else {
       stop("docum section currently only coded for sixmonstatevector!")
     } # end of 6monstatevector
-    
     
     # 4.5 Combine assimilation data into variable named "proxies"
     if ((!instrumental) & (!real_proxies)) {
@@ -1110,24 +1140,21 @@ for (cyr in syr2:eyr) {
       docall <- doc_t_mon
     }
     
-    # 4.6 Combine assimilation data into variable named "proxies"
     if (!instrumental & real_proxies ) {
-      docall$sour <- rep('doc',length(docall$lon))
-      realprox$sour <- rep('prox',length(realprox$lon))
       tmpnum2 <- rep(1,length(realprox$lon)) #realprox.numavg
       tmpmr <- matrix(NA,nrow=length(docall$lon),ncol=ncol(proxies$mr))
-      tmpres <- rep(NA,length(proxies$var_residu))
+      #tmpres <- rep(NA,length(proxies$var_residu))
       tmpelev <- rep(NA,length(proxies$height))
       tmpnum3 <- rep(1,length(docall$lon))
       proxies<-list(data=rbind(realprox$data,docall$data), lon=c(realprox$lon,docall$lon),
                     lat=c(realprox$lat,docall$lat), names=c(realprox$names,docall$names), 
                     sour=c(realprox$sour,docall$sour), 
                     height=c(realprox$height,tmpelev), time=realprox$time,
-                    mr=rbind(realprox$mr,tmpmr), var_residu=c(realprox$var_residu,tmpres),
+                    mr=rbind(realprox$mr,tmpmr), error=rbind(realprox$error,docall$error),
+                    #var_residu=rbind(realprox$var_residu,tmpres),
                     numavg=c(tmpnum2,tmpnum3))
     }
   }  # end of docu
-  
   
   
   ####################################################################
@@ -1138,7 +1165,6 @@ for (cyr in syr2:eyr) {
   # 5.4 Treat multiple data in the same grid box
   # 5.5 Combining all type of instrumental data
   # 5.6 Mask other data if there is instrumental data in same grid box at that time
-  # 5.7 Use every ??th (see code below) proxy record
   # 5.8 Add data source
   # 5.9 Convert to 2 season per year
   # 5.10 Combine assimilation data into variable named "proxies"
@@ -1745,7 +1771,7 @@ for (cyr in syr2:eyr) {
             realprox$lon[i] <- NA
             realprox$lat[i] <- NA
             realprox$mr[i,] <- NA
-            realprox$var_residu[i] <- NA
+            realprox$var_residu[i,] <- NA
           }
         }
         pos <- apply(!is.na(realprox$data),1,any)
@@ -1753,7 +1779,7 @@ for (cyr in syr2:eyr) {
         realprox$lon <- realprox$lon[pos]
         realprox$lat <- realprox$lat[pos]
         realprox$mr <- realprox$mr[pos,]
-        realprox$var_residu <- realprox$var_residu[pos]
+        realprox$var_residu <- realprox$var_residu[pos,]
         realprox$names <- realprox$names[pos] 
       }
       # 5.6.2 Mask docu data
@@ -1782,39 +1808,16 @@ for (cyr in syr2:eyr) {
       }
     } # end instmaskprox
     
-    # 5.7 Use every ??th (see code below) proxy record
-    if (reduced_proxies) {
-      every <- 12 
-      if (real_proxies) {
-        redpos <-seq(1,length(realprox$lon),every)
-        realprox$lon <- realprox$lon[redpos]
-        realprox$lat <- realprox$lat[redpos]
-        realprox$data <- realprox$data[redpos,]
-        realprox$names <- realprox$names[redpos]
-        realprox.allts$lon <- realprox.allts$lon[redpos]
-        realprox.allts$lat <- realprox.allts$lat[redpos]
-        realprox.allts$data <- realprox.allts$data[redpos,]
-        realprox.allts$names <- realprox.allts$names[redpos]
-      }
-      if (instrumental) {
-        redpos <-seq(1,length(inst$lon),every)
-        inst$lon <- inst$lon[redpos]
-        inst$lat <- inst$lat[redpos]
-        inst$data <- inst$data[redpos,]
-        inst$names <- inst$names[redpos]
-      }
-    }
-    
     # 5.8 Add data source/type information to list
     if (instrumental) {inst$sour <- rep('inst',length(inst$lon))}
-    if (docum) {
-      docall$sour <- rep('doc',length(docall$lon))
-      # docall.allts$sour <- rep('doc',length(docall$lon)) # doesn't exists anymore   
-    }
-    if (real_proxies) {
-      realprox$sour <- rep('prox',length(realprox$lon))
-      realprox.allts$sour <- rep('prox',length(realprox$lon))
-    }
+    # if (docum) {
+    #   docall$sour <- rep('doc',length(docall$lon))
+    #   # docall.allts$sour <- rep('doc',length(docall$lon)) # doesn't exists anymore   
+    # }
+    # if (real_proxies) {
+    #   realprox$sour <- rep('prox',length(realprox$lon))
+    #   realprox.allts$sour <- rep('prox',length(realprox$lon))
+    # }
     
     # 5.9 Convert to 2 season per year
     if (sixmonstatevector) { 
@@ -1849,7 +1852,7 @@ for (cyr in syr2:eyr) {
     
     if (real_proxies) {
       tmpmr <- matrix(NA,nrow=length(inst$lon),ncol=ncol(realprox$mr))
-      tmpres <- rep(NA,length(realprox$var_residu))
+      tmpres <- matrix(NA,nrow=nrow(realprox$var_residu),ncol=ncol(realprox$var_residu))
       if (avg_obs_per_grid) {
         tmpnum1 <- inst$numavg
         tmpnum2 <- rep(1,length(realprox$lon))
@@ -1858,26 +1861,26 @@ for (cyr in syr2:eyr) {
         tmpnum2 <- rep(1,length(realprox$lon)) #realprox.numavg
       }
       if (real_proxies & instrumental) {
-        proxies<-list(data=rbind(inst$data,realprox$data), err = rbind(inst$err,sqrt(realprox$var_residu)),
-                      lon=c(inst$lon,realprox$lon), lat=c(inst$lat,realprox$lat), names=c(inst$names,realprox$names), 
+        proxies<-list(data=rbind(inst$data,realprox$data), error=rbind(inst$err,realprox$err),
+                      lon=c(inst$lon,realprox$lon), lat=c(inst$lat,realprox$lat), 
+                      names=c(inst$names,realprox$names), 
                       sour=c(inst$sour,realprox$sour), 
                       height=c(inst$height,realprox$elevation), time=inst$time,
-                      mr=rbind(tmpmr,realprox$mr), var_residu=c(tmpres,realprox$var_residu),
+                      mr=rbind(tmpmr,realprox$mr), #var_residu=c(tmpres,realprox$var_residu),
                       numavg=c(tmpnum1,tmpnum2))
       }
     }
     
     if (docum) {
       tmpmr <- matrix(NA,nrow=length(docall$lon),ncol=ncol(proxies$mr))
-      tmpres <- rep(NA,length(proxies$var_residu))
+      # tmpres <- rep(NA,length(proxies$var_residu))
       tmpelev <- rep(NA,length(proxies$height))
       tmpnum3 <- rep(1,length(docall$lon))
-      proxies<-list(data=rbind(proxies$data,docall$data), err = rbind(proxies$err,rep(docu_err,length(docall$lon))),
-                    lon=c(proxies$lon,docall$lon), 
-                    lat=c(proxies$lat,docall$lat), names=c(proxies$names,docall$names), 
-                    sour=c(proxies$sour,docall$sour), 
+      proxies<-list(data=rbind(proxies$data,docall$data), error=rbind(proxies$error,rep(docall$error)),
+                    lon=c(proxies$lon,docall$lon), lat=c(proxies$lat,docall$lat), 
+                    names=c(proxies$names,docall$names), sour=c(proxies$sour,docall$sour), 
                     height=c(proxies$height,tmpelev), time=proxies$time,
-                    mr=rbind(proxies$mr,tmpmr), var_residu=c(realprox$var_residu,tmpres),
+                    mr=rbind(proxies$mr,tmpmr), #var_residu=c(realprox$var_residu,tmpres),
                     numavg=c(proxies$numavg,tmpnum3))
     }
   } # end "if (instrumental)"
@@ -1936,16 +1939,18 @@ for (cyr in syr2:eyr) {
       Hcal3[Hcal3==0] <- NA
     }
     rm(etmp)
-    if (instrumental & !docum & sixmonstatevector & !real_proxies) {
+    if (instrumental & !docum & !real_proxies) {
       H.i <- array(NA,c(nrow(Hcal1),1))
-    } else if (instrumental & docum & sixmonstatevector & !real_proxies) {
+    } else if (instrumental & docum & !real_proxies) {
       H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal3)),1))
-    } else if (!instrumental & docum & sixmonstatevector & real_proxies) {
+    } else if (!instrumental & docum & real_proxies) {
       H.i <- array(NA,c((nrow(Hcal2)+nrow(Hcal3)),(ncol(Hcal2))/2))
-    } else if (instrumental & !docum & sixmonstatevector & real_proxies) {
+    } else if (instrumental & !docum & real_proxies) {
       H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal2)),(ncol(Hcal2))/2))
-    } else if (!instrumental & !docum & real_proxies) { #new
+    } else if (!instrumental & !docum & real_proxies) { 
       H.i <- array(NA,c(nrow(Hcal2),(ncol(Hcal2))/2))
+    } else if (!instrumental & docum & !real_proxies) { 
+      H.i <- array(NA,c(nrow(Hcal3),(ncol(Hcal3))/2))  
     } else { 
       H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal2)+nrow(Hcal3)),(ncol(Hcal2))/2))
     }
@@ -1971,9 +1976,13 @@ for (cyr in syr2:eyr) {
       H.i[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,seq(1,ncol(Hcal2),2)] 
       Hredux[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,seq(2,ncol(Hcal2),2)] 
     }
-    if (!instrumental & !docum & real_proxies){ #new
+    if (!instrumental & !docum & real_proxies){ 
       H.i[1:nrow(Hcal2),]<-Hcal2[,seq(1,ncol(Hcal2),2)] 
       Hredux[1:nrow(Hcal2),]<-Hcal2[,seq(2,ncol(Hcal2),2)] 
+    }
+    if (!instrumental & docum & !real_proxies){ 
+      H.i[1:nrow(Hcal3),]<-Hcal3[,seq(1,ncol(Hcal3),2)] 
+      Hredux[1:nrow(Hcal3),]<-Hcal3[,seq(2,ncol(Hcal3),2)] 
     }
     H.i[H.i==0] <- NA
     Hredux[Hredux==0] <- NA
@@ -1996,29 +2005,30 @@ for (cyr in syr2:eyr) {
     # the error would be spatially uncorrelated
     # set squared error R to 1 for 1degC measurement error
     if (sixmonstatevector | pseudo_prox) {
-      if ((real_proxies) & ((instrumental) | (docum))) { 
-        Rcal <- calibrate$error^2
+      #if ((real_proxies) & ((instrumental) | (docum))) { 
+      Rcal <- calibrate$error^2
        # Rcal <- c(temp2=0.9, precip=50, slp=10)[calibrate$names]
        #  #        if (avg_prox_per_grid) {Rcal <- Rcal*(1/calibrate$numavg)}
-       #  Rcal[calibrate$names=="prox"] <- realprox$var_residu 
+       # Rcal[calibrate$names=="prox"] <- realprox$var_residu 
        #  # previously used residuals/2 for 1. paper version to give proxies more weight
        #  # better delete "/2"
        #  # probably should have given instrumentals more error instead!
        #  Rcal[calibrate$sour=="doc"] <- 0.25 # equals 0.5 std. dev.
-      } else if ((real_proxies) & (!instrumental) & (!docum)) { 
-        Rcal <- realprox$var_residu # *2 to increase the possibly underestimated 
+      #} else if ((real_proxies) & (!instrumental) & (!docum)) { 
+      #  Rcal <- cbind(rep(NA,length(realprox$var_residu)),realprox$var_residu)
+        # *2 to increase the possibly underestimated 
         # error and prohibit overcorrection if using thousands of proxy records
         #/ 10 # devision to make proxy error smaller and update larger
-        Rcal[which(is.na(Rcal))] <- 0
-      } else if (((instrumental) | (docum)) & (!real_proxies)) { 
+      Rcal[which(is.na(Rcal))] <- 0
+      #} else if (((instrumental) | (docum)) & (!real_proxies)) { 
 
         # original: Rcal <- c(temp2=0.9, precip=50, slp=10)[calibrate$names]
         # Rcal[calibrate$sour=="doc"] <- 0.25 # equals 0.5 std. dev
-        Rcal <- calibrate$error^2
+      #  Rcal <- calibrate$error^2
 
         #      # set squared error R for precip measurements to 25% of data value
         #      # R <- abs(calibrate$data*0.25)
-      }
+      #}
       
       if (gauss_ana) {
         GAecham = echam
@@ -2283,7 +2293,7 @@ for (cyr in syr2:eyr) {
                   }
                 } 
                 if (ins_tim_loc) {
-                  if (calibrate$sour[j] == "inst") {
+                  if (calibrate$sour[j] == "inst" | calibrate$sour[j] == "doc") {
                     # time localization on PH for instrumental data
                     # let influence only the variables of the current month of the observations
                     month_start = seq(1,dim(PH)[1],dim(PH)[1]/6)
@@ -2520,33 +2530,33 @@ for (cyr in syr2:eyr) {
           if (every2grid){
             if(save_ananomallts == T) {
               save(analysis.anom,analysis.abs,echam.anom,echam.abs,validate,calibrate, ananomallts, 
-                   file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
+                   file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
             } else {
               save(analysis.anom,analysis.abs,echam.anom,echam.abs,validate,calibrate, 
-                   file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
+                   file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
             }
           } else {
             save(analysis.anom,analysis.abs,echam.anom,echam.abs,validate,calibrate,
-                 file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'.Rdata'),version=2)
+                 file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'.Rdata'),version=2)
           }
         } else {
           if (every2grid){    
             save(analysis.anom,analysis.abs,echam.anom,echam.abs,calibrate,
-                 file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
+                 file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
           } else {
             save(analysis.anom,analysis.abs,echam.anom,echam.abs,calibrate,
-                 file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'.Rdata'),version=2)
+                 file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'.Rdata'),version=2)
           }
         }
       } else {
         if (vali) {
           save(analysis.anom,analysis.abs,echam.anom,echam.abs,landcorrected.anom,
                landcorrected.clim,validate,calibrate,
-               file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
+               file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
         } else {
           save(analysis.anom,analysis.abs,echam.anom,echam.abs,landcorrected.anom,
                landcorrected.clim,calibrate,
-               file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
+               file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
         }   
       }
       if (loo) { # leave one out validation

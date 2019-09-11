@@ -3,30 +3,31 @@
 
 # set directories
 echmaskpath <- paste0(dataextdir,'echam/')
-echpath <- paste0(dataextdir,'echam/1600-2005/')
+#echpath <- paste0(dataextdir,'echam/1600-2005/')
+echpath <- paste0(dataextdir,'echam/')
 # echallvarpath <- paste0(dataextdir,'echam_nc_allvar7/')
 # echallvarpath <-"/scratch3/veronika/60_members_1941-1970" # for 60_ensm
-echallvarpath <- "/scratch3/veronika/ccc400_new_statevector/statvec/"
-# echanompath <- paste0(dataextdir,'echam_anom/')
+# echallvarpath <- "/scratch3/veronika/ccc400_new_statevector/statvec/"
+echanompath <- paste0(dataextdir,'echam_anom/')
 # echanompath = "/scratch3/veronika/60_members_1941-1970/anom" # for 60_ensm
-echanompath <- "/scratch3/veronika/ccc400_new_statevector/anom_statvec/"
-# echclimpath <- paste0(dataextdir,'echam_clim/')
+# echanompath <- "/scratch3/veronika/ccc400_new_statevector/anom_statvec/"
+echclimpath <- paste0(dataextdir,'echam_clim/')
 # echclimpath <- "/scratch3/veronika/60_members_1941-1970/clim" # for 60_ensm
-echclimpath <- "/scratch3/veronika/ccc400_new_statevector/clim_statvec/"
+#echclimpath <- "/scratch3/veronika/ccc400_new_statevector/clim_statvec/"
 echsdpath <- paste0(dataextdir,'echam_sd/')
 ncarpath <- paste0(dataextdir,'ncar_last_mill/')
 crupath <- paste0(dataextdir,'vali_data/cru/')
 gisspath = paste0(dataextdir,'vali_data/giss/')
 bestpath = paste0(dataextdir,'vali_data/best/')
 ghcntemppath <- paste0(dataextdir,'assimil_data/ghcn/temp_v3/')
-ghcnprecippath <- paste0(dataextdir,'assim_data/ghcn/precip_v2/')
+ghcnprecippath <- paste0(dataextdir,'assimil_data/ghcn/precip_v2/')
 #histalppath <- paste0(dataintdir,'instr/histalp/')
 petrapath <- paste0(dataextdir,'assimil_data/proxies/petra/')
 mxdpath <- paste0(dataextdir,'assimil_data/proxies/mxd/')
 pagespath = paste0(dataextdir,'assimil_data/proxies/PAGES/')
 ntrendpath = paste0(dataextdir,'assimil_data/proxies/NTREND/')
 schweingrpath <- paste0(dataextdir,'assimil_data/proxies/schweingr/')
-twentycrpath <- paste0(dataextdir,'vali_data/20cr/')
+twentycrpath <- paste0(dataextdir,'vali_data/20CRv2/')
 indicespath <- paste0(dataextdir,'vali_data/indices/')
 
 
@@ -761,6 +762,161 @@ read_last_mill_ens <- function(filehead, path=ncarpath, xlim=c(-180,180), ylim=c
   file.remove(fnames)
   file.remove("../data/ncar_last_mill/tmp")
 } # end function
+
+
+
+read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,90), timlim=c(1980, 2000), 
+                      small=F, landonly=F,calc_ensmean=FALSE){ 
+                      #if calc_ensmean=T then it calculates the ensmean
+  
+  # read in the land-sea mask of echam
+  # mask out sea grid boxes (no variability)
+  if (landonly){
+    nc <- nc_open(paste(echmaskpath, 'landseamask.nc', sep='/'))
+    nc2 <-nc_open(paste(echmaskpath, 'orography.nc', sep="/"))
+    lon <- nc$dim$lon$vals
+    lat <- nc$dim$lat$vals
+    lon[lon > 180] <- lon[lon > 180] - 360
+    loi <- which(lon >= xlim[1] & lon <= xlim[2])
+    lai <- which(lat >= ylim[1] & lat <= ylim[2])
+    if (small==T) {
+      # mulc for reading each 3rd grid cell to avoid memory problems
+      mulc <- floor(length(loi)/96)
+      loi <- loi[seq(ceiling(mulc/2),length(loi),mulc)]
+      lai <- lai[seq(ceiling(mulc/2), length(lai),mulc)]
+    }  
+    lsm <- ncvar_get(nc)[loi, lai]
+    alt <- ncvar_get(nc2)[loi,lai]
+    nc_close(nc)
+    nc_close(nc2)
+    lon2 <- lon
+    lat2 <- lat
+  } 
+  files <- list.files(path, pattern=paste('^', filehead, sep=''), full.names=T)
+  tmp <- list()
+  ensmean <- 0
+  for (f in files){
+    print(f)
+    nc <- nc_open(f)
+    lon <- nc$dim$lon$vals
+    lat <- nc$dim$lat$vals
+    lon[lon > 180] <- lon[lon > 180] - 360
+    loi <- which(lon >= xlim[1] & lon <= xlim[2])
+    lai <- which(lat >= ylim[1] & lat <= ylim[2])
+    if (small==T) {
+      mulc <- floor(length(loi)/96)
+      loi <- loi[seq(ceiling(mulc/2),length(loi),mulc)]
+      lai <- lai[seq(ceiling(mulc/2), length(lai),mulc)]
+    }
+    # change processing of the time coordinate
+    # tim <- seq(1600 + 1/24, by=1/12, length=nc$dim$time$len)
+    # ti  <- which(tim >= 1600 & tim < 1631)
+    # glitches in time representation
+    #    if (timlim[1] < 1900){
+    #      addc <- -15
+    #    } else {
+    #      addc <- 3
+    #    }
+    addc <-0
+    year <- as.numeric(format(ncdf_times(nc) + addc, "%Y"))
+    month <- as.numeric(format(ncdf_times(nc) + addc, "%m"))
+    tim <- year + (month-0.5)/12
+    ti <- which(tim >= timlim[1] & tim < (timlim[2]+1))
+    outdata <- NULL
+    names <- NULL
+    for (varname in c('temp2', 'precip', 'slp','air','prate','hgt','omega')){
+      if (varname %in% names(nc$var)){
+        if (length(nc$var[[varname]]$dim) == 3){
+          if (length(ti)==1) {
+            data <- ncvar_get(nc, varname, start=c(1,1,min(ti)), 
+                              count=c(-1,-1,length(ti)))[loi, lai]
+          } else {
+            data <- ncvar_get(nc, varname, start=c(1,1,min(ti)), 
+                              count=c(-1,-1,length(ti)))[loi, lai,]
+          }
+        } else if (length(nc$var[[varname]]$dim) == 4){
+          if (length(ti)==1) {
+            data <- ncvar_get(nc, varname, start=c(1,1,1,min(ti)), 
+                              count=c(-1,-1,1,length(ti)))[loi, lai]
+          } else {  
+            data <- ncvar_get(nc, varname, start=c(1,1,1,min(ti)), 
+                              count=c(-1,-1,1,length(ti)))[loi, lai,]
+          }
+        }
+        if (landonly){
+          if (length(ti)==1) {
+            data <- array(data, c(length(lsm)))[lsm > 0.5, ]
+          } else {  
+            data <- array(data, c(length(lsm), dim(data)[3]))[lsm > 0.5, ]
+          }
+        } else {
+          if (length(ti)==1) {
+            data <- array(data, c(dim(data)[1]*dim(data)[2]))
+          } else {
+            data <- array(data, c(dim(data)[1]*dim(data)[2], dim(data)[3]))
+          }
+        }
+        if (path == twentycrpath) {
+          if (varname == 'precip') data <- data * 3600 * 24 * 30
+          if (varname == 'slp') data <- data / 100
+        }
+        # compute seasonal averages
+        #dat <- array(data[,11:(ncol(data)-2)], c(nrow(data), 6, ncol(data)/6 - 2))
+        #data <- apply(dat, c(1,3), mean, na.rm=T)
+        if (length(ti)==1) {
+          outdata <- c(outdata, data)  
+        } else {
+          outdata <- rbind(outdata, data)
+        }
+        names <- c(names, rep(varname, nrow(data)))
+        #rm(data, dat)
+      }
+    }
+    time <- tim[ti]
+    tmp[[which(files == f)]] <- outdata
+    if (length(ti)==1) {
+      print(length(outdata))
+    } else {  
+      print(dim(outdata))
+    }
+    if (calc_ensmean==T) {
+      if (f != files[length(files)]){ ensmean <- ensmean + outdata }
+    }
+  }
+  if (calc_ensmean==T) {
+    ensmean <- ensmean/(length(tmp)) #-1) why -1 ???
+  }
+  if (landonly) {
+    if (length(ti)==1) {
+      data <- list(data=unlist(tmp),
+                   ensmean=ensmean, lon=rep(lon[loi], length(lai))[lsm > 0.5],
+                   lat=rep(lat[lai], each=length(loi))[lsm > 0.5], 
+                   height=alt[lsm > 0.5], lsm.i=which(lsm > 0.5),
+                   time=time, names=names)
+    } else {  
+      data <- list(data=array(unlist(tmp), c(dim(tmp[[1]]), length(files))),
+                   ensmean=ensmean, lon=rep(lon[loi], length(lai))[lsm > 0.5],
+                   lat=rep(lat[lai], each=length(loi))[lsm > 0.5], 
+                   height=alt[lsm > 0.5], lsm.i=which(lsm > 0.5),
+                   time=time, names=names)
+    }
+  } else {
+    if (length(ti)==1) {
+      data <- list(data=unlist(tmp),
+                   if(calc_ensmean){ensmean=ensmean}, lon=rep(lon[loi], length(lai)),
+                   lat=rep(lat[lai], each=length(loi)), 
+                   height=rep(-999,(length(loi)*length(lai))), 
+                   lsm.i=rep(-999,(length(loi)*length(lai))), time=time, names=names) 
+    } else {  
+      data <- list(data=array(unlist(tmp), c(dim(tmp[[1]]), length(files))),
+                   ensmean=ifelse(calc_ensmean,ensmean,NaN), lon=rep(lon[loi], length(lai)),
+                   lat=rep(lat[lai], each=length(loi)), 
+                   height=rep(-999,(length(loi)*length(lai))), 
+                   lsm.i=rep(-999,(length(loi)*length(lai))), time=time, names=names)
+    }
+  }
+  invisible(data) 
+}
 
 
 
@@ -3298,7 +3454,7 @@ read_ghcn_refyr <- function(syr,eyr,refsyr,refeyr){
     r.i <- apply(as.matrix(y.i), 1, function(x) min(which(tmp[s.i,2] == years[x])))
     ry.i <- which(ryrs %in% tmp[s.i,2])
     if (length(ry.i) > 0) {
-      print(paste(i,'of',length(seq(stat.i))))
+      #print(paste(i,'of',length(seq(stat.i))))
       tmp.arr[y.i,,i] <- tmp[s.i[r.i],c(4,8,12,16,20,24,28,32,36,40,44,48)]
     } else {
       #      print(i)
@@ -3316,7 +3472,9 @@ read_ghcn_refyr <- function(syr,eyr,refsyr,refeyr){
   mask <- apply(!is.na(tmp.arr), 3, sum) > 0.01 * prod(dim(tmp.arr)[1:2])
   ghcn.data.tmp <- array(aperm(tmp.arr[,,mask], c(2,1,3)), c(prod(dim(tmp.arr)[1:2]), sum(mask)))
   ghcn.data=array(as.numeric(ghcn.data.tmp),c(dim(ghcn.data.tmp)[1],dim(ghcn.data.tmp)[2]))
-  ghcn <- list(data=ghcn.data/100, id=stations.new[mask,'ID'], lon=stations.new[mask,'LONGITUDE'], lat=stations.new[mask,'LATITUDE'], names=gsub(' *$', '', as.character(stations.new[mask,'NAME'])), height=stations.new[mask,'STNELEV'], time=seq(min(years) + 1/24, by=1/12, length=nrow(ghcn.data)))
+  ghcn <- list(data=ghcn.data/100, id=stations.new[mask,'ID'], lon=stations.new[mask,'LONGITUDE'], 
+               lat=stations.new[mask,'LATITUDE'], names=gsub(' *$', '', as.character(stations.new[mask,'NAME'])), 
+               height=stations.new[mask,'STNELEV'], time=seq(min(years) + 1/24, by=1/12, length=nrow(ghcn.data)))
 }
 # 
 # # read in GHCN version 3 (temperature)
@@ -5995,7 +6153,7 @@ getgridboxnum <- function(stat, echam) {
     if (length(mtmp) > 0) {
       #      print("mtmp > 0")
       m[i] <- mtmp
-      try(if (stat$names[i]=="precip") {
+      try(if ((stat$names[i]=="precip") | (stat$names[i]=="prec")) {
         m[i] <- m[i]+one_var_dim
       } else if (stat$names[i]=="slp") {
         m[i] <- m[i]+(2*one_var_dim)
@@ -6003,7 +6161,7 @@ getgridboxnum <- function(stat, echam) {
     } else { m[i] <- NA }
   }
   invisible(m)
-  }  
+}  
 
 
 
@@ -7074,7 +7232,7 @@ calculate_climatology <- function(x,cyr,subtracted,added,source){
 
 ## function to screen realprox data (+/- 5 std.)
 
-screenstd <- function (x,cyr,source) { #sources: proxy/inst
+screenstd <- function (x,cyr,source,sdlim=5) { #sources: proxy/inst
   if (source=="proxy"){
     x.clim<-calculate_climatology(x,cyr,35,35,source)
     tiv=which(floor(x$time)==cyr)  
@@ -7085,8 +7243,8 @@ screenstd <- function (x,cyr,source) { #sources: proxy/inst
       #rpmean <- mean(realprox$data[,i],na.rm=T)
       #rpsd   <- sd(realprox$data[,i],na.rm=T)
       if ((!is.na(rpmean)) & (!is.na(rpsd))) {
-        if ((!is.na(x$data[i,tiv])) & ((x$data[i,tiv] < rpmean-5*rpsd)
-                                       | (x$data[i,tiv] > rpmean+5*rpsd))) {
+        if ((!is.na(x$data[i,tiv])) & ((x$data[i,tiv] < rpmean-sdlim*rpsd)
+                                       | (x$data[i,tiv] > rpmean+sdlim*rpsd))) {
           x$data[i,tiv] <- NA
           print(paste('proxy data', i, 'out of range'))
           write(paste('proxy data', i, 'out of range'),file=paste0('../log/',logfn),append=T)
@@ -7119,8 +7277,8 @@ screenstd <- function (x,cyr,source) { #sources: proxy/inst
               if (!is.na(biasm) & !is.na(vtmp[j,stsv,i]) ) {  # Veronika added the second term of the if
                 #  if (((vtmp[j,((stsv-1)/12+1),i]+ biasm) < echam$ensmean[m,(j+12)]-5*echam.sd$data[m,j]) |
                 #     ((vtmp[j,((stsv-1)/12+1),i]+ biasm) > echam$ensmean[m,(j+12)]+5*echam.sd$data[m,j])) {
-                if (((vtmp[j,stsv,i]+biasm) < echam_clim_mon_ensmean[m,j]-5*echam.sd$data[m,j]) |
-                    ((vtmp[j,stsv,i]+ biasm) > echam_clim_mon_ensmean[m,j]+5*echam.sd$data[m,j])) {
+                if (((vtmp[j,stsv,i]+biasm) < echam_clim_mon_ensmean[m,j]-sdlim*echam.sd$data[m,j]) |
+                    ((vtmp[j,stsv,i]+ biasm) > echam_clim_mon_ensmean[m,j]+sdlim*echam.sd$data[m,j])) {
                   x$data[sts-1+j,i]<-NA
                   print(paste('inst data',varname,'#:',i,'mon:',j,'out of range'))
                   if (exists("logfn")){

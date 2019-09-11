@@ -2,7 +2,7 @@
 ################################ EnSRF_switches.R ####################################
 ######################################################################################
 
-expname="merged_code_docu_test" 
+expname="allinput_halfres_50climcovar_tps" 
 
 version="v1.4"    # set code version number for experiment and netcdf file names
 # v1.1 at DKRZ is experiment 1.2 here!
@@ -57,21 +57,20 @@ generate_CCSM_last_mill_ens=F   # CCSM last millinnium ensemble for DAPS no forc
 
 # generate VALIDATION data in .Rdata format
 # next line not included yet: 
-generate_20CR=F                 # generate 20CR reanalysis for independent verification
-
-generate_CRUALLVAR=F            # if FALSE -> cru_allvar.Rdata 
-generate_HadCRU4=F              # HadCRU ens. SD for instr. uncertainty and error-spread ratio
-generate_LUTPAULKUT=F           # gridded seasonal recons (1750-1999)
-generate_ind_recon=F            # read Stefan's indices 1900-2000 from .txt to .RData
+generate_20CRv2=F                # generate 20CR reanalysis for independent verification
+generate_CRUALLVAR=F             # if FALSE -> cru_allvar.Rdata 
+generate_HadCRU4SD=F             # HadCRU ens. SD for instr. uncertainty and error-spread ratio
+#generate_LUTPAULKUT=F           # gridded seasonal recons (1750-1999) NOT tested forever
+generate_ind_recon=F             # read Stefan's indices 1900-2000 from .txt to .RData
 
 # generate INPUT/ASSIMILATION data in .Rdata format
 # use scripts in data_yuri to generate .Rdata files 
-generate_t_yuri=F               # if TRUE -> yuri's temp. data collection including HISTALP is read
-generate_slp_yuri=F             # if TRUE -> yuri's slp data collection is read
-statyr=1905                     # 1941 1850/69 year, when GHCN/ISTI station network is kept constant
- generate_GHCN=F                 # if TRUE -> orig. GHCN stat. data is read; 
- generate_GHCN_precip=F          # if FALSE -> ghcn.Rdata 
-generate_DOCUM=F                # if TRUE -> yuri's docu. data collection is read 
+generate_instr_yuri=F            # if TRUE -> yuri's temp. data collection .Rdata file is created
+statyr=1880                      # year, when GHCN/ISTI station network is kept constant
+ generate_GHCN=F                 # if TRUE -> orig. GHCN stat. data .Rdata file is created 
+ generate_GHCN_precip=F          
+ generate_ISTI=F
+generate_DOCUM=F                 # if TRUE -> angies's + yuri's docu. data collection .Rdata file is created 
 # do we still need next 3 lines? why after generate_proxies in EnSRF_generate?
 #generate_PAGES=F                # using the screened PAGES proxy dataset
                     # CODE from Roni missing to convert csv to RData 
@@ -108,10 +107,10 @@ generate_PROXIES=F
                         'p.first', 'p.second','p.third','p.fourth','p.fifth','p.sixth')
   
   #### PROXIES ####
-  NTREND=F       # NTREND best tree data version 2018 (identical with 2015 paper)
-  PAGES=F        # PAGESdata base version 2 from 01/2018
+  NTREND=T       # NTREND best tree data version 2018 (identical with 2015 paper)
+  PAGES=T        # PAGESdata base version 2 from 01/2018
                  # works only with t and p regression months
-  TRW_PETRA=F    # all TRW series from ITRDB and recalibrated by Petra
+  TRW_PETRA=T    # all TRW series from ITRDB and recalibrated by Petra
   # Following switches have not been adapted to code version 08/2019, 2 col var_residu etc.
     TRW=F          # 35 best TRW records from Petra's collection
     MXD=F          # additional MXD, not gridded Schweizgruber data
@@ -151,16 +150,17 @@ generate_PROXIES=F
 
 
 #### Instrumental Data ####
-old_statvec = F
-new_statvec = T          # has +: wetdays, block, cycfreq; -: v200, t500
+old_statvec = T
+new_statvec = F          # has +: wetdays, block, cycfreq; -: v200, t500
 
-yuri_temp = F            # yuri's data compilation, SLP always loaded
-yuri_slp = F
+yuri_temp = T            # yuri's data compilation, SLP always loaded
+yuri_slp = T
+yuri_prec = T
  inst_slp_err = sqrt(10) # instrumental slp error (10 is the variance of slp error)
-ghcn_temp = F
+ghcn_temp = T
  inst_t_err = sqrt(0.9)  # instrumental temp error (0.9 is the variance of temp error)
-isti_instead_ghcn = F    # switch from ghcn to isti (ghcn_temp must still be set to TRUE)
-ghcn_prec = F
+ isti_instead_ghcn = T    # switch from ghcn to isti (ghcn_temp must still be set to TRUE)
+ghcn_prec = T
   ghcn_p_err = 0.3       # error in percent (based on US stations estimation should be 30%)
   ghcn_p_min = 10        # minimum error 10 mm
   precip_ratio = F       # if T assimilating ratio, if F assimilating the difference
@@ -205,19 +205,22 @@ if (pseudo_prox) {
 # To use a bigger ensemble for the background
 no_forc_big_ens= F      # use all years as one big ensemble regardless of forcing like LMR
                         # ONLY works with next option load_71yr_anom=T
-covarclim=0            # set 50 or 100 [%] how much echam climatology covariance should be used
+covarclim=50            # set 50 or 100 [%] how much echam climatology covariance should be used
                             # default=0, i.e. current year covar from ECHAM ensemble
 cov_inflate = F         # inflate the PB matrix
   inflate_fac = 1.02      # the factor of covariance inflation
 # Only used if no_forc_big_ens=T or covarclim>0
 state = "changing"      # can be "static" or "changing" (static = the same big ens used for all year, changing = it is recalculated for every year)
-n_covar=250             # set sample size for covar calc or for no_forc LMR like experiment, e.g. 250 or 500
-PHclim_loc = F          # whether we want to localize the PHclim, only works if covarclim > 0
+n_covar=100             # set sample size for covar calc or for no_forc LMR like experiment, e.g. 250 or 500
+PHclim_loc = T          # whether we want to localize the PHclim, only works if covarclim > 0
 PHclim_lvec_factor = 2  # if PHclim_loc=T, we can use eg. 2times the distances as in the 30 ensemble member, at the moment only works for shape_wgt= "circle"
 mixed_loc = F           # first combining Pb and Pclim then localizing
-update_PHclim = F       # whether PHclim should be updated assimilating observation-by-observation
+update_PHclim = T       # whether PHclim should be updated assimilating observation-by-observation
 save_ananomallts = F    # in the covarclim exps if we update the climatology part -> whether to save the "climatological" analysis or not
 
+if (covarclim==0) {
+  update_PHclim = F
+}
 
 if((covarclim>0)&no_forc_big_ens){
   stop("Warning: covarclim>0 and no_forc_big_ens are both TRUE: These two experiments cannot be combined")
@@ -321,6 +324,9 @@ if (no_stream & tps_only) {
 scaleprox=T                     # scale standardized docu to echam variance at location
                                 # not necessary for proxy data because of regression model
 anomaly_assim=T                 # work with anomalies to avoid reg. const in state vector
+if (anomaly_assim==F) {
+  stop("Only working with anomaly_assim=T at the moment!")
+}
 # nseas <- 12                   # year with 12 months
 check_dist=F                    # test for ideal cut-off distance of spatial correlations
 #H_non_lin=F                    # new H operator that also allows non-linear functions
@@ -330,7 +336,7 @@ ana.enssize=F
 # choose validation data sets saved in the analysis step (EnSRF_data):
 # (all three can be selected simultaneously)
 vali_cru=T
-vali_twentycr=F
+vali_twentycr=T
 vali_recon=F
 #####################################################################################
 
@@ -344,7 +350,7 @@ vali_recon=F
 # prepare plot switches
 #####################################################################################
 
-validation_set=c("cru_vali")    #can be set to cru_vali, or twentycr_vali or 
+validation_set=c("cru_vali","twentycr_vali")    #can be set to cru_vali, or twentycr_vali or 
 # both together c("cru_vali","twentycr_vali")
 # choses which validation set should be used in the postprocessing and plots
 monthly_out=F                   # if sixmonstatevector=T output is backtransformed to seasonal 

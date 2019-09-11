@@ -1,4 +1,5 @@
 ########### TODO #########
+2019/09 calibrate.height not complete
 2019/08 optimise code, e.g. docall used in some places doc_t in others or first "proxies" then "calibrate"
 2019/08 add single line input/output for each observation
 2019/08 change from 20CRv2 to 20CRv3 validation

@@ -168,28 +168,30 @@ for (cyr in syr2:eyr) {
     yr2 <- cyr
     # since the anomalies in the ncdf files are calculated by using the running mean 
     #   (first year only 36 yrs used) by using this we are not consistent
-    # yr3 <- yr1
-    # yr4 <- yr2
-    # if (cyr < 1637) {yr3 <- 1636}
-    # if (cyr < 1637) {yr4 <- 1637}
-    # if (cyr > 1970) {yr3 <- 1969}
-    # if (cyr > 1970) {yr4 <- 1970}
+    yr3 <- yr1
+    yr4 <- yr2
+    if (old_statvec) {
+      if (cyr < 1637) {yr3 <- 1636}
+      if (cyr < 1637) {yr4 <- 1637}
+      if (cyr > 1970) {yr3 <- 1969}
+      if (cyr > 1970) {yr4 <- 1970}
+    }
     if (every2grid) {
       load(paste0(echanompath,'echam_anom_',yr1,'-',yr2,'_2ndgrid.Rdata'))
       ## load(paste0(echclimpath,'echam_clim_',yr3,'-',yr4,'_2ndgrid.Rdata')) # old version
       #load(paste0('/scratch3/veronika/reuse/data/echam/new_statvec/echam_anom/echam_anom_',yr1,'-',yr2,'_2ndgrid.Rdata'))
-      load(paste0(echclimpath,'echam_clim_',yr1,'-',yr2,'_2ndgrid.Rdata'))
+      load(paste0(echclimpath,'echam_clim_',yr3,'-',yr4,'_2ndgrid.Rdata'))
       #load(paste0('/scratch3/veronika/reuse/data/echam/new_statvec/echam_clim/echam_clim_',yr1,'-',yr2,'_2ndgrid.Rdata'))
       if (landcorr) {
         load(paste0(echanompath,'echam_anom_103_',yr1,'-',yr2,'_2ndgrid.Rdata'))
-        load(paste0(echclimpath,'echam_clim_103_',yr1,'-',yr2,'_2ndgrid.Rdata'))
+        load(paste0(echclimpath,'echam_clim_103_',yr3,'-',yr4,'_2ndgrid.Rdata'))
       }
     } else {
       load(paste0(echanompath,'echam_anom_',yr1,'-',yr2,'.Rdata'))
-      load(paste0(echclimpath,'echam_clim_',yr1,'-',yr2,'.Rdata'))
+      load(paste0(echclimpath,'echam_clim_',yr3,'-',yr4,'.Rdata'))
       if (landcorr) {
         load(paste0(echanompath,'echam_anom_103_',yr1,'-',yr2,'.Rdata'))
-        load(paste0(echclimpath,'echam_clim_103_',yr1,'-',yr2,'.Rdata'))
+        load(paste0(echclimpath,'echam_clim_103_',yr3,'-',yr4,'.Rdata'))
       }
     }
     # correct units if old state vector with error

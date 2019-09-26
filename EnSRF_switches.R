@@ -2,7 +2,7 @@
 ################################ EnSRF_switches.R ####################################
 ######################################################################################
 
-expname="allinput_halfres_50climcovar_tps" 
+expname="allinput_fullres_50climcovar_alloldvar" 
 
 version="v1.4"    # set code version number for experiment and netcdf file names
 # v1.1 at DKRZ is experiment 1.2 here!
@@ -296,11 +296,11 @@ avg_obs_per_grid=T     # average more than one observation per echam grid box
                        # and calc proxy vs echam correlation
 ins_tim_loc = T        # whether the instrumental obs-s should be localized in time or not
 instmaskprox=F         # remove proxy data from grid boxes that have instr. data
-every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
+every2grid=F           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=F            # calc on land only
-tps_only=T             # only use temp, precip and slp in state vector, remove other vars
+tps_only=F             # only use temp, precip and slp in state vector, remove other vars
 tpsw_only=F            # only use temp, precip, slp and wetdays in state vector, remove other vars
-no_stream=F            # all echam vars but stream function as there is problem with 
+no_stream=T            # all echam vars but stream function as there is problem with 
 #                       # 5/9 levels, which are in lat dimension before and after 1880
 loo=F                  # leave-one-out validation 
 

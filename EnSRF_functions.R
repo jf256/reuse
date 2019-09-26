@@ -9,9 +9,11 @@ echpath <- paste0(dataextdir,'echam/')
 # echallvarpath <-"/scratch3/veronika/60_members_1941-1970" # for 60_ensm
 # echallvarpath <- "/scratch3/veronika/ccc400_new_statevector/statvec/"
 echanompath <- paste0(dataextdir,'echam_anom/')
+echanompath_v2 <- paste0(dataextdir,'echam_anom_v2/')
 # echanompath = "/scratch3/veronika/60_members_1941-1970/anom" # for 60_ensm
 # echanompath <- "/scratch3/veronika/ccc400_new_statevector/anom_statvec/"
 echclimpath <- paste0(dataextdir,'echam_clim/')
+echclimpath_v2 <- paste0(dataextdir,'echam_clim_v2/')
 # echclimpath <- "/scratch3/veronika/60_members_1941-1970/clim" # for 60_ensm
 #echclimpath <- "/scratch3/veronika/ccc400_new_statevector/clim_statvec/"
 echsdpath <- paste0(dataextdir,'echam_sd/')

@@ -81,7 +81,7 @@ for (cyr in syr2:eyr) {
   print(expname)
   print(cyr)
   write(cyr,file=paste0('../log/',logfn),append=T)
-  if (cyr > 1659&(yuri_temp|yuri_slp|ghcn_temp|isti_instead_ghcn|ghcn_prec)) {
+  if (cyr > 1659&(yuri_temp|yuri_slp|ghcn_temp|isti_instead_ghcn|ghcn_prec|ghcn_wday)) {
     #Nevin June2018: I added this control sequence instead of the "proxies_only" in the experiment name. Like that: at least one of the instrumental
     #datasets has to be true in the switches such that instrumental = T here. Otherwhise there was an error when only proxies were used.
     instrumental=T        # all instrumental stations 
@@ -153,40 +153,77 @@ for (cyr in syr2:eyr) {
   ##########################################################################################
   
   # 1.1 Loading echam, echam_anom, echam_clim, landcorrected_anom, landcorrected_clim
-  if (every2grid) {
-    # load(paste(dataextdir,"echam/echam_",(cyr-1),"-",cyr,"_2ndgrid.Rdata",sep=""))
-    load(paste0('/scratch3/veronika/reuse/data/echam/new_statvec/echam/echam_',(cyr-1),'-',cyr,'_2ndgrid.Rdata'))
-  } else {
-    load(paste(dataextdir,"echam/echam_",(cyr-1),"-",cyr,".Rdata",sep=""))
-  }
-  if ((anomaly_assim) & (!no_forc_big_ens)) {  
-    # anomalies calculated efficiently with cdo, slow calculation within R has been removed
+  if (old_statvec) {
+    if (every2grid) {
+      # load(paste(dataextdir,"echam/echam_",(cyr-1),"-",cyr,"_2ndgrid.Rdata",sep=""))
+      load(paste0('/scratch3/veronika/reuse/data/echam/new_statvec/echam/echam_',(cyr-1),'-',cyr,'_2ndgrid.Rdata'))
+    } else {
+      load(paste(dataextdir,"echam/echam_",(cyr-1),"-",cyr,".Rdata",sep=""))
+    }
+    if ((anomaly_assim) & (!no_forc_big_ens)) {  
+      # anomalies calculated efficiently with cdo, slow calculation within R has been removed
+      yr1 <- cyr-1
+      yr2 <- cyr
+      # since the anomalies in the ncdf files are calculated by using the running mean (first year only36 yrs used) by using this we are not consistent
+      # yr3 <- yr1
+      # yr4 <- yr2
+      # if (cyr < 1637) {yr3 <- 1636}
+      # if (cyr < 1637) {yr4 <- 1637}
+      # if (cyr > 1970) {yr3 <- 1969}
+      # if (cyr > 1970) {yr4 <- 1970}
+      if (every2grid) {
+        # load(paste0(echanompath,'echam_anom_',yr1,'-',yr2,'_2ndgrid.Rdata'))
+        ## load(paste0(echclimpath,'echam_clim_',yr3,'-',yr4,'_2ndgrid.Rdata')) # old version
+        load(paste0('/scratch3/veronika/reuse/data/echam/new_statvec/echam_anom/echam_anom_',yr1,'-',yr2,'_2ndgrid.Rdata'))
+        # load(paste0(echclimpath,'echam_clim_',yr1,'-',yr2,'_2ndgrid.Rdata'))
+        load(paste0('/scratch3/veronika/reuse/data/echam/new_statvec/echam_clim/echam_clim_',yr1,'-',yr2,'_2ndgrid.Rdata'))
+        if (landcorr) {
+          load(paste0(echanompath,'echam_anom_103_',yr1,'-',yr2,'_2ndgrid.Rdata'))
+          load(paste0(echclimpath,'echam_clim_103_',yr3,'-',yr4,'_2ndgrid.Rdata'))
+        }
+      } else {
+        load(paste0(echanompath,'echam_anom_',yr1,'-',yr2,'.Rdata'))
+        load(paste0(echclimpath,'echam_clim_',yr3,'-',yr4,'.Rdata'))
+        if (landcorr) {
+          load(paste0(echanompath,'echam_anom_103_',yr1,'-',yr2,'.Rdata'))
+          load(paste0(echclimpath,'echam_clim_103_',yr3,'-',yr4,'.Rdata'))
+        }
+      }
+    }
+  } else if (new_statvec) {
     yr1 <- cyr-1
     yr2 <- cyr
-    # since the anomalies in the ncdf files are calculated by using the running mean (first year only36 yrs used) by using this we are not consistent
-    # yr3 <- yr1
-    # yr4 <- yr2
-    # if (cyr < 1637) {yr3 <- 1636}
-    # if (cyr < 1637) {yr4 <- 1637}
-    # if (cyr > 1970) {yr3 <- 1969}
-    # if (cyr > 1970) {yr4 <- 1970}
-    if (every2grid) {
-      # load(paste0(echanompath,'echam_anom_',yr1,'-',yr2,'_2ndgrid.Rdata'))
-      ## load(paste0(echclimpath,'echam_clim_',yr3,'-',yr4,'_2ndgrid.Rdata')) # old version
-      load(paste0('/scratch3/veronika/reuse/data/echam/new_statvec/echam_anom/echam_anom_',yr1,'-',yr2,'_2ndgrid.Rdata'))
-      # load(paste0(echclimpath,'echam_clim_',yr1,'-',yr2,'_2ndgrid.Rdata'))
-      load(paste0('/scratch3/veronika/reuse/data/echam/new_statvec/echam_clim/echam_clim_',yr1,'-',yr2,'_2ndgrid.Rdata'))
-      if (landcorr) {
-        load(paste0(echanompath,'echam_anom_103_',yr1,'-',yr2,'_2ndgrid.Rdata'))
-        load(paste0(echclimpath,'echam_clim_103_',yr3,'-',yr4,'_2ndgrid.Rdata'))
-      }
-    } else {
-      load(paste0(echanompath,'echam_anom_',yr1,'-',yr2,'.Rdata'))
-      load(paste0(echclimpath,'echam_clim_',yr3,'-',yr4,'.Rdata'))
-      if (landcorr) {
-        load(paste0(echanompath,'echam_anom_103_',yr1,'-',yr2,'.Rdata'))
-        load(paste0(echclimpath,'echam_clim_103_',yr3,'-',yr4,'.Rdata'))
-      }
+    # temp, precip, slp always loaded
+    echam.anom=list()
+    echam.clim=list()
+    # temp
+    load(paste0("/mnt/climstor/giub/EKF400/echam_anom_v2/echam_anom_temp2/echam_anom_temp2_",yr1,"-",yr2,".Rdata"))
+    a_temp2 = echam_anom
+    load(paste0("/mnt/climstor/giub/EKF400/echam_clim_v2/echam_clim_temp2/echam_clim_temp2_",yr1,"-",yr2,".Rdata"))
+    c_temp2 = echam_clim
+    # precip
+    load(paste0("/mnt/climstor/giub/EKF400/echam_anom_v2/echam_anom_precip/echam_anom_precip_",yr1,"-",yr2,".Rdata"))
+    a_precip = echam_anom
+    load(paste0("/mnt/climstor/giub/EKF400/echam_clim_v2/echam_clim_precip/echam_clim_precip_",yr1,"-",yr2,".Rdata"))
+    c_precip = echam_clim
+    #join the two lists
+    a_t2pr = join_lists(a_temp2,a_precip)
+    c_t2pr = join_lists(c_temp2,c_precip)
+    # slp
+    load(paste0("/mnt/climstor/giub/EKF400/echam_anom_v2/echam_anom_slp/echam_anom_slp_",yr1,"-",yr2,".Rdata"))
+    a_slp = echam_anom
+    load(paste0("/mnt/climstor/giub/EKF400/echam_clim_v2/echam_clim_slp/echam_clim_slp_",yr1,"-",yr2,".Rdata"))
+    c_slp = echam_clim
+    echam.anom = join_lists(a_t2pr,a_slp)
+    echam.clim = join_lists(c_t2pr,c_slp)
+    rm (a_temp2,a_precip,a_slp,a_t2pr,c_temp2,c_precip,c_slp,c_t2pr)
+    for (i in statvari) {
+      load(paste0("/mnt/climstor/REUSE/newCompo/echam_anom/echam_anom_every_grid/echam_anom_",i,"/echam_anom_",i,"_",yr1,"-",yr2,".Rdata"))
+      a_x = echam_anom
+      #load(paste0("/mnt/climstor/giub/EKF400/echam_clim_v2/echam_clim_",i,"/echam_clim_",i,"_",yr1,"-",yr2,".Rdata"))
+      #c_x = echam_clim
+      echam.anom = join_lists(echam.anom,a_x)
+      #echam.clim = join_lists(echam.clim,c_x)
     }
   }
   
@@ -196,9 +233,9 @@ for (cyr in syr2:eyr) {
   # just use limited number of years (n_covar) to make calculation faster
   # state ="static": already in 6monstatevector format and units are correct
   if (covarclim>0) {
-    echanomallts <- background_matrix(state ,n_covar, echanomallts)
-  } else if (no_forc_big_ens) {
-    echam_anom = background_matrix(state ,n_covar, echam_anom)
+    echanomallts <- background_matrix(state ,n_covar, echanomallts)# the path has to be changed!
+  } else if (old_statvec & no_forc_big_ens) {
+    echam_anom = background_matrix(state ,n_covar, echam_anom) 
     load(paste0(dataextdir,"echam_400yr_ensmean_clim/400yr_monthly_ensmean.clim_2ndgrid.Rdata"))
     echam_clim = echam_clim_400yr
     echam_clim$ensmean = echam_clim_400yr$data
@@ -208,142 +245,150 @@ for (cyr in syr2:eyr) {
   
   # 1.2 Choose which variables want to use from the model
   # just leave temp precip slp in state vector
-  if (tps_only) {
-    tpspos <- c(which(echam$names=='temp2'), which(echam$names=='precip'),
-                which(echam$names=='slp'))
-    echam$data <- echam$data[tpspos,,]
-    echam$ensmean <- echam$ensmean[tpspos,]
-    echam$names <- echam$names[tpspos]
-    if (anomaly_assim){
-      tpspos <- c(which(echam_anom$names=='temp2'), which(echam_anom$names=='precip'),
-                  which(echam_anom$names=='slp'))
-      echam_anom$data <- echam_anom$data[tpspos,,]
-      echam_anom$ensmean <- echam_anom$ensmean[tpspos,]
-      echam_anom$names <- echam_anom$names[tpspos]
-      if (state == "changing" & covarclim>0) {
-        tpspos <- c(which(echanomallts$names=='temp2'), which(echanomallts$names=='precip'),
-                    which(echanomallts$names=='slp'))
-        echanomallts$data <- echanomallts$data[tpspos,,]
-        echanomallts$ensmean <- echanomallts$ensmean[tpspos,]
-        echanomallts$names <- echanomallts$names[tpspos]
-      }
-      tpspos <- c(which(echam_clim$names=='temp2'), which(echam_clim$names=='precip'),
-                  which(echam_clim$names=='slp'))
-      echam_clim$data <- echam_clim$data[tpspos,,]
-      echam_clim$ensmean <- echam_clim$ensmean[tpspos,]
-      echam_clim$names <- echam_clim$names[tpspos]
-    }
-  }
-
-  if (tpsw_only) {
-    tpswpos <- c(which(echam$names=='temp2'), which(echam$names=='precip'), which(echam$names=='slp'),
-                which(echam$names=='wdays'), which(echam$names=='bias'))
-    echam$data <- echam$data[tpswpos,,]
-    echam$ensmean <- echam$ensmean[tpswpos,]
-    echam$names <- echam$names[tpswpos]
-    if (anomaly_assim){
-      tpswpos <- c(which(echam_anom$names=='temp2'), which(echam_anom$names=='precip'), which(echam_anom$names=='slp'),
-                  which(echam_anom$names=='wdays'), which(echam_anom$names=='bias'))
-      echam_anom$data <- echam_anom$data[tpswpos,,]
-      echam_anom$ensmean <- echam_anom$ensmean[tpswpos,]
-      echam_anom$names <- echam_anom$names[tpswpos]
-      if (state == "changing" & covarclim>0) {
-        tpswpos <- c(which(echanomallts$names=='temp2'), which(echanomallts$names=='precip'),
-                    which(echanomallts$names=='slp'), which(echam$names=='wdays'), which(echanomallts$names=='bias'))
-        echanomallts$data <- echanomallts$data[tpswpos,,]
-        echanomallts$ensmean <- echanomallts$ensmean[tpswpos,]
-        echanomallts$names <- echanomallts$names[tpswpos]
-      }
-      # Blending was not tested
-      # if (state == "static" & no_forc_big_ens ) {
-      #   tpspos <- c(which(echam_clim$names=='temp2'), which(echam_clim$names=='precip'),
-      #               which(echam_clim$names=='slp'), which(echam_clim$names=='bias'))
-      # }
-      echam_clim$data <- echam_clim$data[tpswpos,,]
-      echam_clim$ensmean <- echam_clim$ensmean[tpswpos,]
-      echam_clim$names <- echam_clim$names[tpswpos]
-    }
-  }
-
-  if (no_stream) {
-    # ACHTUNG stream var has ERROR because the 5/9 levels before/after 1880 have a lat dimension
-    tpspos <- c(which(echam$names!='stream'))
-    echam$data <- echam$data[tpspos,,]
-    echam$ensmean <- echam$ensmean[tpspos,]
-    echam$names <- echam$names[tpspos]
-    if (anomaly_assim){
-      tpspos <- c(which(echam_anom$names!='stream'))
-      echam_anom$data <- echam_anom$data[tpspos,,]
-      echam_anom$ensmean <- echam_anom$ensmean[tpspos,]
-      echam_anom$names <- echam_anom$names[tpspos]
-      if (covarclim>0 | no_forc_big_ens) {
-        if (state == "changing") {
-          tpspos <- c(which(echanomallts$names!='stream'))
+  if (old_statvec) {
+    if (tps_only) {
+      tpspos <- c(which(echam$names=='temp2'), which(echam$names=='precip'),
+                  which(echam$names=='slp'))
+      echam$data <- echam$data[tpspos,,]
+      echam$ensmean <- echam$ensmean[tpspos,]
+      echam$names <- echam$names[tpspos]
+      if (anomaly_assim){
+        tpspos <- c(which(echam_anom$names=='temp2'), which(echam_anom$names=='precip'),
+                    which(echam_anom$names=='slp'))
+        echam_anom$data <- echam_anom$data[tpspos,,]
+        echam_anom$ensmean <- echam_anom$ensmean[tpspos,]
+        echam_anom$names <- echam_anom$names[tpspos]
+        if (state == "changing" & covarclim>0) {
+          tpspos <- c(which(echanomallts$names=='temp2'), which(echanomallts$names=='precip'),
+                      which(echanomallts$names=='slp'))
           echanomallts$data <- echanomallts$data[tpspos,,]
           echanomallts$ensmean <- echanomallts$ensmean[tpspos,]
           echanomallts$names <- echanomallts$names[tpspos]
         }
+        tpspos <- c(which(echam_clim$names=='temp2'), which(echam_clim$names=='precip'),
+                    which(echam_clim$names=='slp'))
+        echam_clim$data <- echam_clim$data[tpspos,,]
+        echam_clim$ensmean <- echam_clim$ensmean[tpspos,]
+        echam_clim$names <- echam_clim$names[tpspos]
       }
-      tpspos <- c(which(echam_clim$names!='stream'))
-      echam_clim$data <- echam_clim$data[tpspos,,]
-      echam_clim$ensmean <- echam_clim$ensmean[tpspos,]
-      echam_clim$names <- echam_clim$names[tpspos]
-      if (landcorr) {
-        landcorrected_anom$data <- landcorrected_anom$data[tpspos,,]
-        landcorrected_anom$names <- landcorrected_anom$names[tpspos]
-        landcorrected_clim$data <- landcorrected_clim$data[tpspos,,]
-        landcorrected_clim$names <- landcorrected_clim$names[tpspos]
+    }
+    
+    if (tpsw_only) {
+      tpswpos <- c(which(echam$names=='temp2'), which(echam$names=='precip'), which(echam$names=='slp'),
+                   which(echam$names=='wdays'), which(echam$names=='bias'))
+      echam$data <- echam$data[tpswpos,,]
+      echam$ensmean <- echam$ensmean[tpswpos,]
+      echam$names <- echam$names[tpswpos]
+      if (anomaly_assim){
+        tpswpos <- c(which(echam_anom$names=='temp2'), which(echam_anom$names=='precip'), which(echam_anom$names=='slp'),
+                     which(echam_anom$names=='wdays'), which(echam_anom$names=='bias'))
+        echam_anom$data <- echam_anom$data[tpswpos,,]
+        echam_anom$ensmean <- echam_anom$ensmean[tpswpos,]
+        echam_anom$names <- echam_anom$names[tpswpos]
+        if (state == "changing" & covarclim>0) {
+          tpswpos <- c(which(echanomallts$names=='temp2'), which(echanomallts$names=='precip'),
+                       which(echanomallts$names=='slp'), which(echam$names=='wdays'), which(echanomallts$names=='bias'))
+          echanomallts$data <- echanomallts$data[tpswpos,,]
+          echanomallts$ensmean <- echanomallts$ensmean[tpswpos,]
+          echanomallts$names <- echanomallts$names[tpswpos]
+        }
+        # Blending was not tested
+        # if (state == "static" & no_forc_big_ens ) {
+        #   tpspos <- c(which(echam_clim$names=='temp2'), which(echam_clim$names=='precip'),
+        #               which(echam_clim$names=='slp'), which(echam_clim$names=='bias'))
+        # }
+        echam_clim$data <- echam_clim$data[tpswpos,,]
+        echam_clim$ensmean <- echam_clim$ensmean[tpswpos,]
+        echam_clim$names <- echam_clim$names[tpswpos]
+      }
+    }
+    
+    if (no_stream) {
+      # ACHTUNG stream var has ERROR because the 5/9 levels before/after 1880 have a lat dimension
+      tpspos <- c(which(echam$names!='stream'))
+      echam$data <- echam$data[tpspos,,]
+      echam$ensmean <- echam$ensmean[tpspos,]
+      echam$names <- echam$names[tpspos]
+      if (anomaly_assim){
+        tpspos <- c(which(echam_anom$names!='stream'))
+        echam_anom$data <- echam_anom$data[tpspos,,]
+        echam_anom$ensmean <- echam_anom$ensmean[tpspos,]
+        echam_anom$names <- echam_anom$names[tpspos]
+        if (covarclim>0 | no_forc_big_ens) {
+          if (state == "changing") {
+            tpspos <- c(which(echanomallts$names!='stream'))
+            echanomallts$data <- echanomallts$data[tpspos,,]
+            echanomallts$ensmean <- echanomallts$ensmean[tpspos,]
+            echanomallts$names <- echanomallts$names[tpspos]
+          }
+        }
+        tpspos <- c(which(echam_clim$names!='stream'))
+        echam_clim$data <- echam_clim$data[tpspos,,]
+        echam_clim$ensmean <- echam_clim$ensmean[tpspos,]
+        echam_clim$names <- echam_clim$names[tpspos]
+        if (landcorr) {
+          landcorrected_anom$data <- landcorrected_anom$data[tpspos,,]
+          landcorrected_anom$names <- landcorrected_anom$names[tpspos]
+          landcorrected_clim$data <- landcorrected_clim$data[tpspos,,]
+          landcorrected_clim$names <- landcorrected_clim$names[tpspos]
+        }
       }
     }
   }
-
+  
   if (anomaly_assim){
     # new echam_clim made by veronika have correct units
     # error where echam_anom and echam_clim were generated initially: 
     # no unit correction happened, thus here
-    if (!(state =="static" & no_forc_big_ens)) {
-       if (old_statvec) {
-         echam_anom$data[echam_anom$names=='precip',,] <- echam_anom$data[echam_anom$names=='precip',,] * 3600 * 24 * 30
-         echam_anom$ensmean[echam_anom$names=='precip',] <- echam_anom$ensmean[echam_anom$names=='precip',] * 3600 * 24 * 30
-         echam_anom$data[echam_anom$names=='slp',,] <- echam_anom$data[echam_anom$names=='slp',,]/100
-         echam_anom$ensmean[echam_anom$names=='slp',] <- echam_anom$ensmean[echam_anom$names=='slp',]/100
-       }
-       echam.anom <- echam_anom
-       if (state=="changing" & covarclim > 0) {
-         if(old_statvec) {
-           echanomallts$data[echanomallts$names=='precip',,] <- echanomallts$data[echanomallts$names=='precip',,] * 3600 * 24 * 30
-           echanomallts$ensmean[echanomallts$names=='precip',] <- echanomallts$ensmean[echanomallts$names=='precip',] * 3600 * 24 * 30
-           echanomallts$data[echanomallts$names=='slp',,] <- echanomallts$data[echanomallts$names=='slp',,]/100
-           echanomallts$ensmean[echanomallts$names=='slp',] <- echanomallts$ensmean[echanomallts$names=='slp',]/100
-         }
-       }
-    }else{
-      echam.anom<-echam_anom
+    if (old_statvec) {
+      
+      if (!(state =="static" & no_forc_big_ens)) {
+        echam_anom$data[echam_anom$names=='precip',,] <- echam_anom$data[echam_anom$names=='precip',,] * 3600 * 24 * 30
+        echam_anom$ensmean[echam_anom$names=='precip',] <- echam_anom$ensmean[echam_anom$names=='precip',] * 3600 * 24 * 30
+        echam_anom$data[echam_anom$names=='slp',,] <- echam_anom$data[echam_anom$names=='slp',,]/100
+        echam_anom$ensmean[echam_anom$names=='slp',] <- echam_anom$ensmean[echam_anom$names=='slp',]/100
+        echam.anom <- echam_anom
+        if (state=="changing" & covarclim > 0) {
+          echanomallts$data[echanomallts$names=='precip',,] <- echanomallts$data[echanomallts$names=='precip',,] * 3600 * 24 * 30
+          echanomallts$ensmean[echanomallts$names=='precip',] <- echanomallts$ensmean[echanomallts$names=='precip',] * 3600 * 24 * 30
+          echanomallts$data[echanomallts$names=='slp',,] <- echanomallts$data[echanomallts$names=='slp',,]/100
+          echanomallts$ensmean[echanomallts$names=='slp',] <- echanomallts$ensmean[echanomallts$names=='slp',]/100
+        }
+      }else{
+        echam.anom<-echam_anom
+      }
+      
+      if (no_forc_big_ens) {
+        echam_clim$data = array(echam_clim$data, c(dim(echam_clim$data),1))  
+        echam_clim$data[echam_clim$names=='temp2',,] <- echam_clim$data[echam_clim$names=='temp2',,]-273.15
+        echam_clim$ensmean[echam_clim$names=='temp2',] <- echam_clim$ensmean[echam_clim$names=='temp2',]-273.15
+        echam_clim$data[echam_clim$names=='precip',,] <- echam_clim$data[echam_clim$names=='precip',,]*3600 * 24 * 30
+        echam_clim$ensmean[echam_clim$names=='precip',] <- echam_clim$ensmean[echam_clim$names=='precip',]*3600 * 24 * 30
+        echam_clim$data[echam_clim$names=='slp',,] <- echam_clim$data[echam_clim$names=='slp',,]/100
+        echam_clim$ensmean[echam_clim$names=='slp',] <- echam_clim$ensmean[echam_clim$names=='slp',]/100
+      }
+      
+      echam.clim <- echam_clim
     }
-
-    if (no_forc_big_ens) {
-      echam_clim$data = array(echam_clim$data, c(dim(echam_clim$data),1))  
-      echam_clim$data[echam_clim$names=='temp2',,] <- echam_clim$data[echam_clim$names=='temp2',,]-273.15
-      echam_clim$ensmean[echam_clim$names=='temp2',] <- echam_clim$ensmean[echam_clim$names=='temp2',]-273.15
-      echam_clim$data[echam_clim$names=='precip',,] <- echam_clim$data[echam_clim$names=='precip',,]*3600 * 24 * 30
-      echam_clim$ensmean[echam_clim$names=='precip',] <- echam_clim$ensmean[echam_clim$names=='precip',]*3600 * 24 * 30
-      echam_clim$data[echam_clim$names=='slp',,] <- echam_clim$data[echam_clim$names=='slp',,]/100
-      echam_clim$ensmean[echam_clim$names=='slp',] <- echam_clim$ensmean[echam_clim$names=='slp',]/100
-    }
-   
-    echam.clim <- echam_clim
+    
+  
     # echam_clim_mon_ensmean (next line) stays 12 months version for instr screening
     if (!no_forc_big_ens) {
-      echam_clim_mon_ensmean <- echam_clim$ensmean[,10:21] 
+      if (old_statvec) {
+        echam_clim_mon_ensmean <- echam_clim$ensmean[,10:21] 
+      } else if (new_statvec) {
+        echam_clim_mon_ensmean <- echam.clim$ensmean[,10:21] 
+      }
     } else {
       echam_clim_mon_ensmean <- echam_clim$ensmean[,c(10,11,12,1,2,3,4,5,6,7,8,9)]
     }
     if (state=="changing") { # Roni: why I delete it only if state = "changing ?? 
-                             # -> I think because if it is "static" I need it in 
-                             #    the background_matrix function
+      # -> I think because if it is "static" I need it in 
+      #    the background_matrix function
       rm (echam_anom)
     }
     rm(echam_clim)
+    
     if (landcorr) {
       # They (temp2, precip, slp) are corrected for the climatology
       # They (precip, slp) are NOT corrected for the anomaly
@@ -624,7 +669,9 @@ for (cyr in syr2:eyr) {
       echam.clim<-convert_to_2_seasons(echam.clim,source="echam")
     }    
     
-    echam.clim$names <- rep(echam.clim$names,6)
+    if (old_statvec) {
+      echam.clim$names <- rep(echam.clim$names,6) # VV: why only the names and no lon/lat?
+    }
     
     if (landcorr) {
       land61 <- array(landcorrected.clim$data,c(dim(landcorrected.clim$data)[1]*dim(landcorrected.clim$data)[2],1))
@@ -646,60 +693,62 @@ for (cyr in syr2:eyr) {
   
   # convert lon, lat, names sixmonstatevector data format
   # ACHTUNG: only 11 vars withOUT stream function included so far
-  if (pseudo_prox) { 
-    one_var_dim<-length(echam$lon)
-    numvar <- length(unique(echam$names)) 
-    echam$lon <-  c(rep(echam$lon, (numvar)))
-    echam$lat <- c(rep(echam$lat, (numvar)))
-  }
-  if (sixmonstatevector) {
-    if(!(state=="static" & no_forc_big_ens)){
+  if (old_statvec) {
+    if (pseudo_prox) {
       one_var_dim<-length(echam$lon)
-      numvar <- length(unique(echam$names)) 
-      echam$lon <-  c(rep(echam$lon, (numvar*6)))
-      echam$lat <- c(rep(echam$lat, (numvar*6)))
-      echam$names <- c(rep(echam$names, 6))
-      echam <- echam[c('data', 'ensmean', 'lon', 'lat', 'height', 'lsm.i', 'time', 'names')]
-    }else{
-      one_var_dim<-length(echam$lon)/6
-      numvar <- length(unique(echam$names)) 
+      numvar <- length(unique(echam$names))
+      echam$lon <-  c(rep(echam$lon, (numvar)))
+      echam$lat <- c(rep(echam$lat, (numvar)))
     }
-    if (state =="changing" & (covarclim > 0)) {
-      echanomallts$lon <-  c(rep(echanomallts$lon, (numvar*6)))
-      echanomallts$lat <- c(rep(echanomallts$lat, (numvar*6)))
-      echanomallts$names <- c(rep(echanomallts$names, 6))
-      echanomallts <- echanomallts[c('data', 'ensmean', 'lon', 'lat', 'height', 'lsm.i', 'time', 'names')]
-    }
-    if (landcorr) {
-      landcorrected.anom$lon <-  c(rep(landcorrected.anom$lon, (numvar*6)))
-      landcorrected.anom$lat <- c(rep(landcorrected.anom$lat, (numvar*6)))
-      landcorrected.anom$names <- c(rep(landcorrected.anom$names, 6))
-      landcorrected.anom <- landcorrected.anom[c('data', 'ensmean', 'lon', 'lat', 'height', 'lsm.i', 'time', 'names')]
-    }
-  }
+    if (sixmonstatevector) {
+      if(!(state=="static" & no_forc_big_ens)){
+        one_var_dim<-length(echam$lon)
+        numvar <- length(unique(echam$names))
+        echam$lon <-  c(rep(echam$lon, (numvar*6)))
+        echam$lat <- c(rep(echam$lat, (numvar*6)))
+        echam$names <- c(rep(echam$names, 6))
+        echam <- echam[c('data', 'ensmean', 'lon', 'lat', 'height', 'lsm.i', 'time', 'names')]
+      }else{
+        one_var_dim<-length(echam$lon)/6
+        numvar <- length(unique(echam$names))
+      }
+      if (state =="changing" & (covarclim > 0)) {
+        echanomallts$lon <-  c(rep(echanomallts$lon, (numvar*6)))
+        echanomallts$lat <- c(rep(echanomallts$lat, (numvar*6)))
+        echanomallts$names <- c(rep(echanomallts$names, 6))
+        echanomallts <- echanomallts[c('data', 'ensmean', 'lon', 'lat', 'height', 'lsm.i', 'time', 'names')]
+      }
+      if (landcorr) {
+        landcorrected.anom$lon <-  c(rep(landcorrected.anom$lon, (numvar*6)))
+        landcorrected.anom$lat <- c(rep(landcorrected.anom$lat, (numvar*6)))
+        landcorrected.anom$names <- c(rep(landcorrected.anom$names, 6))
+        landcorrected.anom <- landcorrected.anom[c('data', 'ensmean', 'lon', 'lat', 'height', 'lsm.i', 'time', 'names')]
+      }
+    } 
+  }# end of old_statvec
   
   
   # 1.6 Set up the cutoff distance for localisation
   lvec <- rep(l_dist_ind, length(unique(echam$names)))
   names(lvec) <- unique(echam$names)
-  lvec['slp'] <- l_dist_slp
-  lvec['precip'] <- l_dist_precip
-  lvec['temp2'] <- l_dist_temp2 
-  lvec['gph500'] <- l_dist_gph500
-  lvec['gph100'] <- l_dist_gph100
-  lvec['u850'] <- l_dist_u850
-  lvec['u200'] <- l_dist_u200
-  lvec['v850'] <- l_dist_v850
-  lvec['omega500'] <- l_dist_omega500
   if (old_statvec) {
+    lvec['slp'] <- l_dist_slp
+    lvec['precip'] <- l_dist_precip
+    lvec['temp2'] <- l_dist_temp2 
+    lvec['gph500'] <- l_dist_gph500
+    lvec['gph100'] <- l_dist_gph100
+    lvec['u850'] <- l_dist_u850
+    lvec['u200'] <- l_dist_u200
+    lvec['v850'] <- l_dist_v850
+    lvec['omega500'] <- l_dist_omega500
     # lvec['t850'] <- l_dist_t850 # replaced by t500
     lvec['t500'] <- l_dist_t500
     lvec['v200'] <- l_dist_v200
   }
   if (new_statvec) {
-    lvec['wdays'] <- l_dist_wdays
-    lvec['blocks'] <- l_dist_blocks
-    lvec['cycfreq'] <- l_dist_cycfreq
+    for (sv in unique(echam$names)) {
+      lvec[sv] = get(paste0("l_dist_",sv))
+    }
   }
   
   print('calc time for loading data')
@@ -748,8 +797,8 @@ for (cyr in syr2:eyr) {
       
       if (every2grid) {
         if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,"_2ndgrid.Rdata",sep=""))
-        } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid.Rdata",sep=""))
-        # } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid_v2017.Rdata",sep=""))
+        # } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid.Rdata",sep=""))
+         } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid_v2017.Rdata",sep=""))
         } else if (twentycr_vali){load(paste0(twentycrpath,"twentycr_allvar_",syr_twentycr,"-",eyr_twentycr,"_2ndgrid.Rdata"))}
       } else {
         if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,".Rdata",sep=""))
@@ -1147,11 +1196,11 @@ for (cyr in syr2:eyr) {
   if (instrumental){
     # 5.1 Loading the files
     if (yuri_slp) {
-      load(paste0(dataextdir,'assimil_data/rdata_files/slp.Rdata')) # monthly slp collection from yuri, histalp included
+      load(paste0(dataextdir,'assimil_data/rdata_files_v1/slp.Rdata')) # monthly slp collection from yuri, histalp included
       inst_slp <- slp
     }
     if (yuri_temp) {
-      load(paste0(dataextdir,'assimil_data/rdata_files/t.Rdata')) # monthly temp collection from yuri, histalp included
+      load(paste0(dataextdir,'assimil_data/rdata_files_v1/t.Rdata')) # monthly temp collection from yuri, histalp included
       inst_t <- t
     }
     if (ghcn_temp) {
@@ -1167,29 +1216,33 @@ for (cyr in syr2:eyr) {
       #load(paste0("/scratch3/veronika/reuse/assimil_data/ghcn/ghcn_precip_1600-2005.Rdata"))
       #load("/scratch3/veronika/reuse/assimil_data/ghcn_d/ghcn_precip.RData")
       load("/scratch3/veronika/reuse/assimil_data/ghnc_d_better_coverage/ghcn_precip.RData")
+      #load("/scratch3/veronika/reuse/assimil_data/ghcn_d_1842/ghcn_precip.RData")
     }
     if (ghcn_wday) {
       # load("/scratch3/brugnara/ekf400/ghcn_wetdays.RData")
       # load("/scratch3/veronika/reuse/assimil_data/ghcn_d/ghcn_wetdays.RData")
-      load("/scratch3/veronika/reuse/assimil_data/ghnc_d_better_coverage/ghcn_wetdays.RData")
+      # load("/scratch3/veronika/reuse/assimil_data/ghnc_d_better_coverage/ghcn_wetdays.RData")
+      load("/scratch3/veronika/reuse/assimil_data/ghcn_d_1842/ghcn_wetdays.RData")
     }
     
     # 5.2 Qualtiy check of the data
     if (check_assimdata) {
-      if (ghcn_prec) { 
+      if (ghcn_prec & !ghcn_wday) { 
         if (ghcn_temp & yuri_slp) {
           varlist <- c("inst_t","inst_slp","ghcn","ghcn_precip")
         } else {
           varlist <- c("ghcn_precip") # assimilating only precip
         }
-      } else if (ghcn_wday) {
+      } else if (ghcn_wday & !ghcn_prec) {
         if (ghcn_temp & yuri_slp) {
           varlist <- c("inst_t","inst_slp","ghcn","ghcn_wetdays")
         } else {
           varlist <- c("ghcn_wetdays") # assimilating only wetdays
         }
-      } else if (ghcn_temp & yuri_slp) {
+      } else if (ghcn_temp & yuri_slp & !ghcn_prec & !ghcn_wday) {
         varlist <- c("inst_t","inst_slp","ghcn")
+      } else if (ghcn_temp & yuri_slp & ghcn_prec & ghcn_wday) {
+        varlist <- c("inst_t","inst_slp","ghcn","ghcn_precip","ghcn_wetdays")
       }
       
       for (varname in varlist) {
@@ -1707,8 +1760,8 @@ for (cyr in syr2:eyr) {
                    height=c(inst_w$height), time=inst_w$time)
       }
     } else if (ghcn_temp & yuri_slp & !ghcn_prec) {
-      inst<-list(data=t(cbind(inst_t$data,inst_slp$data)), lon=c(inst_t$lon,inst_slp$lon),
-                 lat=c(inst_t$lat,inst_slp$lat), names=c(inst_t$names,inst_slp$names),
+      inst<-list(data=t(cbind(inst_t$data,inst_slp$data)), error=t(cbind(inst_t$err,inst_slp$err)),
+                 lon=c(inst_t$lon,inst_slp$lon),lat=c(inst_t$lat,inst_slp$lat), names=c(inst_t$names,inst_slp$names),
                  numavg=c(inst_t$numavg,inst_slp$numavg),
                  height=c(inst_t$height,inst_slp$height), time=inst_t$time)
     } else if (ghcn_temp & yuri_slp & ghcn_prec & ghcn_wday) {
@@ -2520,22 +2573,22 @@ for (cyr in syr2:eyr) {
           if (every2grid){
             if(save_ananomallts == T) {
               save(analysis.anom,analysis.abs,echam.anom,echam.abs,validate,calibrate, ananomallts, 
-                   file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
+                   file=paste0(dataintdir,'analysis/EKF400_',version,expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
             } else {
               save(analysis.anom,analysis.abs,echam.anom,echam.abs,validate,calibrate, 
-                   file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
+                   file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
             }
           } else {
             save(analysis.anom,analysis.abs,echam.anom,echam.abs,validate,calibrate,
-                 file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'.Rdata'),version=2)
+                 file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'.Rdata'),version=2)
           }
         } else {
           if (every2grid){    
             save(analysis.anom,analysis.abs,echam.anom,echam.abs,calibrate,
-                 file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
+                 file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
           } else {
             save(analysis.anom,analysis.abs,echam.anom,echam.abs,calibrate,
-                 file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'.Rdata'),version=2)
+                 file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'.Rdata'),version=2)
           }
         }
       } else {

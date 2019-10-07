@@ -2,7 +2,7 @@
 ################################ EnSRF_switches.R ####################################
 ######################################################################################
 
-expname="assim_temp_slp_ghcn_d_better_precip_R30_timeloc"
+expname="assim_ghcn_d_better_precip_R30_timeloc"
 
 version="v1.3"    # set code version number for experiment and netcdf file names
 # v1.1 at DKRZ is experiment 1.2 here!
@@ -149,6 +149,9 @@ generate_PROXIES=F
 #### Instrumental Data ####
 old_statvec = F
 new_statvec = T      # has +: wetdays, block, cycfreq; -: v200, t500
+ statvari=c("wdays", "u")  # if new_statvec=T, define which variable should be in the statvector
+                           # can be: blocks', 'cycfreq','wdays', 'gph','u', 'v', 'omega', 'st'
+                           # at the moment temp2,precip,slp is always loaded
 
 yuri_temp=T                     # yuri's data compilation, SLP always loaded
 yuri_slp=T
@@ -163,7 +166,7 @@ precip_ratio= F      # if T assimilating ratio, if F assimilating the difference
 gauss_ana =F         # use Gaussian anamorphosis for precipitation ratio
 check_norm = F       # check whether the GA transformed values normally distributed and use only those that are
 ghcn_wday =F         # assimilating wetdays calculated from daily precip ghcn data
-ghnc_w_err = 2     # error number of days (based on US stations estimation should be 2 days)
+ghcn_w_err = 2     # error number of days (based on US stations estimation should be 2 days)
 
 
 #### Documentary Data ####
@@ -204,7 +207,7 @@ cov_inflate = F         # inflate the PB matrix
   inflate_fac = 1.02      # the factor of covariance inflation
 # Only used if no_forc_big_ens=T or covarclim>0
 state = "changing"      # can be "static" or "changing" (static = the same big ens used for all year, changing = it is recalculated for every year)
-n_covar=250             # set sample size for covar calc or for no_forc LMR like experiment, e.g. 250 or 500
+n_covar=0             # set sample size for covar calc or for no_forc LMR like experiment, e.g. 250 or 500
 PHclim_loc = F          # whether we want to localize the PHclim, only works if covarclim > 0
 PHclim_lvec_factor = 2  # if PHclim_loc=T, we can use eg. 2times the distances as in the 30 ensemble member, at the moment only works for shape_wgt= "circle"
 mixed_loc = F           # first combining Pb and Pclim then localizing
@@ -291,7 +294,7 @@ instmaskprox=F         # remove proxy data from grid boxes that have instr. data
 reduced_proxies=F      # use every ??th (see code below) proxy record
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=F            # calc on land only
-tps_only=T             # only use temp, precip and slp in state vector, remove other vars
+tps_only=T            # only use temp, precip and slp in state vector, remove other vars
 tpsw_only=F            # only use temp, precip, slp and wetdays in state vector, remove other vars
 no_stream=F            # all echam vars but stream function as there is problem with 
 #                       # 5/9 levels, which are in lat dimension before and after 1880
@@ -306,10 +309,10 @@ if (loo) {tps_only=T;no_stream=F}  # reduce state vector for faster validation
 #  anom_save=F}
 check_assimdata=T               # screen assimilation data before using it
 
-if (no_stream & tps_only) {
-  stop("Either no_stream or tps_only has to be TRUE but not both!")
-}else if(!tps_only &!no_stream){
-  stop("Either no_stream or tps_only has to be TRUE but not both!")
+if (no_stream & tps_only & tpsw_only) {
+  stop("Either no_stream or tps_only or tpsw_only has to be TRUE but not both!")
+}else if(!tps_only & !no_stream & !tpsw_only) {
+  stop("Either no_stream or tps_only or tpsw_only has to be TRUE but not both!")
 }
 
 
@@ -343,12 +346,12 @@ vali_recon=F
 validation_set=c("cru_vali")    #can be set to cru_vali, or twentycr_vali or 
 # both together c("cru_vali","twentycr_vali")
 # choses which validation set should be used in the postprocessing and plots
-monthly_out=F                   # if sixmonstatevector=T output is backtransformed to seasonal 
+monthly_out=F                  # if sixmonstatevector=T output is backtransformed to seasonal 
 # yearly out is old switch from nevin. annual output automatically if pseudo_prox=T
   yearly_out=F                    # if both false, plots seasonal averages are calculated
                                 # average or monthly data if monthly_out=T 
 temporal_postproc=F             # save half year averages calc from monthly data into /prepplot folder
-mergetime_indices=T             # if TRUE: indices are combined to allts variables for whole period 
+mergetime_indices=F             # if TRUE: indices are combined to allts variables for whole period 
                                 # (e.g. also for 1604-2004) and saved into image folder for TS-plots
 # run next option "load_prepplot" for entire validation period, usually 
 # 1902-2003, because it creates time series
@@ -356,11 +359,11 @@ mergetime_fields=T              # if calc_prepplot has been run, load_prepplot c
 # saves image and only needs to be run once, afterward set "load_images=T" 
 load_images=F                   # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
                                 # of merged indices and fields. NOT need if just calculated before
-calc_vali_stat=T                # calculate validation statistics after preparation (set "load_image=T")
+calc_vali_stat=F                # calculate validation statistics after preparation (set "load_image=T")
 CRPS=F                          # calculate Continuous Ranked Probability Score
-ind_anom=T                      # calculate indices from anomaly data
+ind_anom=F                      # calculate indices from anomaly data
 
-vali_plots=T                    # source EnSRF_plots.R script 
+vali_plots=F                    # source EnSRF_plots.R script 
 
 #ind_ECHAM=T                     # delete/comment code in prepplot script and then delete switches here
 #ind_recon=F                     # delete/comment code in prepplot script and then delete switches here

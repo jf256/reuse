@@ -12,8 +12,8 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
-syr=1902 #1902 #1941
-eyr=2000 #2003 #1970
+syr=1951 #1902 #1941
+eyr=2004 #2003 #1970
 
 # syrtot and eyrtot are only used for the total 400 yr indices time series 
 #syrtot=1902 #set to the same syr and eyr of the prepplots script (default 1602)
@@ -1584,6 +1584,15 @@ if (mergetime_fields){
   }
   #print("calc time for a year")
   
+  # VV: added 2019 September
+  if (monthly_out){ 
+    s.plot <- 12 
+  } else if (pseudo_prox) {
+    s.plot <- 1
+  } else {
+    s.plot <- 2
+  }
+  
   # calc validate.anom, validate.clim, calibrate.clim, calibrate.anom, vind.anom
   if (vali) {
     valiname = names(validate)
@@ -1594,11 +1603,11 @@ if (mergetime_fields){
     l=0
     for (v in valiname){  ## for multiple vali data sets
       l=l+1
-      #print(v)
+      # print(s): VV: when I printed s in a monthly_out exp it was 2 instead of 12, therefore above s.plot was introduced (which originally was used later in the script)
       validate<-validate_init[[v]]
       validate.clim <- validate
-      validate.clim$data <- apply(array(validate$data, c(nrow(validate$data), s, ncol(validate$data)/s)), 1:2, mean, na.rm=T)
-      validate.clim$ensmean<-apply(array(validate$ensmean, c(nrow(validate$ensmean), s, ncol(validate$ensmean)/s)), 1:2, mean, na.rm=T)
+      validate.clim$data <- apply(array(validate$data, c(nrow(validate$data), s.plot, ncol(validate$data)/s.plot)), 1:2, mean, na.rm=T) 
+      validate.clim$ensmean<-apply(array(validate$ensmean, c(nrow(validate$ensmean), s.plot, ncol(validate$ensmean)/s.plot)), 1:2, mean, na.rm=T) 
       validate.anom <- validate
       validate.anom$data <- array(validate$data - as.vector(validate.clim$data), c(nrow(validate$data), ncol(validate$data)))
       validate.anom$ensmean <- array(validate$ensmean - as.vector(validate.clim$ensmean), c(nrow(validate$ensmean), ncol(validate$ensmean)))
@@ -1630,9 +1639,9 @@ if (mergetime_fields){
   l=1
   for (v in valiname){
     validate.anom<-validate.anom_init[[v]]
-    validate.anom$data<-array(validate.anom$data,c(dim(validate.anom$data)[1],s,dim(validate.anom$data)[2]/s))
-    validate.anom$ensmean<-array(validate.anom$ensmean,c(dim(validate.anom$ensmean)[1],s,dim(validate.anom$ensmean)[2]/s))
-    validate.anom$time<-array(validate.anom$time,c(s,length(validate.anom$time)/s))
+    validate.anom$data<-array(validate.anom$data,c(dim(validate.anom$data)[1],s.plot,dim(validate.anom$data)[2]/s.plot)) 
+    validate.anom$ensmean<-array(validate.anom$ensmean,c(dim(validate.anom$ensmean)[1],s.plot,dim(validate.anom$ensmean)[2]/s.plot))
+    validate.anom$time<-array(validate.anom$time,c(s.plot,length(validate.anom$time)/s.plot)) 
     # commented JF 01/2018
     valitmp<-validate.anom
     for (i in 1:dim(validate.anom$time)[2]){

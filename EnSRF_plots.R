@@ -27,8 +27,8 @@ rm(list=ls())
 #syrtot=1903 #set to the same syr and eyr of the prepplots script (default 1602)
 #eyrtot=1904 #(default 2000) 
 
-syr=1902 #validation period: syr>=1902, eyr<2004. Syr should be the later of the two 1902 and syr in prepplots
-eyr=2000
+syr=1951 #validation period: syr>=1902, eyr<2004. Syr should be the later of the two 1902 and syr in prepplots
+eyr=2004
 
 
 user <- system("echo $USER",intern=T)
@@ -440,7 +440,7 @@ for (v in validation_set){
     
     levs <- c(0,0.33,0.5,0.67,0.83,1.2,1.5,2,3,Inf)
     
-    plot_echam4(plotdata, varname='temp2', cex.pt=1.5, names=pnames[1:dim(plotdata$data)[3]], lev=levs , 
+    plot_echam4(plotdata, varname='temp2', cex.pt=0.7, names=pnames[1:dim(plotdata$data)[3]], lev=levs , 
                 type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,
                 plotname=paste0('spread_error_ratio_anom_tmean_analysis.pdf'), paper='special')
     
@@ -455,7 +455,7 @@ for (v in validation_set){
     plotdata$lon <- plotdata$lon[echam$names=="temp2"]
     plotdata$lat <- plotdata$lat[echam$names=="temp2"]
     levs <- c(0,0.33,0.5,0.67,0.83,1.2,1.5,2,3,Inf)
-    plot_echam4(plotdata, varname='temp2', cex.pt=1.5, names=pnames[1:dim(plotdata$data)[3]], lev=levs , 
+    plot_echam4(plotdata, varname='temp2', cex.pt=0.7, names=pnames[1:dim(plotdata$data)[3]], lev=levs , 
                 type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,
                 plotname=paste0('spread_error_ratio_anom_tmean_echam.pdf'), paper='special')
   }
@@ -466,8 +466,8 @@ for (v in validation_set){
   ###############################################################
   ################# figs.06: Talagrant Diagram ##################
   ###############################################################
-  if (vali) {
-    if (!recon_vali) {
+  #if (vali) { vali and recon_vali switchws dont exist anymore (?)
+  #  if (!recon_vali) {
       if (anomaly_assim) {
         ereliable.summer <- ereliable.anom.summer
         areliable.summer <- areliable.anom.summer
@@ -510,11 +510,11 @@ for (v in validation_set){
       #   barplot(arel_obserr$temp2)
       #   dev.off()
       # }
-    }
-  }
+    #}
+  #}
   
-  if (vali & !monthly_out) {
-    if (!recon_vali) {
+  #if (vali & !monthly_out) {
+  #  if (!recon_vali) {
       if (anomaly_assim) {
         ereliable <- ereliable.anom
         areliable <- areliable.anom
@@ -584,8 +584,8 @@ for (v in validation_set){
       #   barplot(arel_obserr$slp)
       #   dev.off()
       # }
-    }
-  }
+    #}
+  #}
   ###############################################################
   
   
@@ -675,48 +675,90 @@ for (v in validation_set){
   tmax=round(max(abs(update$ensmean[which(update$names=="temp2"),])),digits=2)
   slpmax=round(max(abs(update$ensmean[which(update$names=="slp"),])),digits=2)
   prmax=round(max(abs(update$ensmean[which(update$names=="precip"),])),digits=1)
-  if (monthly_out) {
-    plot_echam4(update, varname='temp2', cex.pt=1.3, names=pnames[1:dim(update$data)[3]], type='ensmean', 
-                st.col=NULL, stations=plstat,NHseason="summer",
-                plotname=paste0('avg_upd_temp_summer.pdf'), paper='special')
-    plot_echam4(update, varname='temp2', cex.pt=1.3, names=pnames[1:dim(update$data)[3]], type='ensmean', 
-                st.col=NULL, stations=plstat,NHseason="winter",
-                plotname=paste0('avg_upd_temp_winter.pdf'), paper='special')
+  if (exists("pnames")) {
+    if (monthly_out) {
+      plot_echam4(update, varname='temp2', cex.pt=0.7, names=pnames[1:dim(update$data)[3]], type='ensmean', 
+                  st.col=NULL, stations=plstat,NHseason="summer",
+                  plotname=paste0('avg_upd_temp_summer.pdf'), paper='special')
+      plot_echam4(update, varname='temp2', cex.pt=0.7, names=pnames[1:dim(update$data)[3]], type='ensmean', 
+                  st.col=NULL, stations=plstat,NHseason="winter",
+                  plotname=paste0('avg_upd_temp_winter.pdf'), paper='special')
+    } else {
+      plot_echam4(update, varname='temp2', cex.pt=0.7, levs=round(tmax/9*c(-Inf,-7.5:-0.5,0.5:7.5,Inf),digits=3), 
+                  names=pnames[1:dim(update$data)[3]], type='ensmean', st.col=NULL, stations=plstat,
+                  NHseason=NULL, plotname=paste0('avg_upd_temp.pdf'), paper='special')
+    }
   } else {
-    plot_echam4(update, varname='temp2', cex.pt=1.3, lev=round(tmax/9*c(-Inf,-7.5:-0.5,0.5:7.5,Inf),digits=3), 
-                names=pnames[1:dim(update$data)[3]], type='ensmean', st.col=NULL, stations=plstat,
-                NHseason=NULL, plotname=paste0('avg_upd_temp.pdf'), paper='special')
+    if (monthly_out) {
+      plot_echam4(update, varname='temp2', cex.pt=0.7, type='ensmean', 
+                  st.col=NULL, stations=plstat,NHseason="summer",
+                  plotname=paste0('avg_upd_temp_summer.pdf'), paper='special')
+      plot_echam4(update, varname='temp2', cex.pt=0.7, type='ensmean', 
+                  st.col=NULL, stations=plstat,NHseason="winter",
+                  plotname=paste0('avg_upd_temp_winter.pdf'), paper='special')
+    } else {
+      plot_echam4(update, varname='temp2', cex.pt=0.7, levs=round(tmax/9*c(-Inf,-7.5:-0.5,0.5:7.5,Inf),digits=3), 
+                  type='ensmean', st.col=NULL, stations=plstat,
+                  NHseason=NULL, plotname=paste0('avg_upd_temp.pdf'), paper='special')
+    }
   }
   
   ############## Precipitation Update ##############
-  
-  if (monthly_out) {
-    plot_echam4(update, varname='precip', cex.pt=1.3, names=pnames[1:dim(update$data)[3]], type='ensmean', 
-                st.col=NULL, stations=plstat, NHseason="summer",
-                plotname=paste0('avg_upd_precip_summer.pdf'), paper='special')
-    plot_echam4(update, varname='precip', cex.pt=1.3, names=pnames[1:dim(update$data)[3]], type='ensmean', 
-                st.col=NULL, stations=plstat, NHseason="winter",
-                plotname=paste0('avg_upd_precip_winter.pdf'), paper='special')
+  if (exists("pnames")) {
+    if (monthly_out) {
+      plot_echam4(update, varname='precip', cex.pt=0.7, names=pnames[1:dim(update$data)[3]], type='ensmean', 
+                  st.col=NULL, stations=plstat, NHseason="summer",
+                  plotname=paste0('avg_upd_precip_summer.pdf'), paper='special')
+      plot_echam4(update, varname='precip', cex.pt=0.7, names=pnames[1:dim(update$data)[3]], type='ensmean', 
+                  st.col=NULL, stations=plstat, NHseason="winter",
+                  plotname=paste0('avg_upd_precip_winter.pdf'), paper='special')
+    } else {
+      plot_echam4(update, varname='precip', cex.pt=0.7,levs=round(prmax/9*c(-Inf,-7.5:-0.5,0.5:7.5,Inf),digits=2), 
+                  names=pnames[1:dim(update$data)[3]], type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,
+                  plotname=paste0('avg_upd_precip.pdf'), paper='special')
+    }
   } else {
-    plot_echam4(update, varname='precip', cex.pt=1.3,lev=round(prmax/9*c(-Inf,-7.5:-0.5,0.5:7.5,Inf),digits=2), 
-                names=pnames[1:dim(update$data)[3]], type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,
-                plotname=paste0('avg_upd_precip.pdf'), paper='special')
+    if (monthly_out) {
+      plot_echam4(update, varname='precip', cex.pt=0.7, type='ensmean', 
+                  st.col=NULL, stations=plstat, NHseason="summer",
+                  plotname=paste0('avg_upd_precip_summer.pdf'), paper='special')
+      plot_echam4(update, varname='precip', cex.pt=0.7, type='ensmean', 
+                  st.col=NULL, stations=plstat, NHseason="winter",
+                  plotname=paste0('avg_upd_precip_winter.pdf'), paper='special')
+    } else {
+      plot_echam4(update, varname='precip', cex.pt=0.7, levs=round(prmax/9*c(-Inf,-7.5:-0.5,0.5:7.5,Inf),digits=2), 
+                  type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,
+                  plotname=paste0('avg_upd_precip.pdf'), paper='special')
+    }
   }
   
   ############## Sea Level Pressure ##############
   
-  if (monthly_out) {
-    plot_echam4(update, varname='slp', cex.pt=1.3, names=pnames[1:dim(update$data)[3]] , type='ensmean', 
-                st.col=NULL, stations=plstat, NHseason="summer",
-                plotname=paste0('avg_upd_slp_summer.pdf'), paper='special')
-    plot_echam4(update, varname='slp', cex.pt=1.3, names=pnames[1:dim(update$data)[3]] , type='ensmean', 
-                st.col=NULL, stations=plstat, NHseason="winter",
-                plotname=paste0('avg_upd_slp_winter.pdf'), paper='special')
+  if (exists("pnames")) {
+    if (monthly_out) {
+      plot_echam4(update, varname='slp', cex.pt=0.7, names=pnames[1:dim(update$data)[3]] , type='ensmean', 
+                  st.col=NULL, stations=plstat, NHseason="summer",
+                  plotname=paste0('avg_upd_slp_summer.pdf'), paper='special')
+      plot_echam4(update, varname='slp', cex.pt=0.7, names=pnames[1:dim(update$data)[3]] , type='ensmean', 
+                  st.col=NULL, stations=plstat, NHseason="winter",
+                  plotname=paste0('avg_upd_slp_winter.pdf'), paper='special')
+    } else {
+      plot_echam4(update, varname='slp', cex.pt=0.7,levs=round(slpmax/9*c(-Inf,-7.5:-0.5,0.5:7.5,Inf),digits=3), 
+                  names=pnames[1:dim(update$data)[3]], type='ensmean', st.col=NULL, stations=plstat,
+                  NHseason=NULL,plotname=paste0('avg_upd_slp.pdf'), paper='special')
+    }
   } else {
-    plot_echam4(update, varname='slp', cex.pt=1.3,lev=round(slpmax/9*c(-Inf,-7.5:-0.5,0.5:7.5,Inf),digits=3), 
-                names=pnames[1:dim(update$data)[3]], type='ensmean', st.col=NULL, stations=plstat,
-                NHseason=NULL,plotname=paste0('avg_upd_slp.pdf'), paper='special')
+    if (monthly_out) {
+      plot_echam4(update, varname='slp', cex.pt=0.7, type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
+                  plotname=paste0('avg_upd_slp_summer.pdf'), paper='special')
+      plot_echam4(update, varname='slp', cex.pt=0.7, type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
+                  plotname=paste0('avg_upd_slp_winter.pdf'), paper='special')
+    } else {
+      plot_echam4(update, varname='slp', cex.pt=0.7,levs=round(slpmax/9*c(-Inf,-7.5:-0.5,0.5:7.5,Inf),digits=3), 
+                  type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,plotname=paste0('avg_upd_slp.pdf'), paper='special')
+    }
   }
+  
   rm(upd,update)
   ###############################################################
   
@@ -728,7 +770,7 @@ for (v in validation_set){
   
   
   
-  ###################### Temperature Correlation ################
+  ###################### Temp, Precip, SLP Correlation ################
   
   corr.tot <- echam
   #corr.tot$data <- array(cbind(corr.ech$ensmean,corr$ensmean),c(dim(corr$ensmean)[1],1,dim(corr$ensmean)[2]*2)) #[,,1:2,drop=F]
@@ -739,45 +781,34 @@ for (v in validation_set){
   #corr.tot$ensmean <- array(cbind(corr.ech$ensmean,corr$ensmean),c(dim(corr$ensmean)[1],dim(corr$ensmean)[2]*2)) #[,,1:2,drop=F]
   corr.tot$ensmean <- array(cbind(corr.ech$ensmean,corr$ensmean),c(dim(corr$ensmean)[1],s.plot*2)) #[,,1:2,drop=F]
   
-  levs <- c(-1,seq(-0.9,0.9,0.2),1)
-  if (monthly_out) {
-    plot_echam4(corr.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
-                plotname=paste0('corr_echam_anal-',v,'_temp_summer.pdf'), paper='special')
-    plot_echam4(corr.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
-                plotname=paste0('corr_echam_anal-',v,'_temp_winter.pdf'), paper='special')
-  } else {
-    plot_echam4(corr.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
-                plotname=paste0('corr_echam_anal-',v,'_temp.pdf'), paper='special')
+  lev <- c(-1,seq(-0.9,0.9,0.2),1)
+  for (vari in unique(corr.tot$names)){
+    if (exists("pnames")) {
+      if (monthly_out) {
+        plot_echam4(corr.tot, varname=vari, cex.pt=0.7, names=pnames[1:dim(corr.tot$data)[3]], levs=lev, 
+                    type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
+                    plotname=paste0('corr_echam_anal-',v,'_',vari,'_summer.pdf'), paper='special')
+        plot_echam4(corr.tot, varname=vari, cex.pt=0.7, names=pnames[1:dim(corr.tot$data)[3]], levs=lev, 
+                    type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
+                    plotname=paste0('corr_echam_anal-',v,'_',vari,'_winter.pdf'), paper='special')
+      } else {
+        plot_echam4(corr.tot, varname=vari, cex.pt=0.7, names=pnames[1:dim(corr.tot$data)[3]], levs=lev, 
+                    type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
+                    plotname=paste0('corr_echam_anal-',v,'_',vari,'.pdf'), paper='special')
+      }
+    } else {
+      if (monthly_out) {
+        plot_echam4(corr.tot, varname=vari, cex.pt=0.7, levs=lev, type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
+                    plotname=paste0('corr_echam_anal-',v,'_',vari,'_summer.pdf'), paper='special')
+        plot_echam4(corr.tot, varname=vari, cex.pt=0.7, levs=lev, type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
+                    plotname=paste0('corr_echam_anal-',v,'_',vari,'_winter.pdf'), paper='special')
+      } else {
+        plot_echam4(corr.tot, varname=vari, cex.pt=0.7, levs=lev, type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
+                    plotname=paste0('corr_echam_anal-',v,'_',vari,'.pdf'), paper='special')
+      }
+    }
   }
-  
-  #################### Precipitation Correlation ##################
-  
-  levs <- c(-1,seq(-0.9,0.9,0.2),1)
-  if (monthly_out){
-    plot_echam4(corr.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('corr_echam_anal-',v,'_precip_summer.pdf'), paper='special')
-    plot_echam4(corr.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('corr_echam_anal-',v,'_precip_winter.pdf'), paper='special')
-  }else{
-    plot_echam4(corr.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('corr_echam_anal-',v,'_precip.pdf'), paper='special')
-  }
-  
-  
-  ################# Sea Level Pressure Correlation #################
-  
-  levs <- c(-1,seq(-0.9,0.9,0.2),1)
-  
-  if (monthly_out){
-    plot_echam4(corr.tot, varname='slp', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('corr_echam_anal-',v,'_slp_summer.pdf'), paper='special')
-    plot_echam4(corr.tot, varname='slp', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('corr_echam_anal-',v,'_slp_winter.pdf'), paper='special')
-  }else{
-    plot_echam4(corr.tot, varname='slp', cex.pt=1.5, names=pnames[1:dim(corr.tot$data)[3]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('corr_echam_anal-',v,'_slp.pdf'), paper='special')
-  }
-  
-  
-  ###############################################################
-  
+
   
   
   ###############################################################
@@ -792,66 +823,43 @@ for (v in validation_set){
     corr.diff$ensmean <- corr.diff$ensmean[,(ncol(corr.tot$ensmean)/2+1):ncol(corr.tot$ensmean)]-corr.diff$ensmean[,1:(ncol(corr.tot$ensmean)/2)]
   }
   
-  ###################### Temperature CorrDiff ###################
+  lev <- round(seq(-1.3,1.3,0.2),digits = 1)
+  ###################### Temp, Precip, SLP CorrDiff ###################
   
-  if (monthly_out) {
-    plot_echam4(corr.diff, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",
-                plotname=paste0('corr.diff_echam_anal-',v,'_temp_summer.pdf'), paper='special')
-    plot_echam4(corr.diff, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",
-                plotname=paste0('corr.diff_echam_anal-',v,'_temp_winter.pdf'), paper='special')
-  } else if (pseudo_prox) {
-    plot_echam4(corr.diff, varname='temp2', cex.pt=1.5, names=pnames[1], lev=levs, type='ensmean', 
-                st.col=NULL, stations=plstat,NHseason=NULL,
-                plotname=paste0('corr.diff_echam_anal-',v,'_temp.pdf'), paper='special')
-  } else {
-    plot_echam4(corr.diff, varname='temp2', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
-                plotname=paste0('corr.diff_echam_anal-',v,'_temp.pdf'), paper='special')
+  for (vari in unique(corr.diff$names)){
+    if (exists("pnames")) {
+      if (monthly_out) {
+        plot_echam4(corr.diff, varname=vari, cex.pt=0.7, names=pnames[1:dim(corr.diff$data)[2]], levs=lev, 
+                    type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",
+                    plotname=paste0('corr_diff_echam_anal-',v,'_',vari,'_summer.pdf'), paper='special')
+        plot_echam4(corr.diff, varname=vari, cex.pt=0.7, names=pnames[1:dim(corr.diff$data)[2]], levs=lev, 
+                    type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",
+                    plotname=paste0('corr_diff_echam_anal-',v,'_',vari,'_winter.pdf'), paper='special')
+      } else if (pseudo_prox) {
+        plot_echam4(corr.diff, varname=vari, cex.pt=0.7, names=pnames[1], lev=levs, type='ensmean', 
+                    st.col=NULL, stations=plstat,NHseason=NULL,
+                    plotname=paste0('corr_diff_echam_anal-',v,'_',vari,'.pdf'), paper='special')
+      } else {
+        plot_echam4(corr.diff, varname=vari, cex.pt=0.7, names=pnames[1:dim(corr.diff$data)[2]], levs=lev,
+                    type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
+                    plotname=paste0('corr_diff_echam_anal-',v,'_',vari,'.pdf'), paper='special')
+      }
+    } else {
+      if (monthly_out) {
+        plot_echam4(corr.diff, varname=vari, cex.pt=0.7, levs=lev, type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",
+                    plotname=paste0('corr_diff_echam_anal-',v,'_',vari,'_summer.pdf'), paper='special')
+        plot_echam4(corr.diff, varname=vari, cex.pt=0.7, levs=lev, type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",
+                    plotname=paste0('corr_diff_echam_anal-',v,'_',vari,'_winter.pdf'), paper='special')
+      } else if (pseudo_prox) {
+        plot_echam4(corr.diff, varname=vari, cex.pt=0.7, lev=levs, type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,
+                    plotname=paste0('corr_diff_echam_anal-',v,'_',vari,'.pdf'), paper='special')
+      } else {
+        plot_echam4(corr.diff, varname=vari, cex.pt=0.7, levs=lev,type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
+                    plotname=paste0('corr_diff_echam_anal-',v,'_',vari,'.pdf'), paper='special')
+      }
+    }
   }
-  
-  
-  ###################### Precipitation CorrDiff ################
-  
-  if (monthly_out) {
-    plot_echam4(corr.diff, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",
-                plotname=paste0('corr.diff_echam_anal-',v,'_precip_summer.pdf'), paper='special')
-    plot_echam4(corr.diff, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], 
-                lev=levs, type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",
-                plotname=paste0('corr.diff_echam_anal-',v,'_precip_winter.pdf'), paper='special')
-  } else if (pseudo_prox) {
-    plot_echam4(corr.diff, varname='precip', cex.pt=1.5, names=pnames[1], lev=levs, type='ensmean', 
-                st.col=NULL, stations=plstat,NHseason=NULL,
-                plotname=paste0('corr.diff_echam_anal-',v,'_precip.pdf'), paper='special')
-  } else {
-    plot_echam4(corr.diff, varname='precip', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], 
-                lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,
-                plotname=paste0('corr.diff_echam_anal-',v,'_precip.pdf'), paper='special')
-  }
-  
-  ################# Sea Level Pressure CorrDiff #################
-  
-  if (monthly_out) {
-    plot_echam4(corr.diff, varname='slp', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",
-                plotname=paste0('corr.diff_echam_anal-',v,'_slp_summer.pdf'), paper='special')
-    plot_echam4(corr.diff, varname='slp', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",
-                plotname=paste0('corr.diff_echam_anal-',v,'_slp_winter.pdf'), paper='special')
-  } else if (pseudo_prox) {
-    plot_echam4(corr.diff, varname='slp', cex.pt=1.5, names=pnames[1], lev=levs, type='ensmean', 
-                st.col=NULL, stations=plstat,NHseason=NULL,
-                plotname=paste0('corr.diff_echam_anal-',v,'_slp.pdf'), paper='special')
-  } else {
-    plot_echam4(corr.diff, varname='slp', cex.pt=1.5, names=pnames[1:dim(corr.diff$data)[2]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,
-                plotname=paste0('corr.diff_echam_anal-',v,'_slp.pdf'), paper='special')
-  }
-  
-  ###############################################################
-  
+ 
   
   
   ###############################################################
@@ -866,9 +874,9 @@ for (v in validation_set){
     bias.tot$data <- array(cbind(bias.ech$ensmean,bias$ensmean),c(dim(bias$ensmean)[1],1,dim(bias$ensmean)[2]*2))
     bias.tot$ensmean <- array(cbind(bias.ech$ensmean,bias$ensmean),c(dim(bias$ensmean)[1],dim(bias$ensmean)[2]*2))
     
-    levs <- c(-Inf,-10,-5,-2,-1,0,1,2,5,10,Inf)
+    lev <- c(-Inf,-10,-5,-2,-1,0,1,2,5,10,Inf)
     
-    plot_echam4(bias.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(bias.tot$data)[3]], lev=levs, 
+    plot_echam4(bias.tot, varname='temp2', cex.pt=0.7, names=pnames[1:dim(bias.tot$data)[3]], levs=lev, 
                 type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
                 plotname=paste0('bias_echam_anal-',v,'_temp.pdf'), paper='special')
     
@@ -876,9 +884,9 @@ for (v in validation_set){
     ##################### Precipitation Bias ########################
     
     
-    levs <- c(-Inf,-40,-20,-10,-5,0,5,10,20,40,Inf)
+    lev <- c(-Inf,-40,-20,-10,-5,0,5,10,20,40,Inf)
     
-    plot_echam4(bias.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(bias.tot$data)[3]], lev=levs, 
+    plot_echam4(bias.tot, varname='precip', cex.pt=0.7, names=pnames[1:dim(bias.tot$data)[3]], levs=lev, 
                 type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
                 plotname=paste0('bias_echam_anal-',v,'_precip.pdf'), paper='special')
     
@@ -886,9 +894,9 @@ for (v in validation_set){
     ##################### Sea Level Pressure Bias ########################
     
     
-    levs <- c(-Inf,-10,-5,-2,-1,0,1,2,5,10,Inf)
+    lev <- c(-Inf,-10,-5,-2,-1,0,1,2,5,10,Inf)
     
-    plot_echam4(bias.tot, varname='slp', cex.pt=1.5, names=pnames[1:dim(bias.tot$data)[3]], lev=levs, 
+    plot_echam4(bias.tot, varname='slp', cex.pt=0.7, names=pnames[1:dim(bias.tot$data)[3]], levs=lev, 
                 type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
                 plotname=paste0('bias_echam_anal-',v,'_slp.pdf'), paper='special')
     
@@ -903,223 +911,150 @@ for (v in validation_set){
   ###############################################################
   
   
-  ################### Temperature RE Anomaly ###################
+  ################### Temp, Precip, SLP RE Anomaly ###################
   
   RE.tot <- echam
   RE.tot$data <- array(RE.anom$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$ensmean)[2]))
   RE.tot$ensmean <- array(RE.anom$ensmean,c(dim(RE$ensmean)[1], dim(RE$ensmean)[2]))
   
-  levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+  lev <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
   
-  if (monthly_out){
-    plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
-                plotname=paste0('re_anom_echam_anal-',v,'_temp_summer.pdf'), paper='special')
-    plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
-                plotname=paste0('re_anom_echam_anal-',v,'_temp_winter.pdf'), paper='special')
-  }else{
-    plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
-                plotname=paste0('re_anom_echam_anal-',v,'_temp.pdf'), paper='special')
+  for (vari in unique(RE.tot$names)){
+    if (exists("pnames")) {
+      if (monthly_out){
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, names=pnames[1:dim(RE.tot$data)[3]], levs=lev, 
+                    type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
+                    plotname=paste0('re_anom_echam_anal-',v,'_',vari,'_summer.pdf'), paper='special')
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, names=pnames[1:dim(RE.tot$data)[3]], levs=lev, 
+                    type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
+                    plotname=paste0('re_anom_echam_anal-',v,'_',vari,'_winter.pdf'), paper='special')
+      }else{
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, names=pnames[1:dim(RE.tot$data)[3]], levs=lev, 
+                    type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
+                    plotname=paste0('re_anom_echam_anal-',v,'_',vari,'.pdf'), paper='special')
+      }
+    } else {
+      if (monthly_out){
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, levs=lev, type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
+                    plotname=paste0('re_anom_echam_anal-',v,'_',vari,'_summer.pdf'), paper='special')
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, levs=lev, type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
+                    plotname=paste0('re_anom_echam_anal-',v,'_',vari,'_winter.pdf'), paper='special')
+      }else{
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, levs=lev, type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
+                    plotname=paste0('re_anom_echam_anal-',v,'_',vari,'.pdf'), paper='special')
+      }
+    }
   }
   
-  #################### Precipitation RE Anomaly ######################
+ 
   
-  if (monthly_out){
-    plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
-                plotname=paste0('re_anom_echam_anal-',v,'_precip_summer.pdf'), paper='special')
-    plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
-                plotname=paste0('re_anom_echam_anal-',v,'_precip_winter.pdf'), paper='special')
-  }else{
-    plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
-                plotname=paste0('re_anom_echam_anal-',v,'_precip.pdf'), paper='special')
-  }
-  
-  ##################### Sea Level Pressure RE Anomaly ########################
-  
-  levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
-  
-  if (monthly_out){
-    plot_echam4(RE.tot, varname='slp', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
-                plotname=paste0('re_anom_echam_anal-',v,'_slp_summer.pdf'), paper='special')
-    plot_echam4(RE.tot, varname='slp', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
-                plotname='re_anom_echam_anal-',v,'_slp_winter.pdf', paper='special')
-  }else{
-    plot_echam4(RE.tot, varname='slp', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
-                plotname=paste0('re_anom_echam_anal-',v,'_slp.pdf'), paper='special')
-  }
-  
-  
-  ##################### Temperature RE Absolute ########################
+  ##################### Temp, Precip, SLP RE Absolute ########################
   
   RE.tot <- echam
   RE.tot$data <- array(RE$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$ensmean)[2]))
   RE.tot$ensmean <- array(RE$ensmean,c(dim(RE$ensmean)[1], dim(RE$ensmean)[2]))
   
   
-  levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
-  if (monthly_out){
-    plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
-                plotname=paste0('re_echam_anal-',v,'_temp_summer.pdf'), paper='special')
-    plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
-                plotname=paste0('re_echam_anal-',v,'_temp_winter.pdf'), paper='special')
-  }else{
-    plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
-                plotname=paste0('re_echam_anal-',v,'_temp.pdf'), paper='special')
+  lev <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+  
+  for (vari in unique(RE.tot$names)){
+    if (exists("pnames")) {
+      if (monthly_out){
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, names=pnames[1:dim(RE.tot$data)[3]], levs=lev, 
+                    type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
+                    plotname=paste0('re_echam_anal-',v,'_',vari,'_summer.pdf'), paper='special')
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, names=pnames[1:dim(RE.tot$data)[3]], levs=lev, 
+                    type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
+                    plotname=paste0('re_echam_anal-',v,'_',vari,'_winter.pdf'), paper='special')
+      }else{
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, names=pnames[1:dim(RE.tot$data)[3]], levs=lev, 
+                    type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
+                    plotname=paste0('re_echam_anal-',v,'_',vari,'.pdf'), paper='special')
+      }
+    } else {
+      if (monthly_out){
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, levs=lev, type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
+                    plotname=paste0('re_echam_anal-',v,'_',vari,'_summer.pdf'), paper='special')
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, levs=lev, type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
+                    plotname=paste0('re_echam_anal-',v,'_',vari,'_winter.pdf'), paper='special')
+      }else{
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, levs=lev, type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
+                    plotname=paste0('re_echam_anal-',v,'_',vari,'.pdf'), paper='special')
+      }
+    }
   }
+
   
-  ##################### Precipitation RE Absolute ########################
-  
-  if (monthly_out){
-    plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
-                plotname=paste0('re_echam_anal-',v,'_precip_summer.pdf'), paper='special')
-    plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
-                plotname=paste0('re_echam_anal-',v,'_precip_winter.pdf'), paper='special')
-  }else{
-    plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
-                plotname=paste0('re_echam_anal-',v,'_precip.pdf'), paper='special')
-  }
-  
-  ##################### Sea Level Pressure RE Absolute ########################
-  
-  levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
-  
-  if (monthly_out){
-    plot_echam4(RE.tot, varname='slp', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
-                plotname=paste0('re_echam_anal-',v,'_slp_summer.pdf'), paper='special')
-    plot_echam4(RE.tot, varname='slp', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs,
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
-                plotname=paste0('re_echam_anal-',v,'_slp_winter.pdf'), paper='special')
-  }else{
-    plot_echam4(RE.tot, varname='slp', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
-                plotname=paste0('re_echam_anal-',v,'_slp.pdf'), paper='special')
-  }
-  
-  
-  ##################### Temperature RE Climatology Absolute ########################
+  ##################### Temp, Precip, SLP RE Climatology Absolute ########################
   
   RE.tot <- echam
   RE.tot$data <- array(RE.echam.clim$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$ensmean)[2]))
   RE.tot$ensmean <- array(RE.echam.clim$ensmean,c(dim(RE$ensmean)[1],dim(RE$ensmean)[2]))
   
-  levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+  lev <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
   
-  if (monthly_out){
-    plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
-                plotname=paste0('re_clim_echam_anal-',v,'_temp_summer.pdf'), paper='special')
-    plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
-                plotname=paste0('re_clim_echam_anal-',v,'_temp_winter.pdf'), paper='special')
-  }else{
-    plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
-                plotname=paste0('re_clim_echam_anal-',v,'_temp.pdf'), paper='special')
+  for (vari in unique(RE.tot$names)){
+    if (exists("pnames")) {
+      if (monthly_out){
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, names=pnames[1:dim(RE.tot$data)[3]], levs=lev, 
+                    type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
+                    plotname=paste0('re_clim_echam_anal-',v,'_',vari,'_summer.pdf'), paper='special')
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, names=pnames[1:dim(RE.tot$data)[3]], levs=lev, 
+                    type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
+                    plotname=paste0('re_clim_echam_anal-',v,'_',vari,'_winter.pdf'), paper='special')
+      }else{
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, names=pnames[1:dim(RE.tot$data)[3]], levs=lev, 
+                    type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
+                    plotname=paste0('re_clim_echam_anal-',v,'_',vari,'.pdf'), paper='special')
+      }
+    } else {
+      if (monthly_out){
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, levs=lev, type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
+                    plotname=paste0('re_clim_echam_anal-',v,'_',vari,'_summer.pdf'), paper='special')
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, levs=lev, type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
+                    plotname=paste0('re_clim_echam_anal-',v,'_',vari,'_winter.pdf'), paper='special')
+      }else{
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, levs=lev, type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
+                    plotname=paste0('re_clim_echam_anal-',v,'_',vari,'.pdf'), paper='special')
+      }
+    }
   }
-  
-  ##################### Precipitation RE Climatology Absolute ########################
-  
-  if (monthly_out){
-    plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
-                plotname=paste0('re_clim_echam_anal-',v,'_precip_summer.pdf'), paper='special')
-    plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
-                plotname=paste0('re_clim_echam_anal-',v,'_precip_winter.pdf'), paper='special')
-  }else{
-    plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
-                plotname=paste0('re_clim_echam_anal-',v,'_precip.pdf'), paper='special')
-  }
-  
-  ##################### Sea Level Pressure RE Climatology Absolute ########################
-  
-  levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
-  
-  if (monthly_out){
-    plot_echam4(RE.tot, varname='slp', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
-                plotname=paste0('re_clim_echam_anal-',v,'_slp_summer.pdf'), paper='special')
-    plot_echam4(RE.tot, varname='slp', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
-                plotname=paste0('re_clim_echam_anal-',v,'_slp_winter.pdf'), paper='special')
-  }else{
-    plot_echam4(RE.tot, varname='slp', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
-                plotname=paste0('re_clim_echam_anal-',v,'_slp.pdf'), paper='special')
-  }
-  
-  ##################### Temperature RE Climatology Anomaly ########################
+ 
+  ##################### Temp, Precip, SLP RE Climatology Anomaly ########################
   
   RE.tot <- echam
   RE.tot$data <- array(RE.echam.clim.anom$ensmean,c(dim(RE$ensmean)[1], 1, dim(RE$ensmean)[2]))
   RE.tot$ensmean <- array(RE.echam.clim.anom$ensmean,c(dim(RE$ensmean)[1], dim(RE$ensmean)[2]))
   
-  levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
+  lev <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,1)
   
-  if (monthly_out){
-    plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
-                plotname=paste0('re_clim_anom_echam_anal-',v,'_temp_summer.pdf'), paper='special')
-    plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
-                plotname=paste0('re_clim_anom_echam_anal-',v,'_temp_winter.pdf'), paper='special')
-  }else{
-    plot_echam4(RE.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
-                plotname=paste0('re_clim_anom_echam_anal-',v,'_temp.pdf'), paper='special')
+  for (vari in unique(RE.tot$names)){
+    if (exists("pnames")) {
+      if (monthly_out){
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, names=pnames[1:dim(RE.tot$data)[3]], levs=lev, 
+                    type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
+                    plotname=paste0('re_clim_anom_echam_anal-',v,'_',vari,'_summer.pdf'), paper='special')
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, names=pnames[1:dim(RE.tot$data)[3]], levs=lev, 
+                    type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
+                    plotname=paste0('re_clim_anom_echam_anal-',v,'_',vari,'_winter.pdf'), paper='special')
+      }else{
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, names=pnames[1:dim(RE.tot$data)[3]], levs=lev, 
+                    type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
+                    plotname=paste0('re_clim_anom_echam_anal-',v,'_',vari,'.pdf'), paper='special')
+      }
+    } else {
+      if (monthly_out){
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, levs=lev, type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
+                    plotname=paste0('re_clim_anom_echam_anal-',v,'_',vari,'_summer.pdf'), paper='special')
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, levs=lev, type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
+                    plotname=paste0('re_clim_anom_echam_anal-',v,'_',vari,'_winter.pdf'), paper='special')
+      }else{
+        plot_echam4(RE.tot, varname=vari, cex.pt=0.7, levs=lev, type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
+                    plotname=paste0('re_clim_anom_echam_anal-',v,'_',vari,'.pdf'), paper='special')
+      }
+    }
   }
-  
-  ##################### Precipitation RE Climatology Anomaly ########################
-  
-  if (monthly_out){
-    plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
-                plotname=paste0('re_clim_anom_echam_anal-',v,'_precip_summer.pdf'), paper='special')
-    plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
-                plotname=paste0('re_clim_anom_echam_anal-',v,'_precip_winter.pdf'), paper='special')
-  }else{
-    plot_echam4(RE.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
-                plotname=paste0('re_clim_anom_echam_anal-',v,'_precip.pdf'), paper='special')
-  }
-  
-  ##################### Sea Level Pressure RE Climatology Anomaly ########################
-  
-  levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0,0.2,0.4,0.6,0.8,1)
-  
-  if (monthly_out){
-    plot_echam4(RE.tot, varname='slp', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
-                plotname=paste0('re_clim_anom_echam_anal-',v,'_slp_summer.pdf'), paper='special')
-    plot_echam4(RE.tot, varname='slp', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
-                plotname=paste0('re_clim_anom_echam_anal-',v,'_slp_winter.pdf'), paper='special')
-  }else{
-    plot_echam4(RE.tot, varname='slp', cex.pt=1.5, names=pnames[1:dim(RE.tot$data)[3]], lev=levs, 
-                type='ensmean', st.col=NULL, stations=plstat, NHseason=NULL,
-                plotname=paste0('re_clim_anom_echam_anal-',v,'_slp.pdf'), paper='special')
-  }
-  
-  
-  ###############################################################
-  
+
   
   
   ###############################################################
@@ -1139,16 +1074,16 @@ for (v in validation_set){
     
     ###################################################################################
     # Fig.: rmse analysis
-    levs<-c(pretty(rmse$ensmean[which(rmse$names==vari)],n=11),Inf)
+    lev<-c(pretty(rmse$ensmean[which(rmse$names==vari)],n=11),Inf)
     if (monthly_out){
-      plot_echam4(rmse, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse$data)[2]],  type='ensmean', 
+      plot_echam4(rmse, varname=vari, cex.pt=0.7, names=pnames[1:dim(rmse$data)[2]],  type='ensmean', 
                   st.col=NULL, stations=plstat, NHseason="summer",
                   plotname=paste0('rmse_anal-',v,'_',vari,'_summer.pdf'), paper='special')
-      plot_echam4(rmse, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse$data)[2]],  type='ensmean', 
+      plot_echam4(rmse, varname=vari, cex.pt=0.7, names=pnames[1:dim(rmse$data)[2]],  type='ensmean', 
                   st.col=NULL, stations=plstat, NHseason="winter",
                   plotname=paste0('rmse_anal-',v,'_',vari,'_winter.pdf'), paper='special')
     }else{
-      plot_echam4(rmse, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse$data)[2]],lev=levs,
+      plot_echam4(rmse, varname=vari, cex.pt=0.7, names=pnames[1:dim(rmse$data)[2]],levs=lev,
                   cols=c('lightblue','royalblue','navy'), type='ensmean', st.col=NULL, 
                   stations=plstat,NHseason=NULL,plotname=paste0('rmse_anal-',v,'_',vari,'.pdf'), paper='special')
       
@@ -1156,49 +1091,49 @@ for (v in validation_set){
     
     ###################################################################################
     # Fig.: rmse analysis anom
-    levs<-c(pretty(rmse.anom$ensmean[which(rmse.anom$names==vari)],n=11),Inf)
+    lev<-c(pretty(rmse.anom$ensmean[which(rmse.anom$names==vari)],n=11),Inf)
     if (monthly_out){
-      plot_echam4(rmse.anom, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse.anom$data)[2]], 
+      plot_echam4(rmse.anom, varname=vari, cex.pt=0.7, names=pnames[1:dim(rmse.anom$data)[2]], 
                   symmetric=F, type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
                   plotname=paste0('rmse_anom_anal-',v,'_',vari,'_summer.pdf'), paper='special')
-      plot_echam4(rmse.anom, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse.anom$data)[2]], 
+      plot_echam4(rmse.anom, varname=vari, cex.pt=0.7, names=pnames[1:dim(rmse.anom$data)[2]], 
                   symmetric=F, type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",
                   plotname=paste0('rmse_anom_anal-',v,'_',vari,'_winter.pdf'), paper='special')
     }else{
-      plot_echam4(rmse.anom, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse.anom$data)[2]],
-                  lev=levs,cols=c('lightblue','royalblue','navy'), type='ensmean', st.col=NULL, 
+      plot_echam4(rmse.anom, varname=vari, cex.pt=0.7, names=pnames[1:dim(rmse.anom$data)[2]],
+                  levs=lev,cols=c('lightblue','royalblue','navy'), type='ensmean', st.col=NULL, 
                   stations=plstat,NHseason=NULL,plotname=paste0('rmse_anom_anal-',v,'_',vari,'.pdf'), paper='special')
     }
     
     ###################################################################################
     # Fig.: rmse echam
-    levs<-pretty(rmse.ech$ensmean[which(rmse.ech$names==vari)],n=11)
+    lev<-pretty(rmse.ech$ensmean[which(rmse.ech$names==vari)],n=11)
     if (monthly_out){
-      plot_echam4(rmse.ech, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse.ech$data)[2]], 
+      plot_echam4(rmse.ech, varname=vari, cex.pt=0.7, names=pnames[1:dim(rmse.ech$data)[2]], 
                   symmetric=F, type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",
                   plotname=paste0('rmse_echam-',v,'_',vari,'_summer.pdf'), paper='special')
-      plot_echam4(rmse.ech, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse.ech$data)[2]], 
+      plot_echam4(rmse.ech, varname=vari, cex.pt=0.7, names=pnames[1:dim(rmse.ech$data)[2]], 
                   symmetric=F, type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",
                   plotname=paste0('rmse_echam-',v,'_',vari,'_winter.pdf'), paper='special')
     }else{
-      plot_echam4(rmse.ech, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse.ech$data)[2]],
-                  lev=levs,cols=c('lightblue','royalblue','navy'), type='ensmean', st.col=NULL, 
+      plot_echam4(rmse.ech, varname=vari, cex.pt=0.7, names=pnames[1:dim(rmse.ech$data)[2]],
+                  levs=lev,cols=c('lightblue','royalblue','navy'), type='ensmean', st.col=NULL, 
                   stations=plstat,NHseason=NULL,plotname=paste0('rmse_echam-',v,'_',vari,'.pdf'), paper='special')
     }
     
     ###################################################################################
     # Fig.: rmse echam anom
-    levs<-c(pretty(rmse.ech.anom$ensmean[which(rmse.ech.anom$names==vari)],n=11),Inf)
+    lev<-c(pretty(rmse.ech.anom$ensmean[which(rmse.ech.anom$names==vari)],n=11),Inf)
     if (monthly_out){
-      plot_echam4(rmse.ech.anom, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse.ech.anom$data)[2]], 
+      plot_echam4(rmse.ech.anom, varname=vari, cex.pt=0.7, names=pnames[1:dim(rmse.ech.anom$data)[2]], 
                   symmetric=F, type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
                   plotname=paste0('rmse_anom_echam-',v,'_',vari,'_summer.pdf'), paper='special')
-      plot_echam4(rmse.ech.anom, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse.ech.anom$data)[2]], 
+      plot_echam4(rmse.ech.anom, varname=vari, cex.pt=0.7, names=pnames[1:dim(rmse.ech.anom$data)[2]], 
                   symmetric=F, type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
                   plotname=paste0('rmse_anom_echam-',v,'_',vari,'_winter.pdf'), paper='special')
     }else{
-      plot_echam4(rmse.ech.anom, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse.ech.anom$data)[2]],
-                  lev=levs,cols=c('lightblue','royalblue','navy'), type='ensmean', st.col=NULL, 
+      plot_echam4(rmse.ech.anom, varname=vari, cex.pt=0.7, names=pnames[1:dim(rmse.ech.anom$data)[2]],
+                  levs=lev,cols=c('lightblue','royalblue','navy'), type='ensmean', st.col=NULL, 
                   stations=plstat,NHseason=NULL,plotname=paste0('rmse_anom_echam-',v,'_',vari,'.pdf'), paper='special')
     }
     
@@ -1207,17 +1142,17 @@ for (v in validation_set){
     vmax<-max(rmse.diff$ensmean[which(rmse.diff$names==vari),],na.rm=T)
     vmin<-min(rmse.diff$ensmean[which(rmse.diff$names==vari),],na.rm=T)
     vmaxmax<-max(vmax,-1*vmin)
-    levs<-c(-Inf,signif(seq(-vmaxmax,vmaxmax,by=2*vmaxmax/9),2),Inf)
+    lev<-c(-Inf,signif(seq(-vmaxmax,vmaxmax,by=2*vmaxmax/9),2),Inf)
     if (monthly_out){
-      plot_echam4(rmse.diff, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse.diff$data)[2]], 
+      plot_echam4(rmse.diff, varname=vari, cex.pt=0.7, names=pnames[1:dim(rmse.diff$data)[2]], 
                   symmetric=F, type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
                   plotname=paste0('rmse_diff-',v,'_',vari,'_summer.pdf'), paper='special')
-      plot_echam4(rmse.diff, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse.diff$data)[2]], 
+      plot_echam4(rmse.diff, varname=vari, cex.pt=0.7, names=pnames[1:dim(rmse.diff$data)[2]], 
                   symmetric=F, type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
                   plotname=paste0('rmse_diff-',v,'_',vari,'_winter.pdf'), paper='special')
     }else{
-      plot_echam4(rmse.diff, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse.diff$data)[2]],
-                  lev=levs,cols=c('yellow','white','navy'), type='ensmean', st.col=NULL, 
+      plot_echam4(rmse.diff, varname=vari, cex.pt=0.7, names=pnames[1:dim(rmse.diff$data)[2]],
+                  levs=lev,cols=c('yellow','white','navy'), type='ensmean', st.col=NULL, 
                   stations=plstat,NHseason=NULL,plotname=paste0('rmse_diff-',v,'_',vari,'.pdf'), paper='special')
     }
     
@@ -1226,17 +1161,17 @@ for (v in validation_set){
     vmax<-max(rmse.anom.diff$ensmean[which(rmse.anom.diff$names==vari),],na.rm=T)
     vmin<-min(rmse.anom.diff$ensmean[which(rmse.anom.diff$names==vari),],na.rm=T)
     vmaxmax<-max(vmax,-1*vmin)
-    levs<-c(-Inf,signif(seq(-vmaxmax,vmaxmax,by=2*vmaxmax/9),2),Inf)
+    lev<-c(-Inf,signif(seq(-vmaxmax,vmaxmax,by=2*vmaxmax/9),2),Inf)
     if (monthly_out){
-      plot_echam4(rmse.anom.diff, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse.anom.diff$data)[2]], 
+      plot_echam4(rmse.anom.diff, varname=vari, cex.pt=0.7, names=pnames[1:dim(rmse.anom.diff$data)[2]], 
                   symmetric=F, type='ensmean', st.col=NULL, stations=plstat, NHseason="summer",
                   plotname=paste0('rmse_diff_anom-',v,'_',vari,'_summer.pdf'), paper='special')
-      plot_echam4(rmse.anom.diff, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse.anom.diff$data)[2]],
+      plot_echam4(rmse.anom.diff, varname=vari, cex.pt=0.7, names=pnames[1:dim(rmse.anom.diff$data)[2]],
                   symmetric=F,  type='ensmean', st.col=NULL, stations=plstat, NHseason="winter",
                   plotname=paste0('rmse_diff_anom-',v,'_',vari,'_winter.pdf'), paper='special')
     }else{
-      plot_echam4(rmse.anom.diff, varname=vari, cex.pt=1.5, names=pnames[1:dim(rmse.anom.diff$data)[2]],
-                  lev=levs,cols=c('yellow','white','navy'), type='ensmean', st.col=NULL, stations=plstat,
+      plot_echam4(rmse.anom.diff, varname=vari, cex.pt=0.7, names=pnames[1:dim(rmse.anom.diff$data)[2]],
+                  levs=lev,cols=c('yellow','white','navy'), type='ensmean', st.col=NULL, stations=plstat,
                   NHseason=NULL,plotname=paste0('rmse_diff_anom-',v,'_',vari,'.pdf'), paper='special')
     }
   } #end rmse plots for loop
@@ -1580,10 +1515,10 @@ for (v in validation_set){
     levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.01,0.02,0.04,0.08,0.1,Inf)
     
     if (monthly_out){
-      plot_echam4(crps.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('crps_anom_echam_anal-',v,'_temp_summer.pdf'), paper='special')
-      plot_echam4(crps.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('crps_anom_echam_anal-',v,'_temp_winter.pdf'), paper='special')
+      plot_echam4(crps.tot, varname='temp2', cex.pt=0.7, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('crps_anom_echam_anal-',v,'_temp_summer.pdf'), paper='special')
+      plot_echam4(crps.tot, varname='temp2', cex.pt=0.7, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('crps_anom_echam_anal-',v,'_temp_winter.pdf'), paper='special')
     }else{
-      plot_echam4(crps.tot, varname='temp2', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('crps_anom_echam_anal-',v,'_temp.pdf'), paper='special')
+      plot_echam4(crps.tot, varname='temp2', cex.pt=0.7, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('crps_anom_echam_anal-',v,'_temp.pdf'), paper='special')
     }
     
     
@@ -1593,10 +1528,10 @@ for (v in validation_set){
     
     levs <- c(-Inf, -10,-3,-1,-0.3, -.1, 0.05,0.2,0.4,0.6,0.8,Inf)
     if (monthly_out) {
-      plot_echam4(crps.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('crps_anom_echam_anal-',v,'_precip_summer.pdf'), paper='special')
-      plot_echam4(crps.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('crps_anom_echam_anal-',v,'_precip_winter.pdf'), paper='special')
+      plot_echam4(crps.tot, varname='precip', cex.pt=0.7, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="summer",plotname=paste0('crps_anom_echam_anal-',v,'_precip_summer.pdf'), paper='special')
+      plot_echam4(crps.tot, varname='precip', cex.pt=0.7, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason="winter",plotname=paste0('crps_anom_echam_anal-',v,'_precip_winter.pdf'), paper='special')
     }else{
-      plot_echam4(crps.tot, varname='precip', cex.pt=1.5, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('crps_anom_echam_anal-',v,'_precip.pdf'), paper='special')
+      plot_echam4(crps.tot, varname='precip', cex.pt=0.7, names=pnames[1:dim(crps.tot$ensmean)[2]], lev=levs , type='ensmean', st.col=NULL, stations=plstat,NHseason=NULL,plotname=paste0('crps_anom_echam_anal-',v,'_precip.pdf'), paper='special')
     }
     dev.off()
   }

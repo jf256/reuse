@@ -1,4 +1,13 @@
 ########### TODO #########
+2019/09 calibrate.height not complete
+2019/08 optimise code, e.g. docall used in some places doc_t in others or first "proxies" then "calibrate"
+2019/08 add single line input/output for each observation
+2019/08 change from 20CRv2 to 20CRv3 validation
+2019/08 vind.anom has ind_recon..., eind not
+2019/08 $archivetype, $parameter info of proxies get lost in _data line 930
+2019/08 reenter .tot for time series
+2019/08 stat loc map by proxy type?
+2019/08 tps_only set F in line 531. why?
 Currently working on improvements in proxy only period
 - mergetime_indices only works for syr to eyr and NOT for syrtot to eyrtot
 - proxy parameter not consistent between collections:
@@ -49,7 +58,13 @@ OK- are we using full or screened-by-Raphi(FDR) PAGES data and which version num
 
 This file serves as an overview of all experiments (e.g. date, explanation, name).
 With this it should be easier to find plots, data etc. from former experiments.
-################ EXPERIMENTS STILL TODO: ##################
+################ EXPERIMENTS ##################
+
+"merged_code_pages_test" # 2019/08/19 test in merged code v1.4 with VV prec part and JF proxy fixes work
+                         # now BEST for proxy calibration because more data in remote proxy areas
+                         # and AIC fixed, only allows positive reg. coeff. now
+
+
 
 "NTREND_tree_prox_only"              # compare NTREND vs PAGES vs Petra by JF 2019/01
   # results: same as nevin's version

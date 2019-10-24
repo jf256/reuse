@@ -94,11 +94,11 @@ for (cyr in syr2:eyr) {
   } else {
     real_proxies=F
   }
-  if (cyr <= 1900&pseudo_prox) {
+  if (cyr <= 1900 & pseudo_prox) {
     real_proxies=F
     stop('DAPS pseudo proxy experiment is currently only working from 1901 onwards')
   }
-  if (cyr <= 1853&import_luca) {
+  if (assim_docu) { # cyr <= 1853 & assim_docu) { #import_luca) {
     docum=T                 # read documentary based data
   } else {
     docum=F
@@ -143,7 +143,7 @@ for (cyr in syr2:eyr) {
   
   ##########################################################################################
   # 1. Echam Part
-  # 1.1 Loading echam, echam_anom, echam_clim, landcorrected_anom, landcorrected_clim
+  # 1.1 Loading (echam commented), echam_anom, echam_clim, landcorrected_anom, landcorrected_clim
   # 1.1.2 Load/create bigger ensemble size 
   # 1.2 Choose which variables want to use from the model
   # 1.3 Calc echam st. dev. for each grid point and month over ens memb. to scale docu data
@@ -154,42 +154,49 @@ for (cyr in syr2:eyr) {
   
   # 1.1 Loading echam, echam_anom, echam_clim, landcorrected_anom, landcorrected_clim
   if (old_statvec) {
+  # JF commented 09/2019
+  #if (every2grid) {
+  #  load(paste(echpath,"echam_",(cyr-1),"-",cyr,"_2ndgrid.Rdata",sep=""))
+  #  #load(paste(dataextdir,"echam/echam_",(cyr-1),"-",cyr,"_2ndgrid.Rdata",sep=""))
+  #  #load(paste0('/scratch3/veronika/reuse/data/echam/new_statvec/echam/echam_',(cyr-1),'-',cyr,'_2ndgrid.Rdata'))
+  #} else {
+  #  load(paste0(echpath,"echam_",(cyr-1),"-",cyr,".Rdata"))
+  #  # load(paste0(dataextdir,"echam/echam_",(cyr-1),"-",cyr,".Rdata"))
+  #}
+  if ((anomaly_assim) & (!no_forc_big_ens)) {  
+    # anomalies calculated efficiently with cdo, slow calculation within R has been removed
+    yr1 <- cyr-1
+    yr2 <- cyr
+    # since the anomalies in the ncdf files are calculated by using the running mean 
+    #   (first year only 36 yrs used) by using this we are not consistent
+    yr3 <- yr1
+    yr4 <- yr2
+      if (cyr < 1637) {yr3 <- 1636}
+      if (cyr < 1637) {yr4 <- 1637}
+      if (cyr > 1970) {yr3 <- 1969}
+      if (cyr > 1970) {yr4 <- 1970}
     if (every2grid) {
-      # load(paste(dataextdir,"echam/echam_",(cyr-1),"-",cyr,"_2ndgrid.Rdata",sep=""))
-      load(paste0('/scratch3/veronika/reuse/data/echam/new_statvec/echam/echam_',(cyr-1),'-',cyr,'_2ndgrid.Rdata'))
+      load(paste0(echanompath,'echam_anom_',yr1,'-',yr2,'_2ndgrid.Rdata'))
+      load(paste0(echclimpath,'echam_clim_',yr3,'-',yr4,'_2ndgrid.Rdata'))
+      if (landcorr) {
+        load(paste0(echanompath,'echam_anom_103_',yr1,'-',yr2,'_2ndgrid.Rdata'))
+        load(paste0(echclimpath,'echam_clim_103_',yr3,'-',yr4,'_2ndgrid.Rdata'))
+      }
     } else {
-      load(paste(dataextdir,"echam/echam_",(cyr-1),"-",cyr,".Rdata",sep=""))
-    }
-    if ((anomaly_assim) & (!no_forc_big_ens)) {  
-      # anomalies calculated efficiently with cdo, slow calculation within R has been removed
-      yr1 <- cyr-1
-      yr2 <- cyr
-      # since the anomalies in the ncdf files are calculated by using the running mean (first year only36 yrs used) by using this we are not consistent
-      # yr3 <- yr1
-      # yr4 <- yr2
-      # if (cyr < 1637) {yr3 <- 1636}
-      # if (cyr < 1637) {yr4 <- 1637}
-      # if (cyr > 1970) {yr3 <- 1969}
-      # if (cyr > 1970) {yr4 <- 1970}
-      if (every2grid) {
-        # load(paste0(echanompath,'echam_anom_',yr1,'-',yr2,'_2ndgrid.Rdata'))
-        ## load(paste0(echclimpath,'echam_clim_',yr3,'-',yr4,'_2ndgrid.Rdata')) # old version
-        load(paste0('/scratch3/veronika/reuse/data/echam/new_statvec/echam_anom/echam_anom_',yr1,'-',yr2,'_2ndgrid.Rdata'))
-        # load(paste0(echclimpath,'echam_clim_',yr1,'-',yr2,'_2ndgrid.Rdata'))
-        load(paste0('/scratch3/veronika/reuse/data/echam/new_statvec/echam_clim/echam_clim_',yr1,'-',yr2,'_2ndgrid.Rdata'))
-        if (landcorr) {
-          load(paste0(echanompath,'echam_anom_103_',yr1,'-',yr2,'_2ndgrid.Rdata'))
-          load(paste0(echclimpath,'echam_clim_103_',yr3,'-',yr4,'_2ndgrid.Rdata'))
-        }
-      } else {
-        load(paste0(echanompath,'echam_anom_',yr1,'-',yr2,'.Rdata'))
-        load(paste0(echclimpath,'echam_clim_',yr3,'-',yr4,'.Rdata'))
-        if (landcorr) {
-          load(paste0(echanompath,'echam_anom_103_',yr1,'-',yr2,'.Rdata'))
-          load(paste0(echclimpath,'echam_clim_103_',yr3,'-',yr4,'.Rdata'))
-        }
+      load(paste0(echanompath,'echam_anom_',yr1,'-',yr2,'.Rdata'))
+      load(paste0(echclimpath,'echam_clim_',yr3,'-',yr4,'.Rdata'))
+      if (landcorr) {
+        load(paste0(echanompath,'echam_anom_103_',yr1,'-',yr2,'.Rdata'))
+        load(paste0(echclimpath,'echam_clim_103_',yr3,'-',yr4,'.Rdata'))
       }
     }
+    # correct units if old state vector with error
+      echam_anom$data[echam_anom$names=='precip',,] <- echam_anom$data[echam_anom$names=='precip',,] * 3600 * 24 * 30
+      echam_anom$ensmean[echam_anom$names=='precip',] <- echam_anom$ensmean[echam_anom$names=='precip',] * 3600 * 24 * 30
+      echam_anom$data[echam_anom$names=='slp',,] <- echam_anom$data[echam_anom$names=='slp',,]/100
+      echam_anom$ensmean[echam_anom$names=='slp',] <- echam_anom$ensmean[echam_anom$names=='slp',]/100
+  }
+
   } else if (new_statvec) {
     yr1 <- cyr-1
     yr2 <- cyr
@@ -197,33 +204,33 @@ for (cyr in syr2:eyr) {
     echam.anom=list()
     echam.clim=list()
     # temp
-    load(paste0("/mnt/climstor/giub/EKF400/echam_anom_v2/echam_anom_temp2/echam_anom_temp2_",yr1,"-",yr2,".Rdata"))
+    load(paste0(echanompath_v2,"/echam_anom_temp2/echam_anom_temp2_",yr1,"-",yr2,".Rdata"))
     a_temp2 = echam_anom
-    load(paste0("/mnt/climstor/giub/EKF400/echam_clim_v2/echam_clim_temp2/echam_clim_temp2_",yr1,"-",yr2,".Rdata"))
+    load(paste0(echclimpath_v2,"/echam_clim_temp2/echam_clim_temp2_",yr1,"-",yr2,".Rdata"))
     c_temp2 = echam_clim
     # precip
-    load(paste0("/mnt/climstor/giub/EKF400/echam_anom_v2/echam_anom_precip/echam_anom_precip_",yr1,"-",yr2,".Rdata"))
+    load(paste0(echanompath_v2,"/echam_anom_precip/echam_anom_precip_",yr1,"-",yr2,".Rdata"))
     a_precip = echam_anom
-    load(paste0("/mnt/climstor/giub/EKF400/echam_clim_v2/echam_clim_precip/echam_clim_precip_",yr1,"-",yr2,".Rdata"))
+    load(paste0(echclimpath_v2,"/echam_clim_precip/echam_clim_precip_",yr1,"-",yr2,".Rdata"))
     c_precip = echam_clim
     #join the two lists
     a_t2pr = join_lists(a_temp2,a_precip)
     c_t2pr = join_lists(c_temp2,c_precip)
     # slp
-    load(paste0("/mnt/climstor/giub/EKF400/echam_anom_v2/echam_anom_slp/echam_anom_slp_",yr1,"-",yr2,".Rdata"))
+    load(paste0(echanompath_v2,"/echam_anom_slp/echam_anom_slp_",yr1,"-",yr2,".Rdata"))
     a_slp = echam_anom
-    load(paste0("/mnt/climstor/giub/EKF400/echam_clim_v2/echam_clim_slp/echam_clim_slp_",yr1,"-",yr2,".Rdata"))
+    load(paste0(echclimpath_v2,"/echam_clim_slp/echam_clim_slp_",yr1,"-",yr2,".Rdata"))
     c_slp = echam_clim
     echam.anom = join_lists(a_t2pr,a_slp)
     echam.clim = join_lists(c_t2pr,c_slp)
     rm (a_temp2,a_precip,a_slp,a_t2pr,c_temp2,c_precip,c_slp,c_t2pr)
     for (i in statvari) {
-      load(paste0("/mnt/climstor/REUSE/newCompo/echam_anom/echam_anom_every_grid/echam_anom_",i,"/echam_anom_",i,"_",yr1,"-",yr2,".Rdata"))
+      load(paste0(echanompath_v2,"/echam_anom_",i,"/echam_anom_",i,"_",yr1,"-",yr2,".Rdata"))
       a_x = echam_anom
-      #load(paste0("/mnt/climstor/giub/EKF400/echam_clim_v2/echam_clim_",i,"/echam_clim_",i,"_",yr1,"-",yr2,".Rdata"))
-      #c_x = echam_clim
+      load(paste0(echclimpath_v2,"/echam_clim_",i,"/echam_clim_",i,"_",yr1,"-",yr2,".Rdata"))
+      c_x = echam_clim
       echam.anom = join_lists(echam.anom,a_x)
-      #echam.clim = join_lists(echam.clim,c_x)
+      echam.clim = join_lists(echam.clim,c_x)
     }
   }
   
@@ -247,11 +254,12 @@ for (cyr in syr2:eyr) {
   # just leave temp precip slp in state vector
   if (old_statvec) {
     if (tps_only) {
-      tpspos <- c(which(echam$names=='temp2'), which(echam$names=='precip'),
-                  which(echam$names=='slp'))
-      echam$data <- echam$data[tpspos,,]
-      echam$ensmean <- echam$ensmean[tpspos,]
-      echam$names <- echam$names[tpspos]
+      # JF commented 09/2019
+      #tpspos <- c(which(echam$names=='temp2'), which(echam$names=='precip'),
+      #            which(echam$names=='slp'))
+      #echam$data <- echam$data[tpspos,,]
+      #echam$ensmean <- echam$ensmean[tpspos,]
+      #echam$names <- echam$names[tpspos]
       if (anomaly_assim){
         tpspos <- c(which(echam_anom$names=='temp2'), which(echam_anom$names=='precip'),
                     which(echam_anom$names=='slp'))
@@ -273,42 +281,14 @@ for (cyr in syr2:eyr) {
       }
     }
     
-    if (tpsw_only) {
-      tpswpos <- c(which(echam$names=='temp2'), which(echam$names=='precip'), which(echam$names=='slp'),
-                   which(echam$names=='wdays'), which(echam$names=='bias'))
-      echam$data <- echam$data[tpswpos,,]
-      echam$ensmean <- echam$ensmean[tpswpos,]
-      echam$names <- echam$names[tpswpos]
-      if (anomaly_assim){
-        tpswpos <- c(which(echam_anom$names=='temp2'), which(echam_anom$names=='precip'), which(echam_anom$names=='slp'),
-                     which(echam_anom$names=='wdays'), which(echam_anom$names=='bias'))
-        echam_anom$data <- echam_anom$data[tpswpos,,]
-        echam_anom$ensmean <- echam_anom$ensmean[tpswpos,]
-        echam_anom$names <- echam_anom$names[tpswpos]
-        if (state == "changing" & covarclim>0) {
-          tpswpos <- c(which(echanomallts$names=='temp2'), which(echanomallts$names=='precip'),
-                       which(echanomallts$names=='slp'), which(echam$names=='wdays'), which(echanomallts$names=='bias'))
-          echanomallts$data <- echanomallts$data[tpswpos,,]
-          echanomallts$ensmean <- echanomallts$ensmean[tpswpos,]
-          echanomallts$names <- echanomallts$names[tpswpos]
-        }
-        # Blending was not tested
-        # if (state == "static" & no_forc_big_ens ) {
-        #   tpspos <- c(which(echam_clim$names=='temp2'), which(echam_clim$names=='precip'),
-        #               which(echam_clim$names=='slp'), which(echam_clim$names=='bias'))
-        # }
-        echam_clim$data <- echam_clim$data[tpswpos,,]
-        echam_clim$ensmean <- echam_clim$ensmean[tpswpos,]
-        echam_clim$names <- echam_clim$names[tpswpos]
-      }
-    }
     
     if (no_stream) {
       # ACHTUNG stream var has ERROR because the 5/9 levels before/after 1880 have a lat dimension
-      tpspos <- c(which(echam$names!='stream'))
-      echam$data <- echam$data[tpspos,,]
-      echam$ensmean <- echam$ensmean[tpspos,]
-      echam$names <- echam$names[tpspos]
+      # JF commented 09/2019
+      #tpspos <- c(which(echam$names!='stream'))
+      #echam$data <- echam$data[tpspos,,]
+      #echam$ensmean <- echam$ensmean[tpspos,]
+      #echam$names <- echam$names[tpspos]
       if (anomaly_assim){
         tpspos <- c(which(echam_anom$names!='stream'))
         echam_anom$data <- echam_anom$data[tpspos,,]
@@ -322,7 +302,8 @@ for (cyr in syr2:eyr) {
             echanomallts$names <- echanomallts$names[tpspos]
           }
         }
-        tpspos <- c(which(echam_clim$names!='stream'))
+        tpspos <- c(which(echam_clim$names=='temp2'), which(echam_clim$names=='precip'),
+                    which(echam_clim$names=='slp'))
         echam_clim$data <- echam_clim$data[tpspos,,]
         echam_clim$ensmean <- echam_clim$ensmean[tpspos,]
         echam_clim$names <- echam_clim$names[tpspos]
@@ -336,23 +317,27 @@ for (cyr in syr2:eyr) {
     }
   }
   
+  
   if (anomaly_assim){
     # new echam_clim made by veronika have correct units
     # error where echam_anom and echam_clim were generated initially: 
     # no unit correction happened, thus here
     if (old_statvec) {
-      
       if (!(state =="static" & no_forc_big_ens)) {
-        echam_anom$data[echam_anom$names=='precip',,] <- echam_anom$data[echam_anom$names=='precip',,] * 3600 * 24 * 30
-        echam_anom$ensmean[echam_anom$names=='precip',] <- echam_anom$ensmean[echam_anom$names=='precip',] * 3600 * 24 * 30
-        echam_anom$data[echam_anom$names=='slp',,] <- echam_anom$data[echam_anom$names=='slp',,]/100
-        echam_anom$ensmean[echam_anom$names=='slp',] <- echam_anom$ensmean[echam_anom$names=='slp',]/100
+        # if (old_statvec) {
+        #   echam_anom$data[echam_anom$names=='precip',,] <- echam_anom$data[echam_anom$names=='precip',,] * 3600 * 24 * 30
+        #   echam_anom$ensmean[echam_anom$names=='precip',] <- echam_anom$ensmean[echam_anom$names=='precip',] * 3600 * 24 * 30
+        #   echam_anom$data[echam_anom$names=='slp',,] <- echam_anom$data[echam_anom$names=='slp',,]/100
+        #   echam_anom$ensmean[echam_anom$names=='slp',] <- echam_anom$ensmean[echam_anom$names=='slp',]/100
+        # }
         echam.anom <- echam_anom
         if (state=="changing" & covarclim > 0) {
-          echanomallts$data[echanomallts$names=='precip',,] <- echanomallts$data[echanomallts$names=='precip',,] * 3600 * 24 * 30
-          echanomallts$ensmean[echanomallts$names=='precip',] <- echanomallts$ensmean[echanomallts$names=='precip',] * 3600 * 24 * 30
-          echanomallts$data[echanomallts$names=='slp',,] <- echanomallts$data[echanomallts$names=='slp',,]/100
-          echanomallts$ensmean[echanomallts$names=='slp',] <- echanomallts$ensmean[echanomallts$names=='slp',]/100
+          if(old_statvec) {
+            echanomallts$data[echanomallts$names=='precip',,] <- echanomallts$data[echanomallts$names=='precip',,] * 3600 * 24 * 30
+            echanomallts$ensmean[echanomallts$names=='precip',] <- echanomallts$ensmean[echanomallts$names=='precip',] * 3600 * 24 * 30
+            echanomallts$data[echanomallts$names=='slp',,] <- echanomallts$data[echanomallts$names=='slp',,]/100
+            echanomallts$ensmean[echanomallts$names=='slp',] <- echanomallts$ensmean[echanomallts$names=='slp',]/100
+          }
         }
       }else{
         echam.anom<-echam_anom
@@ -369,9 +354,9 @@ for (cyr in syr2:eyr) {
       }
       
       echam.clim <- echam_clim
-    }
+      
+    }# end of old statvec
     
-  
     # echam_clim_mon_ensmean (next line) stays 12 months version for instr screening
     if (!no_forc_big_ens) {
       if (old_statvec) {
@@ -382,6 +367,8 @@ for (cyr in syr2:eyr) {
     } else {
       echam_clim_mon_ensmean <- echam_clim$ensmean[,c(10,11,12,1,2,3,4,5,6,7,8,9)]
     }
+    
+    
     if (state=="changing") { # Roni: why I delete it only if state = "changing ?? 
       # -> I think because if it is "static" I need it in 
       #    the background_matrix function
@@ -403,16 +390,17 @@ for (cyr in syr2:eyr) {
   }
   print('calc time reading echam and ev. calc anom.')
   print(proc.time() - ptm1)
-  
+    
   
   # 1.3 Calc echam st. dev. for each grid point and month over ens memb. to scale docu data
-  echam.sd <- echam # to have non-sixmon echam in docum section -> I would move it to 1.3
+  # JF added .anom 09/2019
+  echam.sd <- echam.anom # to have non-sixmon echam in docum section -> I would move it to 1.3
   if (sixmonstatevector) {
-    echam.sd$data <- apply(echam$data[,10:21,],1:2,sd)
-    echam.sd$time <- echam$time[10:21]
+    echam.sd$data <- apply(echam.anom$data[,10:21,],1:2,sd)
+    echam.sd$time <- echam.anom$time[10:21]
   } else {
-    echam.sd$data <- apply(echam$data[,13:24,],1:2,sd)
-    echam.sd$time <- echam$time[13:24]
+    echam.sd$data <- apply(echam.anom$data[,13:24,],1:2,sd)
+    echam.sd$time <- echam.anom$time[13:24]
   }
   echam.sd$ensmean <- NULL
   print('calc time for standard deviations')
@@ -422,7 +410,8 @@ for (cyr in syr2:eyr) {
   # 1.4 Calculate decorrelation distance
   if (calc_decorr_dist) { 
     if (covarclim == 0) {
-      d <- compute_dist_2d(echam$lon,echam$lat,echam$lon,echam$lat, region) 
+      # JF added .anom 09/2019
+      d <- compute_dist_2d(echam.anom$lon,echam.anom$lat,echam.anom$lon,echam.anom$lat, region) 
     } else if (covarclim > 0) {
       d <- compute_dist_2d(echanomallts$lon[1:4608],echanomallts$lat[1:4608],echanomallts$lon[1:4608],echanomallts$lat[1:4608], region)
     }
@@ -579,9 +568,10 @@ for (cyr in syr2:eyr) {
   # 1.5 Just leave data for one year in memory and convert to sixmonstatevector data format
   #     or annual mean for DAPS pseudoproxy experiment
   if (pseudo_prox) {
-    echam$data <- array(apply(echam$data[,13:24,],c(1,3),mean),dim=c(dim(echam$data)[1],1,dim(echam$data)[3]))  
-    echam$ensmean <- array(apply(echam$ensmean[,13:24],1,mean),dim=c(dim(echam$data)[1],1))    
-    echam$time <- floor(echam$time[13])
+    # JF commented 09/2019
+    #echam$data <- array(apply(echam$data[,13:24,],c(1,3),mean),dim=c(dim(echam$data)[1],1,dim(echam$data)[3]))  
+    #echam$ensmean <- array(apply(echam$ensmean[,13:24],1,mean),dim=c(dim(echam$data)[1],1))    
+    #echam$time <- floor(echam$time[13])
     if (anomaly_assim) {
       echam.anom$data <- array(apply(echam.anom$data[,13:24,],c(1,3),mean),
                                dim=c(dim(echam.anom$data)[1],1,dim(echam.anom$data)[3]))  
@@ -618,7 +608,8 @@ for (cyr in syr2:eyr) {
     # first winter starts in oct of syr
     # 6 mon stat vectors for oct-mar and apr and sep
     
-    echam <-convert_to_2_seasons(echam,source="echam")
+    # JF commented 09/2019
+    #echam <-convert_to_2_seasons(echam,source="echam")
     if (!no_forc_big_ens & covarclim== 0) {
       echam.anom <- convert_to_2_seasons(echam.anom,source="echam")
     } else if (state != "static" & no_forc_big_ens) {
@@ -725,6 +716,8 @@ for (cyr in syr2:eyr) {
         landcorrected.anom <- landcorrected.anom[c('data', 'ensmean', 'lon', 'lat', 'height', 'lsm.i', 'time', 'names')]
       }
     } 
+  } else if (new_statvec) {
+    one_var_dim=length(which(echam$names=='temp2'))/6
   }# end of old_statvec
   
   
@@ -797,12 +790,13 @@ for (cyr in syr2:eyr) {
       
       if (every2grid) {
         if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,"_2ndgrid.Rdata",sep=""))
-        # } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid.Rdata",sep=""))
-         } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid_v2017.Rdata",sep=""))
+        } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid.Rdata",sep=""))
+         #} else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid_v2017.Rdata",sep=""))
         } else if (twentycr_vali){load(paste0(twentycrpath,"twentycr_allvar_",syr_twentycr,"-",eyr_twentycr,"_2ndgrid.Rdata"))}
       } else {
         if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,".Rdata",sep=""))
-        } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,".Rdata",sep=""))} 
+        } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,".Rdata",sep="")) 
+        } else if (twentycr_vali){load(paste0(twentycrpath,"twentycr_allvar_",syr_twentycr,"-",eyr_twentycr,".Rdata"))}
       }
       # if (ind_recon) {
       #   load(file=paste("../data/indices/indices_recon_",syr,"-",eyr,".Rdata",sep=""))
@@ -900,7 +894,11 @@ for (cyr in syr2:eyr) {
     if (pseudo_prox) {
       load(file=paste0("../data/proxies/DAPS_pseudoproxies_",fsyr,"-",feyr,".Rdata"))
     } else {
-      load(paste0("../data/proxies/real_proxies_",expname,"_",fsyr,"-",feyr,".Rdata"))
+      if (!generate_PROXIES & (length(regression_months)==12) & (length(type)==2) & NTREND & TRW_PETRA & PAGES) {
+        load(paste0(dataextdir,"assimil_data/rdata_files_v2/real_proxies_NTREND_PETRA_PAGES_tree_coral_1602-2004.Rdata"))
+      } else {  
+        load(paste0("../data/proxies/real_proxies_",expname,"_",fsyr,"-",feyr,".Rdata"))
+      }
     }
     
     # 3.2 Screen the proxy data
@@ -913,8 +911,8 @@ for (cyr in syr2:eyr) {
     }
     
     # 3.2.1 Only use best proxies per grid cell, i.e. smallest residuals
-    if (best_prox_per_grid) {
-      res=bestproxres
+    if (best_tree_per_grid) {
+      res=besttreeres
       newgrid <- echam.sd
       newgrid$ensmean <- NULL
       #newgrid$lon <- echam.sd$lon[seq(1,length(echam.sd$lon),res)]
@@ -925,60 +923,112 @@ for (cyr in syr2:eyr) {
       newgrid$lat <- rep(lats, each=length(lons))
       newgrid$data <- as.matrix(rep(NA,length(newgrid$lon)))
       
-      tmp_prox <- realprox
-      tmp_vec <- vector()
-      for (i in 1:ncol(tmp_prox$data)) {
-        if (i %% 1000 == 0) {
-          print(paste('Remove duplicate proxies, i.e. best_prox_per_grid. Number:', i))
-        }
-        pos <- which(newgrid$lon>(tmp_prox$lon[i]-(2*res))&newgrid$lon<(tmp_prox$lon[i]+(2*res))&
-                        newgrid$lat>(tmp_prox$lat[i]-(2*res))&newgrid$lat<(tmp_prox$lat[i]+(2*res))) 
-        dist <- compute_dist(newgrid$lon[pos], newgrid$lat[pos], tmp_prox$lon[i], tmp_prox$lat[i])
-        tmp_vec[i] <- pos[which.min(dist)]
+      tpos=which(realprox$archivetype=='tree')
+      cpos=which(realprox$archivetype=='coral')
+      if (length(cpos) > 0) {
+        # save corals
+        coralprox <- realprox
+        coralprox$data <- realprox$data[,cpos]
+        coralprox$lon <- realprox$lon[cpos]
+        coralprox$lat <- realprox$lat[cpos]
+        coralprox$archivetype <- realprox$archivetype[cpos]
+        coralprox$elevation <- realprox$elevation[cpos]
+        coralprox$mr <- realprox$mr[cpos,]
+        coralprox$var_residu <- realprox$var_residu[cpos,]
+        coralprox$datasource <- realprox$datasource[cpos]
       }
-      #n_prox_per_grid <- apply(tmp_array, 2, sum)
-      #Hproxy <- compute_H(tmp_prox, newgrid, threshold=(700*res))  
-      #n_prox_per_grid <- apply(Hproxy, 2, sum)
-      removepos=NULL
-      tiv=which(floor(realprox$time)==cyr)
-      for (i in unique(tmp_vec)) {
-        pos <- which(tmp_vec==i)
-        if (length(pos) > 1) {
-      #for (i in 1:ncol(Hproxy)){
-      #  if (n_prox_per_grid[i] > 1) {
-      #    pos <- which(Hproxy[,i]>0) # find prox in same grid box
-          posnotna <- !is.na(realprox$data[tiv,pos])
-          pos2 <- pos[posnotna]
-          pos_t <- rep(NA,length=length(pos2))
-          pos_n <- rep(NA,length=length(pos2))
-          # split into rather t and p sensitive
-          for (j in 1:length(pos2)) {
-            pos_t[j] <- (length(which(!is.na(realprox$mr[pos2[j],2:7])))>length(which(!is.na(realprox$mr[pos2[j],8:13]))))
-            pos_n[j] <- (length(which(!is.na(realprox$mr[pos2[j],2:7])))<length(which(!is.na(realprox$mr[pos2[j],8:13]))))
+      if (length(tpos) > 0) {
+        # run duplicate removal on trees only
+        treeprox <- realprox
+        treeprox$data <- realprox$data[,tpos]
+        treeprox$lon <- realprox$lon[tpos]
+        treeprox$lat <- realprox$lat[tpos]
+        treeprox$archivetype <- realprox$archivetype[tpos]
+        treeprox$elevation <- realprox$elevation[tpos]
+        treeprox$mr <- realprox$mr[tpos,]
+        treeprox$var_residu <- realprox$var_residu[tpos,]
+        treeprox$datasource <- realprox$datasource[tpos]
+        tmp_prox <- treeprox
+        tmp_vec <- vector()
+        for (i in 1:ncol(tmp_prox$data)) {
+          if (i %% 1000 == 0) {
+            print(paste('Remove duplicate proxies, i.e. best_prox_per_grid. Number:', i))
           }
-          if (all(is.na(realprox$var_residu[pos2]))) {
-            removepos <- c(removepos,pos)
-          } else if (any(pos_t) & any(pos_n)) {
-            removepos <- c(removepos,pos[-c(which(realprox$var_residu[pos]==min(realprox$var_residu[pos2[pos_t]],na.rm=T)),
-                                            which(realprox$var_residu[pos]==min(realprox$var_residu[pos2[pos_n]],na.rm=T)))])
-          } else if (any(pos_t) & !any(pos_n)) {
-            removepos <- c(removepos,pos[-which(realprox$var_residu[pos]==min(realprox$var_residu[pos2[pos_t]],na.rm=T))])
-          } else if (!any(pos_n) & any(pos_n)) {
-            removepos <- c(removepos,pos[-which(realprox$var_residu[pos]==min(realprox$var_residu[pos2[pos_n]],na.rm=T))])
-          }   
+          pos <- which(newgrid$lon>(tmp_prox$lon[i]-(2*res))&newgrid$lon<(tmp_prox$lon[i]+(2*res))&
+                         newgrid$lat>(tmp_prox$lat[i]-(2*res))&newgrid$lat<(tmp_prox$lat[i]+(2*res))) 
+          dist <- compute_dist(newgrid$lon[pos], newgrid$lat[pos], tmp_prox$lon[i], tmp_prox$lat[i])
+          tmp_vec[i] <- pos[which.min(dist)]
         }
+        #n_prox_per_grid <- apply(tmp_array, 2, sum)
+        #Hproxy <- compute_H(tmp_prox, newgrid, threshold=(700*res))  
+        #n_prox_per_grid <- apply(Hproxy, 2, sum)
+        removepos=NULL
+        tiv=which(floor(treeprox$time)==cyr)
+        for (i in unique(tmp_vec)) {
+          pos <- which(tmp_vec==i)
+          if (length(pos) > 1) {
+            #for (i in 1:ncol(Hproxy)){
+            #  if (n_prox_per_grid[i] > 1) {
+            #    pos <- which(Hproxy[,i]>0) # find prox in same grid box
+            posnotna <- !is.na(treeprox$data[tiv,pos])
+            if (treeprox$lat[pos][1] > 0) {
+              tcol=2
+            } else {
+              tcol=1
+            }
+            pos2 <- pos[posnotna]
+            pos_t <- rep(NA,length=length(pos2))
+            pos_n <- rep(NA,length=length(pos2))
+            # split into rather t and p sensitive
+            for (j in 1:length(pos2)) {
+              pos_t[j] <- (length(which(!is.na(treeprox$mr[pos2[j],2:7])))>=
+                             length(which(!is.na(treeprox$mr[pos2[j],8:13]))))
+              pos_n[j] <- (length(which(!is.na(treeprox$mr[pos2[j],2:7])))<
+                             length(which(!is.na(treeprox$mr[pos2[j],8:13]))))
+            }
+            if (all(is.na(treeprox$var_residu[pos2,]))) {
+              removepos <- c(removepos,pos)
+            } else if (any(pos_t) & any(pos_n)) {
+              removepos <- c(removepos,pos[-c(which(treeprox$var_residu[pos2,tcol]==
+                                                      min(treeprox$var_residu[pos2[pos_t],tcol],na.rm=T)),
+                                              which(treeprox$var_residu[pos,tcol]==
+                                                      min(treeprox$var_residu[pos[pos_n],tcol],na.rm=T)))])
+            } else if (any(pos_t) & !any(pos_n)) {
+              removepos <- c(removepos,pos[-which(treeprox$var_residu[pos,tcol]==
+                                                    min(treeprox$var_residu[pos2[pos_t],tcol],na.rm=T))])
+            } else if (!any(pos_n) & any(pos_n)) {
+              removepos <- c(removepos,pos[-which(treeprox$var_residu[pos,tcol]==
+                                                    min(treeprox$var_residu[pos2[pos_n],tcol],na.rm=T))])
+            } 
+          }
+        }
+        # remove stations, will not be shown on station map 
+        # treeprox$lon <- treeprox$lon[-removepos] 
+        # treeprox$lat <- treeprox$lat[-removepos] 
+        # treeprox$data <- treeprox$data[,-removepos] 
+        # treeprox$names <- treeprox$names[-removepos]
+        # treeprox$mr <- treeprox$mr[-removepos,]
+        # treeprox$var_residu <- treeprox$var_residu[-removepos] 
+        # set NA to keep station map symbol instead of removing
+        treeprox$data[tiv,removepos] <- NA
+        treeprox$mr[removepos,] <- NA
+        treeprox$var_residu[removepos,] <- NA
+      } # end if any tree data exists
+      if ((length(cpos) > 0) & (length(tpos) > 0)) {
+        # merge trees and corals to realprox again
+        realprox$data <- cbind(treeprox$data,coralprox$data)
+        realprox$lon <- c(treeprox$lon,coralprox$lon)
+        realprox$lat <- c(treeprox$lat,coralprox$lat)
+        realprox$archivetype <- c(treeprox$archivetype,coralprox$archivetype)
+        realprox$elevation <- c(treeprox$elevation,coralprox$elevation)
+        realprox$mr <- rbind(treeprox$mr,coralprox$mr)
+        realprox$var_residu <- rbind(treeprox$var_residu,coralprox$var_residu)
+        realprox$datasource <- c(treeprox$datasource,coralprox$datasource)
+      } else if (length(tpos) > 0) {
+        realprox <- treeprox
+      } else if (length(cpos) > 0) {
+        realprox <- coralprox
       }
-      # remove stations, will not be shown on station map 
-      # realprox$lon <- realprox$lon[-removepos] 
-      # realprox$lat <- realprox$lat[-removepos] 
-      # realprox$data <- realprox$data[,-removepos] 
-      # realprox$names <- realprox$names[-removepos]
-      # realprox$mr <- realprox$mr[-removepos,]
-      # realprox$var_residu <- realprox$var_residu[-removepos] 
-      # set NA to keep station map symbol instead of removing
-      realprox$data[tiv,removepos] <- NA
-      realprox$mr[removepos,] <- NA
-      realprox$var_residu[removepos] <- NA
     }
     
     # 3.3 Convert to 2 season per year or leave annual average for DAPS pseudoproxy exp.
@@ -1024,9 +1074,9 @@ for (cyr in syr2:eyr) {
     
     # 3.4.5 Sort proxies by residuals 
     if (best2worst) {
-      pos <- order(realprox$var_residu)
+      pos <- order(rowMeans(realprox$var_residu,na.rm=T))
     } else {
-      pos <- rev(order(realprox$var_residu))
+      pos <- rev(order(rowMeans(realprox$var_residu,na.rm=T)))
     }
     #if (pseudo_prox) {
     realprox$data <- realprox$data[pos,,drop=F]
@@ -1040,32 +1090,18 @@ for (cyr in syr2:eyr) {
     realprox$parameter <- NULL
     realprox$mr <- realprox$mr[pos,]
     realprox$names <- realprox$names[pos]
-    realprox$var_residu <- realprox$var_residu[pos]
- 
-      
+    realprox$var_residu <- realprox$var_residu[pos,]
+    realprox$error <- sqrt(realprox$var_residu)
+    realprox$sour <- rep('prox',length(realprox$lon))
+    realprox.allts$sour <- rep('prox',length(realprox$lon))
+    
     # 3.5 Create a list named proxies
     # real trw proxy multiple regression approach
     if (!instrumental) {
-      realprox$sour <- rep('prox',length(realprox$lon))
-      realprox.allts$sour <- rep('prox',length(realprox$lon))
-      if (reduced_proxies) {
-        every <- 12
-        redpos <-seq(1,length(realprox$lon),every)
-        realprox$lon <- realprox$lon[redpos]
-        realprox$lat <- realprox$lat[redpos]
-        realprox$data <- realprox$data[redpos,]
-        realprox$names <- realprox$names[redpos]
-        realprox$sour <- realprox$sour[redpos]
-        realprox.allts$lon <- realprox.allts$lon[redpos]
-        realprox.allts$lat <- realprox.allts$lat[redpos]
-        realprox.allts$data <- realprox.allts$data[redpos,]
-        realprox.allts$names <- realprox.allts$names[redpos]
-        realprox.allts$sour <- realprox.allts$sour[redpos]
-      }
       proxies<-list(data=realprox$data, lon=realprox$lon,
                     lat=realprox$lat, names=realprox$names, sour=realprox$sour,
                     height=realprox$elevation, time=realprox$time,
-                    mr=realprox$mr, var_residu=realprox$var_residu,
+                    mr=realprox$mr, error=realprox$error,
                     numavg=rep(1,length(realprox$lon)))
     }
     
@@ -1085,28 +1121,21 @@ for (cyr in syr2:eyr) {
   # 4.3 Scale the documentary data
   # 4.4 Reconvert to 2 seasons per year
   # 4.5 Combine assimilation data into variable named "proxies"
-  # 4.6 Combine assimilation data into variable named "proxies"
   ##########################################################################################
   
   if (docum) {
-    # 4.1 Loading documentary data
-    # if (import_luca) {
-      load('../assimil_data/t_docu/t_docu_monthly_luca.Rdata')
-    # }else{
-    #   load(paste0(dataextdir,"assimil_data/rdata_files/t_docu_monthly.Rdata"))
-    # }
+    #print('prepare documentary data')
+    # 4.1 Loading documentary data: angie 2019 contains data from v1 + new monthly series
+    load(paste0(dataextdir,'assimil_data/rdata_files_v2/temp2_docu_monthly_angie2017_2019.Rdata'))
     if (!any(!is.na(t$data))) { docu=F }
-    
     if (sixmonstatevector) {
       
       # 4.2 Calculate the 71 anomaly from cyr-1 October to cyr September
-      
       if (anomaly_assim){
-        # 4.2.1 Calculate the climatology
         
+        # 4.2.1 Calculate the climatology
         t.clim<-calculate_climatology(t,cyr,36,35,source="inst")
         t.clim$data<-t(t.clim$data)
-        
         t.clim$data = apply(array(t.clim$data, c(nrow(t.clim$data), 12, ncol(t.clim$data)/12)), 1:2, mean,na.rm=T)
         
         # 4.2.3 Cut out the cyr-1 and cyr time window
@@ -1143,14 +1172,14 @@ for (cyr in syr2:eyr) {
       }
       
       # 4.4 Reconvert to 2 seasons per year
-      
       listoftwo<-convert_to_2_seasons(doc_t_mon,source="doc")
       doc_t_mon <- listoftwo$x
-      
+      doc_t_mon$sour <- rep('doc',length(doc_t_mon$lon))
+      doc_t_mon$error <- matrix(docu_err,nrow=length(doc_t_mon$lon),ncol=2)
+      docall <- doc_t_mon
     } else {
       stop("docum section currently only coded for sixmonstatevector!")
     } # end of 6monstatevector
-    
     
     # 4.5 Combine assimilation data into variable named "proxies"
     if ((!instrumental) & (!real_proxies)) {
@@ -1159,24 +1188,21 @@ for (cyr in syr2:eyr) {
       docall <- doc_t_mon
     }
     
-    # 4.6 Combine assimilation data into variable named "proxies"
     if (!instrumental & real_proxies ) {
-      docall$sour <- rep('doc',length(docall$lon))
-      realprox$sour <- rep('prox',length(realprox$lon))
       tmpnum2 <- rep(1,length(realprox$lon)) #realprox.numavg
       tmpmr <- matrix(NA,nrow=length(docall$lon),ncol=ncol(proxies$mr))
-      tmpres <- rep(NA,length(proxies$var_residu))
+      #tmpres <- rep(NA,length(proxies$var_residu))
       tmpelev <- rep(NA,length(proxies$height))
       tmpnum3 <- rep(1,length(docall$lon))
       proxies<-list(data=rbind(realprox$data,docall$data), lon=c(realprox$lon,docall$lon),
                     lat=c(realprox$lat,docall$lat), names=c(realprox$names,docall$names), 
                     sour=c(realprox$sour,docall$sour), 
                     height=c(realprox$height,tmpelev), time=realprox$time,
-                    mr=rbind(realprox$mr,tmpmr), var_residu=c(realprox$var_residu,tmpres),
+                    mr=rbind(realprox$mr,tmpmr), error=rbind(realprox$error,docall$error),
+                    #var_residu=rbind(realprox$var_residu,tmpres),
                     numavg=c(tmpnum2,tmpnum3))
     }
   }  # end of docu
-  
   
   
   ####################################################################
@@ -1187,7 +1213,6 @@ for (cyr in syr2:eyr) {
   # 5.4 Treat multiple data in the same grid box
   # 5.5 Combining all type of instrumental data
   # 5.6 Mask other data if there is instrumental data in same grid box at that time
-  # 5.7 Use every ??th (see code below) proxy record
   # 5.8 Add data source
   # 5.9 Convert to 2 season per year
   # 5.10 Combine assimilation data into variable named "proxies"
@@ -1195,73 +1220,112 @@ for (cyr in syr2:eyr) {
   
   if (instrumental){
     # 5.1 Loading the files
-    if (yuri_slp) {
-      load(paste0(dataextdir,'assimil_data/rdata_files_v1/slp.Rdata')) # monthly slp collection from yuri, histalp included
-      inst_slp <- slp
-    }
     if (yuri_temp) {
-      load(paste0(dataextdir,'assimil_data/rdata_files_v1/t.Rdata')) # monthly temp collection from yuri, histalp included
-      inst_t <- t
+      # monthly temp collection from yuri, histalp included
+      load(paste0(dataextdir,'assimil_data/rdata_files_v2/temp2_instr_monthly_yuri2017.Rdata')) 
+      t2017 <- t
+      load(paste0(dataextdir,'assimil_data/rdata_files_v2/temp2_instr_monthly_yuri2019.Rdata')) 
+      t2019 <- temp2
+      tpos <- t2019$time %in% t2017$time
+      inst_t <- list()
+      inst_t$data <- cbind(t2017$data,t2019$data[tpos,])
+      inst_t$lon <- c(t2017$lon,t2019$lon)
+      inst_t$lat <- c(t2017$lat,t2019$lat)
+      inst_t$names <- c(t2017$names,t2019$names)
+      inst_t$height <- c(t2017$height,t2019$height)
+      inst_t$time <- t2017$time
+    }
+    if (yuri_slp) {
+      # monthly slp collection from yuri, histalp included
+      load(paste0(dataextdir,'assimil_data/rdata_files_v2/slp_instr_monthly_yuri2017.Rdata')) 
+      slp2017 <- slp
+      load(paste0(dataextdir,'assimil_data/rdata_files_v2/slp_instr_monthly_yuri2019.Rdata')) 
+      slp2019 <- slp
+      slppos <- slp2019$time %in% slp2017$time
+      inst_slp <- list()
+      inst_slp$data <- cbind(slp2017$data,slp2019$data[slppos,])
+      inst_slp$lon <- c(slp2017$lon,slp2019$lon)
+      inst_slp$lat <- c(slp2017$lat,slp2019$lat)
+      inst_slp$names <- c(slp2017$names,slp2019$names)
+      inst_slp$height <- c(slp2017$height,slp2019$height)
+      inst_slp$time <- slp2017$time
+    }
+    if (yuri_prec) {
+      # monthly prec collection from yuri, histalp included
+      load(paste0(dataextdir,'assimil_data/rdata_files_v2/prec_instr_monthly_yuri2017.Rdata')) 
+      prec2017 <- r
+      load(paste0(dataextdir,'assimil_data/rdata_files_v2/prec_instr_monthly_yuri2019.Rdata')) 
+      prec2019 <- prec
+      precpos <- prec2019$time %in% prec2017$time
+      inst_prec <- list()
+      inst_prec$data <- cbind(prec2017$data,prec2019$data[precpos,])
+      inst_prec$lon <- c(prec2017$lon,prec2019$lon)
+      inst_prec$lat <- c(prec2017$lat,prec2019$lat)
+      inst_prec$names <- rep('precip',length(c(prec2017$name,prec2019$names)))
+      inst_prec$height <- c(prec2017$height,prec2019$height)
+      inst_prec$time <- prec2017$time
+    }
+    if (yuri_wday) {
+      load(paste0(dataextdir,'assimil_data/rdata_files_v2/wetdays_instr_monthly_yuri2019.Rdata'))
+      inst_w = wetdays
     }
     if (ghcn_temp) {
       if (isti_instead_ghcn) {
-        load(paste0(dataextdir,"assimil_data/isti/isti_1600-2005.Rdata"))
+        load(paste0(dataextdir,"assimil_data/rdata_files_v2/isti_freeze1880_1600-2005.RData"))
         print("ACHTUNG: ISTI instr. temp. data will be assimilated NOT GHCN")
       } else {
-        load(paste0(dataextdir,"assimil_data/ghcn/ghcn_temp_1600-2005.Rdata"))
+        load(paste0(dataextdir,"assimil_data/rdata_files_v2/ghcn_temp_freeze1880_1602-2004.Rdata"))
       }
     }
     if (ghcn_prec) {
-      #load(paste0(dataextdir,"assimil_data/ghcn/ghcn_precip_1600-2005.Rdata"))
+      load(paste0(dataextdir,"assimil_data/rdata_files_v2/ghcn_precip_freeze1880_1602-2004.Rdata"))
       #load(paste0("/scratch3/veronika/reuse/assimil_data/ghcn/ghcn_precip_1600-2005.Rdata"))
       #load("/scratch3/veronika/reuse/assimil_data/ghcn_d/ghcn_precip.RData")
-      load("/scratch3/veronika/reuse/assimil_data/ghnc_d_better_coverage/ghcn_precip.RData")
-      #load("/scratch3/veronika/reuse/assimil_data/ghcn_d_1842/ghcn_precip.RData")
+      #load("/scratch3/veronika/reuse/assimil_data/ghnc_d_better_coverage/ghcn_precip.RData")
     }
     if (ghcn_wday) {
+      load(paste0(dataextdir,"assimil_data/rdata_files_v2/ghcn_wetdays.RData"))
       # load("/scratch3/brugnara/ekf400/ghcn_wetdays.RData")
       # load("/scratch3/veronika/reuse/assimil_data/ghcn_d/ghcn_wetdays.RData")
       # load("/scratch3/veronika/reuse/assimil_data/ghnc_d_better_coverage/ghcn_wetdays.RData")
-      load("/scratch3/veronika/reuse/assimil_data/ghcn_d_1842/ghcn_wetdays.RData")
     }
     
     # 5.2 Qualtiy check of the data
     if (check_assimdata) {
-      if (ghcn_prec & !ghcn_wday) { 
-        if (ghcn_temp & yuri_slp) {
-          varlist <- c("inst_t","inst_slp","ghcn","ghcn_precip")
-        } else {
-          varlist <- c("ghcn_precip") # assimilating only precip
-        }
-      } else if (ghcn_wday & !ghcn_prec) {
-        if (ghcn_temp & yuri_slp) {
-          varlist <- c("inst_t","inst_slp","ghcn","ghcn_wetdays")
-        } else {
-          varlist <- c("ghcn_wetdays") # assimilating only wetdays
-        }
-      } else if (ghcn_temp & yuri_slp & !ghcn_prec & !ghcn_wday) {
-        varlist <- c("inst_t","inst_slp","ghcn")
-      } else if (ghcn_temp & yuri_slp & ghcn_prec & ghcn_wday) {
-        varlist <- c("inst_t","inst_slp","ghcn","ghcn_precip","ghcn_wetdays")
-      }
-      
+      varlist <- c("inst_t","inst_slp","inst_prec","inst_w","ghcn","ghcn_precip",
+                   "ghcn_wetdays")[c(yuri_temp,yuri_slp,yuri_prec,yuri_wday,ghcn_temp,ghcn_prec,ghcn_wday)]
+      # if (ghcn_prec) { 
+      #   if (ghcn_temp & yuri_slp) {
+      #     varlist <- c("inst_t","inst_slp","ghcn","ghcn_precip")
+      #   } else {
+      #     varlist <- c("ghcn_precip") # assimilating only precip
+      #   }
+      # } else if (ghcn_wday) {
+      #   if (ghcn_temp & yuri_slp) {
+      #     varlist <- c("inst_t","inst_slp","ghcn","ghcn_wetdays")
+      #   } else {
+      #     varlist <- c("ghcn_wetdays") # assimilating only wetdays
+      #   }
+      # } else if (ghcn_temp & yuri_slp) {
+      #   varlist <- c("inst_t","inst_slp","ghcn")
+      # }
       for (varname in varlist) {
-        
         var<-screendistance(echam.sd,varname)
-        if (varname=="inst_t") {inst_t$data<- var$data}
-        if (varname=="inst_slp") {inst_slp$data<- var$data}
+        if (varname=="inst_t") {inst_t$data <- var$data}
+        if (varname=="inst_slp") {inst_slp$data <- var$data}
+        if (varname=="inst_prec") {inst_prec$data <- var$data}
+        if (varname=="inst_w") {inst_w$data <- var$data}
         if (varname=="ghcn") {ghcn$data <- var$data}
         if (varname=="ghcn_precip") {ghcn_precip$data <- var$data}
         if (varname=="ghcn_wetdays") {ghcn_wetdays$data <- var$data}
-        
-        
-        var<-screenstd(get(varname),cyr,source="inst")
+        var<-screenstd(get(varname),cyr,source="inst",sdlim=5) # screen 5SD for all temp, slp, precip???
         if (varname=="inst_t") {inst_t$data <- var$data}
         if (varname=="inst_slp") {inst_slp$data <- var$data}
-        if (varname=="ghcn") {ghcn$data<- var$data}
+        if (varname=="inst_prec") {inst_prec$data <- var$data}
+        if (varname=="inst_w") {inst_w$data <- var$data}
+        if (varname=="ghcn") {ghcn$data <- var$data}
         if (varname=="ghcn_precip") {ghcn_precip$data <- var$data}
         if (varname=="ghcn_wetdays") {ghcn_wetdays$data <- var$data}
-        
       }
     }
     
@@ -1301,7 +1365,6 @@ for (cyr in syr2:eyr) {
               newgrid$ensmean <- NULL
               newgrid$lon <- echam$lon[seq(1,length(echam$lon),res)]
               newgrid$lat <- echam$lat[seq(1,length(echam$lat),res)]
-              
               tmp_precip <-ghcn_precip
               tmp_precip$data <- t(ghcn_precip$data)
               Hproxy <- compute_H(tmp_precip, newgrid, threshold=(700*res))  
@@ -1310,7 +1373,6 @@ for (cyr in syr2:eyr) {
               ghcn_precip$lat <- ghcn_precip$lat[p.i]
               ghcn_precip$data <- ghcn_precip$data[,p.i]
               ghcn_precip$names <- ghcn_precip$names[p.i] 
-              
             }
             
             # Gaussian transformation is done on the whole period for each month
@@ -1408,54 +1470,54 @@ for (cyr in syr2:eyr) {
             ghcn_p$err = ghcn_p$data * 0.1
             ghcn_p$time = ghcn_p$time[y_start:y_end]
           } else {
-          # calculate the climatology
-          ghcn_prec.clim=ghcn_precip
-          ti=which(floor(ghcn_precip$time)>=(cyr-36) & floor(ghcn_precip$time)<=(cyr+35))
-          sts=ti[1]
-          ets=ti[length(ti)]
-          ghcn_prec.clim$data=t(ghcn_precip$data[sts:ets,])
-          ghcn_prec.clim$time=ghcn_precip$time[sts:ets]
-          # transform it to Oct-Sept  years
-          if (cyr < 1636) {
-            y_start = agrep(paste0(1600,'.792'),as.character(ghcn_prec.clim$time))
-          } else {
-            y_start = agrep(paste0(cyr-36,'.792'),as.character(ghcn_prec.clim$time))
-          }
-          if (cyr > 1970) {
-            y_end =  grep(paste0(2005,'.708'),as.character(ghcn_prec.clim$time))
-          } else {
-            y_end = grep(paste0(cyr+35,'.708'),as.character(ghcn_prec.clim$time))
-          }
-          ghcn_prec.clim$data = ghcn_prec.clim$data[,y_start:y_end]
-          ghcn_prec.clim$time = ghcn_prec.clim$time[y_start:y_end]
-          ghcn_prec.clim$data = apply(array(ghcn_prec.clim$data, c(nrow(ghcn_prec.clim$data), 12, ncol(ghcn_prec.clim$data)/12)), 1:2, mean,na.rm=T)
-          
-          # cut out the cyr-1 and cyr time window
-          ghcn_prec.cyr = ghcn_precip
-          ti=which(floor(ghcn_precip$time)>=cyr-1 & floor(ghcn_precip$time)<cyr+1)
-          sts=ti[1]
-          ets=ti[length(ti)]
-          ghcn_prec.cyr$data=t(ghcn_precip$data[sts:ets, ])
-          ghcn_prec.cyr$time=ghcn_precip$time[sts:ets]
-          # transform it to Oct-Sept  years
-          y_start = agrep(paste0(cyr-1,'.792'),as.character(ghcn_prec.cyr$time))
-          y_end = grep(paste0(cyr,'.708'),as.character(ghcn_prec.cyr$time))
-          ghcn_prec.cyr$data = ghcn_prec.cyr$data[,y_start:y_end]
-          ghcn_prec.cyr$time = ghcn_prec.cyr$time[y_start:y_end]
-          # define precip error as %
-          ghcn_prec.cyr$err = ghcn_prec.cyr$data * ghcn_p_err # error is 30% or min 10 mm
-          ghcn_prec.cyr$err[ghcn_prec.cyr$err < ghcn_p_min] = ghcn_p_min 
-          # calculate the anomaly for cyr
-          if (precip_ratio) {
-            ghcn_prec.anom <- ghcn_prec.cyr
-            ghcn_prec.anom$data <- t(ghcn_prec.cyr$data / ghcn_prec.clim$data)
-            ghcn_p <- ghcn_prec.anom
-          } else {
-            ghcn_prec.anom <- ghcn_prec.cyr
-            ghcn_prec.anom$data <- t(ghcn_prec.anom$data - ghcn_prec.clim$data)
-            ghcn_prec.anom$err <- t(ghcn_prec.cyr$err)
-            ghcn_p <- ghcn_prec.anom
-          }
+            # calculate the climatology
+            ghcn_prec.clim=ghcn_precip
+            ti=which(floor(ghcn_precip$time)>=(cyr-36) & floor(ghcn_precip$time)<=(cyr+35))
+            sts=ti[1]
+            ets=ti[length(ti)]
+            ghcn_prec.clim$data=t(ghcn_precip$data[sts:ets,])
+            ghcn_prec.clim$time=ghcn_precip$time[sts:ets]
+            # transform it to Oct-Sept  years
+            if (cyr < 1636) {
+              y_start = agrep(paste0(1600,'.792'),as.character(ghcn_prec.clim$time))
+            } else {
+              y_start = agrep(paste0(cyr-36,'.792'),as.character(ghcn_prec.clim$time))
+            }
+            if (cyr > 1970) {
+              y_end =  grep(paste0(2005,'.708'),as.character(ghcn_prec.clim$time))
+            } else {
+              y_end = grep(paste0(cyr+35,'.708'),as.character(ghcn_prec.clim$time))
+            }
+            ghcn_prec.clim$data = ghcn_prec.clim$data[,y_start:y_end]
+            ghcn_prec.clim$time = ghcn_prec.clim$time[y_start:y_end]
+            ghcn_prec.clim$data = apply(array(ghcn_prec.clim$data, c(nrow(ghcn_prec.clim$data), 
+                                    12, ncol(ghcn_prec.clim$data)/12)), 1:2, mean,na.rm=T)
+            # cut out the cyr-1 and cyr time window
+            ghcn_prec.cyr = ghcn_precip
+            ti=which(floor(ghcn_precip$time)>=cyr-1 & floor(ghcn_precip$time)<cyr+1)
+            sts=ti[1]
+            ets=ti[length(ti)]
+            ghcn_prec.cyr$data=t(ghcn_precip$data[sts:ets, ])
+            ghcn_prec.cyr$time=ghcn_precip$time[sts:ets]
+            # transform it to Oct-Sept  years
+            y_start = agrep(paste0(cyr-1,'.792'),as.character(ghcn_prec.cyr$time))
+            y_end = grep(paste0(cyr,'.708'),as.character(ghcn_prec.cyr$time))
+            ghcn_prec.cyr$data = ghcn_prec.cyr$data[,y_start:y_end]
+            ghcn_prec.cyr$time = ghcn_prec.cyr$time[y_start:y_end]
+            # define precip error as %
+            ghcn_prec.cyr$err = ghcn_prec.cyr$data * ghcn_p_err # error is 30% or min 10 mm
+            ghcn_prec.cyr$err[ghcn_prec.cyr$err < ghcn_p_min] = ghcn_p_min 
+            # calculate the anomaly for cyr
+            if (precip_ratio) {
+              ghcn_prec.anom <- ghcn_prec.cyr
+              ghcn_prec.anom$data <- t(ghcn_prec.cyr$data / ghcn_prec.clim$data)
+              ghcn_p <- ghcn_prec.anom
+            } else {
+              ghcn_prec.anom <- ghcn_prec.cyr
+              ghcn_prec.anom$data <- t(ghcn_prec.anom$data - ghcn_prec.clim$data)
+              ghcn_prec.anom$err <- t(ghcn_prec.cyr$err)
+              ghcn_p <- ghcn_prec.anom
+            }
           }
         } else {
           stop("instr section currently only coded for anom_assim and sixmonstatevector!")
@@ -1475,13 +1537,13 @@ for (cyr in syr2:eyr) {
           ghcn_wetdays.cyr<-calculate_climatology(ghcn_wetdays,cyr,1,0,source="inst")
           ghcn_wetdays.cyr$data<-t(ghcn_wetdays.cyr$data)
           
-          # define wetdays error as 10%
-          ghcn_wetdays.cyr$err = ghcn_wetdays.cyr$data * 0.1
+          # define wetdays error as 10% -> it is defined later in 5.4.3
+          # ghcn_wetdays.cyr$err = ghcn_wetdays.cyr$data * 0.1
           
           # calculate the anomaly for cyr
           ghcn_wetdays.anom <-ghcn_wetdays.cyr
           ghcn_wetdays.anom$data <- t(ghcn_wetdays.anom$data - ghcn_wetdays.clim$data)
-          ghcn_wetdays.anom$err <- t(ghcn_wetdays.cyr$err)
+          #ghcn_wetdays.anom$err <- t(ghcn_wetdays.cyr$err)
           ghcn_w <- ghcn_wetdays.anom
         } else {
           stop("instr section currently only coded for anom_assim and sixmonstatevector!")
@@ -1512,22 +1574,47 @@ for (cyr in syr2:eyr) {
         }
       }
     }
+    if (yuri_prec) {
+      if (dim(inst_prec$data)[2]>0) {
+        if (anomaly_assim & sixmonstatevector) {
+          # calculate the climatology
+          inst_prec.clim<-calculate_climatology(inst_prec,cyr,36,35,source="inst")
+          inst_prec.clim$data<-t(inst_prec.clim$data)
+          inst_prec.clim$data = apply(array(inst_prec.clim$data, c(nrow(inst_prec.clim$data), 
+                                  12, ncol(inst_prec.clim$data)/12)), 1:2, mean,na.rm=T)
+          # cut out the cyr-1 and cyr time window
+          inst_prec.cyr<-calculate_climatology(inst_prec,cyr,1,0,source="inst")
+          inst_prec.cyr$data<-t(inst_prec.cyr$data)
+          # define precip error as %
+          inst_prec.cyr$err = inst_prec.cyr$data * ghcn_p_err # error is 30% or min 10 mm
+          inst_prec.cyr$err[inst_prec.cyr$err < ghcn_p_min] = ghcn_p_min 
+          # calculate the anomaly for cyr
+          if (precip_ratio) {
+            inst_prec.anom <- inst_prec.cyr
+            inst_prec.anom$data <- t(inst_prec.cyr$data / inst_prec.clim$data)
+            inst_p <- inst_prec.anom
+          } else {
+            inst_prec.anom <- inst_prec.cyr
+            inst_prec.anom$data <- t(inst_prec.anom$data - inst_prec.clim$data)
+            inst_prec.anom$err <- t(inst_prec.cyr$err)
+            inst_p <- inst_prec.anom
+          }
+        } else {
+          stop("instr section currently only coded for anom_assim and sixmonstatevector!")
+        }
+      }
+    }
     if (yuri_temp) {
       if (dim(inst_t$data)[2]>0) {
         if (anomaly_assim & sixmonstatevector){
-          
           # calculate the climatology
-          
           inst_t.clim<-calculate_climatology(inst_t,cyr,36,35,source="inst")
           inst_t.clim$data<-t(inst_t.clim$data)
-          
-          inst_t.clim$data = apply(array(inst_t.clim$data, c(nrow(inst_t.clim$data), 12, ncol(inst_t.clim$data)/12)), 1:2, mean,na.rm=T)
-          
+          inst_t.clim$data = apply(array(inst_t.clim$data, c(nrow(inst_t.clim$data), 
+                               12, ncol(inst_t.clim$data)/12)), 1:2, mean,na.rm=T)
           # cut out the cyr-1 and cyr time window
-          
           inst_t.cyr<-calculate_climatology(inst_t,cyr,1,0,source="inst")
           inst_t.cyr$data<-t(inst_t.cyr$data)
-          
           # calculate the anomaly for cyr
           inst_t.anom <- inst_t.cyr
           inst_t.anom$data <- t(inst_t.anom$data - inst_t.clim$data)
@@ -1537,24 +1624,44 @@ for (cyr in syr2:eyr) {
         }
       }
     }
-    if (ghcn_prec) { 
-      if (ghcn_temp & yuri_slp) {
-        if ((dim(inst_slp$data)[2]==0) & (dim(inst_t$data)[2]==0) & (dim(ghcn$data)[2]==0) &
-            (dim(ghcn_precip$data)[2]==0)) {instrumental=F}
-      } else {
-        if ((dim(ghcn_precip$data)[2]==0)) {instrumental=F} # assimilating only precip
+    if (yuri_wday) {
+      if (dim(inst_w$data)[2]>0) {
+        if (anomaly_assim & sixmonstatevector){
+          # calculate the climatology
+          inst_w.clim<-calculate_climatology(inst_w,cyr,36,35,source="inst")
+          inst_w.clim$data<-t(inst_w.clim$data)
+          inst_w.clim$data = apply(array(inst_w.clim$data, c(nrow(inst_w.clim$data), 
+                                                             12, ncol(inst_w.clim$data)/12)), 1:2, mean,na.rm=T)
+          # cut out the cyr-1 and cyr time window
+          inst_w.cyr<-calculate_climatology(inst_w,cyr,1,0,source="inst")
+          inst_w.cyr$data<-t(inst_w.cyr$data)
+          # calculate the anomaly for cyr
+          inst_w.anom <- inst_w.cyr
+          inst_w.anom$data <- t(inst_w.anom$data - inst_w.clim$data)
+          inst_w <-inst_w.anom
+        } else {
+          stop("instr section currently only coded for anom_assim and sixmonstatevector!")
+        }
       }
-    } else if (ghcn_wday) {
-      if (ghcn_temp & yuri_slp) {
-        if ((dim(inst_slp$data)[2]==0) & (dim(inst_t$data)[2]==0) & (dim(ghcn$data)[2]==0) &
-            (dim(ghcn_w$data)[2]==0)) {instrumental=F}
-      } else {
-        if (dim(ghcn_w$data)[2]==0) {instrumental=F}
-      }
-    } else if (ghcn_temp & yuri_slp) {
-      if ((dim(inst_slp$data)[2]==0) & (dim(inst_t$data)[2]==0) & (dim(ghcn$data)[2]==0)) {
-        instrumental=F}
     }
+    # if (ghcn_prec) { 
+    #   if (ghcn_temp & yuri_slp) {
+    #     if ((dim(inst_slp$data)[2]==0) & (dim(inst_t$data)[2]==0) & (dim(ghcn$data)[2]==0) &
+    #         (dim(ghcn_precip$data)[2]==0)) {instrumental=F}
+    #   } else {
+    #     if ((dim(ghcn_precip$data)[2]==0)) {instrumental=F} # assimilating only precip
+    #   }
+    # } else if (ghcn_wday) {
+    #   if (ghcn_temp & yuri_slp) {
+    #     if ((dim(inst_slp$data)[2]==0) & (dim(inst_t$data)[2]==0) & (dim(ghcn$data)[2]==0) &
+    #         (dim(ghcn_w$data)[2]==0)) {instrumental=F}
+    #   } else {
+    #     if (dim(ghcn_w$data)[2]==0) {instrumental=F}
+    #   }
+    # } else if (ghcn_temp & yuri_slp) {
+    #   if ((dim(inst_slp$data)[2]==0) & (dim(inst_t$data)[2]==0) & (dim(ghcn$data)[2]==0)) {
+    #     instrumental=F}
+    # }
   
     
     # 5.4 Treat multiple data in the same grid box
@@ -1569,10 +1676,23 @@ for (cyr in syr2:eyr) {
     if ((ghcn_temp) & (!yuri_temp)) {
       inst_t <- ghcn
     }
-    if (ghcn_prec) {
+    if ((ghcn_prec) & (yuri_prec)) {
+      inst_p<-list(data=cbind(ghcn_p$data,inst_p$data), lon=c(ghcn_p$lon,inst_p$lon),
+                   lat=c(ghcn_p$lat,inst_p$lat), names=c(ghcn_p$names,inst_p$names),
+                   height=c(ghcn_p$height,inst_p$height), time=ghcn_p$time,
+                   err=cbind(ghcn_p$err,inst_p$err))
+    }
+    if ((ghcn_prec) & (!yuri_prec)) {
       inst_p <- ghcn_p
     }
-    if (ghcn_wday) {
+    
+    if (ghcn_wday & (yuri_wday)) {
+      inst_w = list(data=cbind(ghcn_w$data,inst_w$data), lon=c(ghcn_w$lon,inst_w$lon),
+                    lat=c(ghcn_w$lat,inst_w$lat), names=c(ghcn_w$names,inst_w$names),
+                    height=c(ghcn_w$height,inst_w$height), time=ghcn_w$time)
+    }
+    
+    if (ghcn_wday & (!yuri_wday)) {
       inst_w = ghcn_w
     }
     
@@ -1632,18 +1752,20 @@ for (cyr in syr2:eyr) {
       # separate temp, precip, slp
       # makes no sense for realprox: proxies would need to be calibrated before building 
       # regession model
-      if (ghcn_prec) { 
+      if (ghcn_prec & !ghcn_wday) { 
         if (ghcn_temp & yuri_slp) {
           varlist <- c("inst_t","inst_p","inst_slp")
         } else {
           varlist <- c("inst_p") # assimilating only precip
         }
-      } else if (ghcn_wday) {
+      } else if (ghcn_wday & !ghcn_prec) {
         if (ghcn_temp & yuri_slp) {
           varlist <- c("inst_t","inst_slp","inst_w") 
         } else {
           varlist = "inst_w"
         }
+      } else if (ghcn_prec & ghcn_temp & yuri_slp & ghcn_wday) {
+        varlist <- c("inst_t","inst_p","inst_slp","inst_w")
       } else if (ghcn_temp & yuri_slp) {
         varlist <- c("inst_t","inst_slp")
       }
@@ -1759,7 +1881,7 @@ for (cyr in syr2:eyr) {
                    names=c(inst_w$names),
                    height=c(inst_w$height), time=inst_w$time)
       }
-    } else if (ghcn_temp & yuri_slp & !ghcn_prec) {
+    } else if (ghcn_temp & yuri_slp & !ghcn_prec & !ghcn_wday) {
       inst<-list(data=t(cbind(inst_t$data,inst_slp$data)), error=t(cbind(inst_t$err,inst_slp$err)),
                  lon=c(inst_t$lon,inst_slp$lon),lat=c(inst_t$lat,inst_slp$lat), names=c(inst_t$names,inst_slp$names),
                  numavg=c(inst_t$numavg,inst_slp$numavg),
@@ -1798,7 +1920,8 @@ for (cyr in syr2:eyr) {
             realprox$lon[i] <- NA
             realprox$lat[i] <- NA
             realprox$mr[i,] <- NA
-            realprox$var_residu[i] <- NA
+            realprox$var_residu[i,] <- NA
+            realprox$error[i,] <- NA
           }
         }
         pos <- apply(!is.na(realprox$data),1,any)
@@ -1806,7 +1929,8 @@ for (cyr in syr2:eyr) {
         realprox$lon <- realprox$lon[pos]
         realprox$lat <- realprox$lat[pos]
         realprox$mr <- realprox$mr[pos,]
-        realprox$var_residu <- realprox$var_residu[pos]
+        realprox$var_residu <- realprox$var_residu[pos,]
+        realprox$error <- realprox$error[pos,]        
         realprox$names <- realprox$names[pos] 
       }
       # 5.6.2 Mask docu data
@@ -1835,39 +1959,16 @@ for (cyr in syr2:eyr) {
       }
     } # end instmaskprox
     
-    # 5.7 Use every ??th (see code below) proxy record
-    if (reduced_proxies) {
-      every <- 12 
-      if (real_proxies) {
-        redpos <-seq(1,length(realprox$lon),every)
-        realprox$lon <- realprox$lon[redpos]
-        realprox$lat <- realprox$lat[redpos]
-        realprox$data <- realprox$data[redpos,]
-        realprox$names <- realprox$names[redpos]
-        realprox.allts$lon <- realprox.allts$lon[redpos]
-        realprox.allts$lat <- realprox.allts$lat[redpos]
-        realprox.allts$data <- realprox.allts$data[redpos,]
-        realprox.allts$names <- realprox.allts$names[redpos]
-      }
-      if (instrumental) {
-        redpos <-seq(1,length(inst$lon),every)
-        inst$lon <- inst$lon[redpos]
-        inst$lat <- inst$lat[redpos]
-        inst$data <- inst$data[redpos,]
-        inst$names <- inst$names[redpos]
-      }
-    }
-    
     # 5.8 Add data source/type information to list
     if (instrumental) {inst$sour <- rep('inst',length(inst$lon))}
-    if (docum) {
-      docall$sour <- rep('doc',length(docall$lon))
-      # docall.allts$sour <- rep('doc',length(docall$lon)) # doesn't exists anymore   
-    }
-    if (real_proxies) {
-      realprox$sour <- rep('prox',length(realprox$lon))
-      realprox.allts$sour <- rep('prox',length(realprox$lon))
-    }
+    # if (docum) {
+    #   docall$sour <- rep('doc',length(docall$lon))
+    #   # docall.allts$sour <- rep('doc',length(docall$lon)) # doesn't exists anymore   
+    # }
+    # if (real_proxies) {
+    #   realprox$sour <- rep('prox',length(realprox$lon))
+    #   realprox.allts$sour <- rep('prox',length(realprox$lon))
+    # }
     
     # 5.9 Convert to 2 season per year
     if (sixmonstatevector) { 
@@ -1902,7 +2003,7 @@ for (cyr in syr2:eyr) {
     
     if (real_proxies) {
       tmpmr <- matrix(NA,nrow=length(inst$lon),ncol=ncol(realprox$mr))
-      tmpres <- rep(NA,length(realprox$var_residu))
+      tmpres <- matrix(NA,nrow=nrow(realprox$var_residu),ncol=ncol(realprox$var_residu))
       if (avg_obs_per_grid) {
         tmpnum1 <- inst$numavg
         tmpnum2 <- rep(1,length(realprox$lon))
@@ -1911,26 +2012,26 @@ for (cyr in syr2:eyr) {
         tmpnum2 <- rep(1,length(realprox$lon)) #realprox.numavg
       }
       if (real_proxies & instrumental) {
-        proxies<-list(data=rbind(inst$data,realprox$data), err = rbind(inst$err,sqrt(realprox$var_residu)),
-                      lon=c(inst$lon,realprox$lon), lat=c(inst$lat,realprox$lat), names=c(inst$names,realprox$names), 
+        proxies<-list(data=rbind(inst$data,realprox$data), error=rbind(inst$err,realprox$error),
+                      lon=c(inst$lon,realprox$lon), lat=c(inst$lat,realprox$lat), 
+                      names=c(inst$names,realprox$names), 
                       sour=c(inst$sour,realprox$sour), 
                       height=c(inst$height,realprox$elevation), time=inst$time,
-                      mr=rbind(tmpmr,realprox$mr), var_residu=c(tmpres,realprox$var_residu),
+                      mr=rbind(tmpmr,realprox$mr), #var_residu=c(tmpres,realprox$var_residu),
                       numavg=c(tmpnum1,tmpnum2))
       }
     }
     
     if (docum) {
       tmpmr <- matrix(NA,nrow=length(docall$lon),ncol=ncol(proxies$mr))
-      tmpres <- rep(NA,length(proxies$var_residu))
+      # tmpres <- rep(NA,length(proxies$var_residu))
       tmpelev <- rep(NA,length(proxies$height))
       tmpnum3 <- rep(1,length(docall$lon))
-      proxies<-list(data=rbind(proxies$data,docall$data), err = rbind(proxies$err,rep(docu_err,length(docall$lon))),
-                    lon=c(proxies$lon,docall$lon), 
-                    lat=c(proxies$lat,docall$lat), names=c(proxies$names,docall$names), 
-                    sour=c(proxies$sour,docall$sour), 
+      proxies<-list(data=rbind(proxies$data,docall$data), error=rbind(proxies$error,docall$error),
+                    lon=c(proxies$lon,docall$lon), lat=c(proxies$lat,docall$lat), 
+                    names=c(proxies$names,docall$names), sour=c(proxies$sour,docall$sour), 
                     height=c(proxies$height,tmpelev), time=proxies$time,
-                    mr=rbind(proxies$mr,tmpmr), var_residu=c(realprox$var_residu,tmpres),
+                    mr=rbind(proxies$mr,tmpmr), #var_residu=c(realprox$var_residu,tmpres),
                     numavg=c(proxies$numavg,tmpnum3))
     }
   } # end "if (instrumental)"
@@ -1989,16 +2090,18 @@ for (cyr in syr2:eyr) {
       Hcal3[Hcal3==0] <- NA
     }
     rm(etmp)
-    if (instrumental & !docum & sixmonstatevector & !real_proxies) {
+    if (instrumental & !docum & !real_proxies) {
       H.i <- array(NA,c(nrow(Hcal1),1))
-    } else if (instrumental & docum & sixmonstatevector & !real_proxies) {
+    } else if (instrumental & docum & !real_proxies) {
       H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal3)),1))
-    } else if (!instrumental & docum & sixmonstatevector & real_proxies) {
+    } else if (!instrumental & docum & real_proxies) {
       H.i <- array(NA,c((nrow(Hcal2)+nrow(Hcal3)),(ncol(Hcal2))/2))
-    } else if (instrumental & !docum & sixmonstatevector & real_proxies) {
+    } else if (instrumental & !docum & real_proxies) {
       H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal2)),(ncol(Hcal2))/2))
-    } else if (!instrumental & !docum & real_proxies) { #new
+    } else if (!instrumental & !docum & real_proxies) { 
       H.i <- array(NA,c(nrow(Hcal2),(ncol(Hcal2))/2))
+    } else if (!instrumental & docum & !real_proxies) { 
+      H.i <- array(NA,c(nrow(Hcal3),(ncol(Hcal3))/2))  
     } else { 
       H.i <- array(NA,c((nrow(Hcal1)+nrow(Hcal2)+nrow(Hcal3)),(ncol(Hcal2))/2))
     }
@@ -2024,9 +2127,13 @@ for (cyr in syr2:eyr) {
       H.i[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,seq(1,ncol(Hcal2),2)] 
       Hredux[(nrow(Hcal1)+1):(nrow(Hcal1)+nrow(Hcal2)),] <- Hcal2[,seq(2,ncol(Hcal2),2)] 
     }
-    if (!instrumental & !docum & real_proxies){ #new
+    if (!instrumental & !docum & real_proxies){ 
       H.i[1:nrow(Hcal2),]<-Hcal2[,seq(1,ncol(Hcal2),2)] 
       Hredux[1:nrow(Hcal2),]<-Hcal2[,seq(2,ncol(Hcal2),2)] 
+    }
+    if (!instrumental & docum & !real_proxies){ 
+      H.i[1:nrow(Hcal3),]<-Hcal3[,seq(1,ncol(Hcal3),2)] 
+      Hredux[1:nrow(Hcal3),]<-Hcal3[,seq(2,ncol(Hcal3),2)] 
     }
     H.i[H.i==0] <- NA
     Hredux[Hredux==0] <- NA
@@ -2049,29 +2156,30 @@ for (cyr in syr2:eyr) {
     # the error would be spatially uncorrelated
     # set squared error R to 1 for 1degC measurement error
     if (sixmonstatevector | pseudo_prox) {
-      if ((real_proxies) & ((instrumental) | (docum))) { 
-        Rcal <- calibrate$error^2
+      #if ((real_proxies) & ((instrumental) | (docum))) { 
+      Rcal <- calibrate$error^2
        # Rcal <- c(temp2=0.9, precip=50, slp=10)[calibrate$names]
        #  #        if (avg_prox_per_grid) {Rcal <- Rcal*(1/calibrate$numavg)}
-       #  Rcal[calibrate$names=="prox"] <- realprox$var_residu 
+       # Rcal[calibrate$names=="prox"] <- realprox$var_residu 
        #  # previously used residuals/2 for 1. paper version to give proxies more weight
        #  # better delete "/2"
        #  # probably should have given instrumentals more error instead!
        #  Rcal[calibrate$sour=="doc"] <- 0.25 # equals 0.5 std. dev.
-      } else if ((real_proxies) & (!instrumental) & (!docum)) { 
-        Rcal <- realprox$var_residu # *2 to increase the possibly underestimated 
+      #} else if ((real_proxies) & (!instrumental) & (!docum)) { 
+      #  Rcal <- cbind(rep(NA,length(realprox$var_residu)),realprox$var_residu)
+        # *2 to increase the possibly underestimated 
         # error and prohibit overcorrection if using thousands of proxy records
         #/ 10 # devision to make proxy error smaller and update larger
-        Rcal[which(is.na(Rcal))] <- 0
-      } else if (((instrumental) | (docum)) & (!real_proxies)) { 
+      Rcal[which(is.na(Rcal))] <- 0
+      #} else if (((instrumental) | (docum)) & (!real_proxies)) { 
 
         # original: Rcal <- c(temp2=0.9, precip=50, slp=10)[calibrate$names]
         # Rcal[calibrate$sour=="doc"] <- 0.25 # equals 0.5 std. dev
-        Rcal <- calibrate$error^2
+      #  Rcal <- calibrate$error^2
 
         #      # set squared error R for precip measurements to 25% of data value
         #      # R <- abs(calibrate$data*0.25)
-      }
+      #}
       
       if (gauss_ana) {
         GAecham = echam
@@ -2336,7 +2444,7 @@ for (cyr in syr2:eyr) {
                   }
                 } 
                 if (ins_tim_loc) {
-                  if (calibrate$sour[j] == "inst") {
+                  if (calibrate$sour[j] == "inst" | calibrate$sour[j] == "doc") {
                     # time localization on PH for instrumental data
                     # let influence only the variables of the current month of the observations
                     month_start = seq(1,dim(PH)[1],dim(PH)[1]/6)
@@ -2468,7 +2576,7 @@ for (cyr in syr2:eyr) {
                 }
               } # end of !is.na(calibrate$data[j,i])
             } # end of ntim
-          }  
+          } # end if (!is.na(wgt[1]))
         } else { # landcorr is TRUE
           if ((!is.na(dist[1])) & (!is.na(wgt[1]))){
             for (i in 1:ntim){
@@ -2573,7 +2681,7 @@ for (cyr in syr2:eyr) {
           if (every2grid){
             if(save_ananomallts == T) {
               save(analysis.anom,analysis.abs,echam.anom,echam.abs,validate,calibrate, ananomallts, 
-                   file=paste0(dataintdir,'analysis/EKF400_',version,expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
+                   file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
             } else {
               save(analysis.anom,analysis.abs,echam.anom,echam.abs,validate,calibrate, 
                    file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
@@ -2595,11 +2703,11 @@ for (cyr in syr2:eyr) {
         if (vali) {
           save(analysis.anom,analysis.abs,echam.anom,echam.abs,landcorrected.anom,
                landcorrected.clim,validate,calibrate,
-               file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
+               file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
         } else {
           save(analysis.anom,analysis.abs,echam.anom,echam.abs,landcorrected.anom,
                landcorrected.clim,calibrate,
-               file=paste0(dataintdir,'analysis/',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
+               file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'),version=2)
         }   
       }
       if (loo) { # leave one out validation

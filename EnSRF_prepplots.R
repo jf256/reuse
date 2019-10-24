@@ -13,7 +13,7 @@ rm(list=ls())
 # enter syr ane eyr manually
 
 syr=1902 #1902 #1941
-eyr=1950 #2000 #2003 #1970
+eyr=2002 #2000 #2003 #1970
 
 # syrtot and eyrtot are only used for the total 400 yr indices time series 
 #syrtot=1902 #set to the same syr and eyr of the prepplots script (default 1602)
@@ -154,22 +154,26 @@ if (temporal_postproc) {
       rm(validate,analysis,echam)
       load(file=paste0('../data/analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'.Rdata'))
     }
-    if (tps_only&length(unique(echam.abs$names))!=3) {
+    if (tps_only_postproc&length(unique(echam.abs$names))!=3) {
       echam.abs<-convert_to_tps_only(echam.abs)
       echam.anom<-convert_to_tps_only(echam.anom)
       analysis.abs<-convert_to_tps_only(analysis.abs)
       analysis.anom<-convert_to_tps_only(analysis.anom)
       if (vali){
-        
+        # JF 2019/10 remove 20CR from validation if set in switches
+        if (!"twentycr_vali" %in% validation_set) {
+          validate_new<-list()
+          validate_new[[1]]<-validate$cru_vali 
+          names(validate_new)<-"cru_vali"
+          validate<-validate_new
+        }
         valiname = names(validate)
         validate_init <- validate
         validate_all <- list()
-        
         l=0
         for (v in valiname){  ## for multiple vali data sets
           l=l+1
           #print(v)
-          
           validate<-validate_init[[v]]
           validate<-convert_to_tps_only(validate)
           validate_all[[l]] <-validate
@@ -226,17 +230,21 @@ if (temporal_postproc) {
       if (monthly_out) {
         #print(paste('seasons =',s))
         s=12 # set back to 12 months for plotting
-        
-        
         tmptime <- seq(cyr-1,(cyr+1),by=1/12)
         echam<-convert_to_monthly(echam)
         echam.anom<-convert_to_monthly(echam.anom)
         analysis<-convert_to_monthly(analysis)
         analysis.anom<-convert_to_monthly(analysis.anom)
-        
+
         if (vali) {
           if (!recon_vali) {
-            
+            # JF 2019/10 remove 20CR from validation if set in switches
+            if (!"twentycr_vali" %in% validation_set) {
+              validate_new<-list()
+              validate_new[[1]]<-validate$cru_vali 
+              names(validate_new)<-"cru_vali"
+              validate<-validate_new
+            }
             valiname = names(validate)
             validate_init <- validate
             validate_all <- list()
@@ -244,7 +252,6 @@ if (temporal_postproc) {
             for (v in valiname){  ## for multiple vali data sets
               l=l+1
               #print(v)
-              
               validate<-validate_init[[v]]
               validate<-convert_to_monthly(validate)
               validate_all[[l]] <-validate
@@ -332,10 +339,13 @@ if (temporal_postproc) {
         
         if (vali) {    
           if (!recon_vali) {
-            #           if (cyr==1901) {
-            #             validate$data <- cbind(rep(NA,length(validate$data)),validate$data)
-            #             validate$ensmean <- cbind(rep(NA,length(validate$ensmean)),validate$ensmean)
-            #           }
+            # JF 2019/10 remove 20CR from validation if set in switches
+            if (!"twentycr_vali" %in% validation_set) {
+              validate_new<-list()
+              validate_new[[1]]<-validate$cru_vali 
+              names(validate_new)<-"cru_vali"
+              validate<-validate_new
+            }
             valiname = names(validate)
             validate_init <- validate
             validate_all <- list()
@@ -1180,9 +1190,9 @@ if (mergetime_fields){
     if (pseudo_prox & expname=="DAPS_pseudoprox_stat_offl") {
       calibrate$data=t(calibrate$data[,,drop=F])
     }
-    
-    cali<-calibrate # 
-    if (tps_only) {
+    # commented JF 2019/10
+    #cali<-calibrate # 
+    if (tps_only_postproc) {
       echam<-convert_to_tps_only(echam)
       echam.anom<-convert_to_tps_only(echam.anom)
       analysis<-convert_to_tps_only(analysis)
@@ -1343,14 +1353,16 @@ if (mergetime_fields){
         pos <- which(calibrate$sour=="inst")
       }
       if (length(pos)==0) {
-        pos <- which(cali$sour=="inst")
-        calibrate.allts$data=array(NA,dim=dim(cali$data[pos,]))
-        calibrate.allts$lon=as.matrix(cali$lon[pos])
-        calibrate.allts$lat=as.matrix(cali$lat[pos])
-        calibrate.allts$names=as.matrix(cali$names[pos])
-        calibrate.allts$sour=as.matrix(cali$sour[pos])
+        pos <- which(calibrate$sour=="inst")
+        calibrate.allts$data=array(NA,dim=dim(calibrate$data[pos,]))
+        # commented JF 2019/10
+        #calibrate.allts$lon=as.matrix(calibrate$lon[pos])
+        #calibrate.allts$lat=as.matrix(calibrate$lat[pos])
+        #calibrate.allts$names=as.matrix(calibrate$names[pos])
+        #calibrate.allts$sour=as.matrix(calibrate$sour[pos])
       } else {
         calibrate.allts$data=calibrate$data[pos,,drop=F]  
+      }
         calibrate.allts$lon=as.matrix(calibrate$lon[pos])
         calibrate.allts$lat=as.matrix(calibrate$lat[pos])
         if (!pseudo_prox) {
@@ -1363,7 +1375,7 @@ if (mergetime_fields){
         #      calibrate.anom.allts$lat=as.matrix(calibrate.anom$lat[pos])
         #      calibrate.anom.allts$names=as.matrix(calibrate.anom$names[pos])
         #      calibrate.anom.allts$sour=as.matrix(calibrate.anom$sour[pos])
-      }
+      #}
     } else {
       analysis.allts$data=abind(analysis.allts$data,analysis$data,along=2)
       analysis.allts$ensmean=cbind(analysis.allts$ensmean,analysis$ensmean)
@@ -1404,18 +1416,20 @@ if (mergetime_fields){
         pos <- which(calibrate$sour=="inst")
       }
       if (length(pos)==0){
-        pos <- which(cali$sour=="inst")
+        pos <- which(calibrate$sour=="inst")
         calibrate.allts$data=abind(calibrate.allts$data[pos,],
-                                   array(NA,dim=dim(cali$data))[pos,],along=2)
-        calibrate.allts$time=c(calibrate.allts$time,calibrate$time)
-        calibrate.allts$lon=cbind(calibrate.allts$lon[pos,],cali$lon[pos])
-        calibrate.allts$lat=cbind(calibrate.allts$lat[pos,],cali$lat[pos])
-        if (!pseudo_prox){
-          calibrate.allts$names=cbind(calibrate.allts$names[pos,],cali$names[pos])
-        }
-        calibrate.allts$sour=cbind(calibrate.allts$sour[pos,],cali$sour[pos])
+                                   array(NA,dim=dim(calibrate$data))[pos,],along=2)
+        # commented JF 2019/10
+        #calibrate.allts$time=c(calibrate.allts$time,calibrate$time)
+        #calibrate.allts$lon=cbind(calibrate.allts$lon[pos,],cali$lon[pos])
+        #calibrate.allts$lat=cbind(calibrate.allts$lat[pos,],cali$lat[pos])
+        #if (!pseudo_prox){
+        #  calibrate.allts$names=cbind(calibrate.allts$names[pos,],cali$names[pos])
+        #}
+        #calibrate.allts$sour=cbind(calibrate.allts$sour[pos,],cali$sour[pos])
       } else {
         calibrate.allts$data=abind(calibrate.allts$data[pos,],calibrate$data[pos,],along=2)
+      }
         calibrate.allts$time=c(calibrate.allts$time,calibrate$time)
         calibrate.allts$lon=cbind(calibrate.allts$lon[pos,],calibrate$lon[pos])
         calibrate.allts$lat=cbind(calibrate.allts$lat[pos,],calibrate$lat[pos])
@@ -1429,7 +1443,7 @@ if (mergetime_fields){
         #      calibrate.anom.allts$lat=cbind(calibrate.anom.allts$lat[pos,],calibrate.anom$lat[pos])
         #      calibrate.anom.allts$names=cbind(calibrate.anom.allts$names[pos,],calibrate.anom$names[pos])
         #      calibrate.anom.allts$sour=cbind(calibrate.anom.allts$sour[pos,],calibrate.anom$sour[pos])
-      }
+      #}
     }
     
     # adapted by Nevin: 
@@ -1669,7 +1683,7 @@ if (mergetime_fields){
       vindtmp$ensmean<-cbind(vindtmp$ensmean,vind.anom_all[[i]]$ensmean)
       vindtmp$time<-c(vindtmp$time,validate.anom$time[,i])
     }
-    if (!tps_only) {
+    if (!tps_only_postproc) {
       vind.clim<-apply(vindtmp$data[35:40,],1,mean)
       vindtmp$data[35:40]<-vindtmp$data[35:40,]-vind.clim
       vindtmp$ensmean[35:40]<-vindtmp$ensmean[35:40,]-vind.clim
@@ -1893,7 +1907,7 @@ if (calc_vali_stat) {
     vind.anom <- vind.anom_init[[v]]
     
     # delete next 3 lines again JF 08/2019
-    if (tps_only) {
+    if (tps_only_postproc) {
       vind.anom <- convert_to_tps_only(vind.anom)  
     }
     
@@ -2166,9 +2180,9 @@ if (calc_vali_stat) {
     validate.anom <- validate.anom_init
     vind<-vind_init
     vind.anom<-vind.anom_init
-    rm(allvalits,cali,cru4_may_sep,cru4_oct_apr,v.sum,v.win,vind.allts_all,
+    rm(allvalits,cru4_may_sep,cru4_oct_apr,v.sum,v.win,vind.allts_all,
        a.sum, a.win,atala,atmp,atmp2,e.abs.ll,etala,etmp,etmp2,land,landll,
-       landpos,landpos2,landposv,rdat,vtmp)
+       landpos,landpos2,landposv,rdat,vtmp) #cali,
     print(paste("saving",v,"..."))
     if (every2grid) {
       if (monthly_out) {

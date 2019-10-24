@@ -105,8 +105,9 @@ for (cyr in syr2:eyr) {
   }
   
   # next line not included yet: 
-  if (cyr > min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)]) & 
-      cyr <= max(c(eyr_cru,eyr_twentycr,eyr_recon)[c(vali_cru, vali_twentycr, vali_recon)])) {        # if we don't use reconvali, the eyr here should be changed (Error in valiall : object 'valiall' not found) -> but then instead of the eyr we should use cyr
+  if (cyr > min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru,vali_twentycr,vali_recon)]) & 
+      cyr <= max(c(eyr_cru,eyr_twentycr,eyr_recon)[c(vali_cru,vali_twentycr,vali_recon)])) {        
+        # if we don't use reconvali, the eyr here should be changed (Error in valiall : object 'valiall' not found) -> but then instead of the eyr we should use cyr
     vali=T                 # switch off prepplot if no vali data selected
   } else {
     vali=F
@@ -770,11 +771,17 @@ for (cyr in syr2:eyr) {
         if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,"_2ndgrid.Rdata",sep=""))
         } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid.Rdata",sep=""))
         # } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid_v2017.Rdata",sep=""))
-        } else if (twentycr_vali){load(paste0(twentycrpath,"twentycr_allvar_",syr_twentycr,"-",eyr_twentycr,"_2ndgrid.Rdata"))}
+        # old version 2
+        #} else if (twentycr_vali){load(paste0(twentycrpath,"twentycr_allvar_",syr_twentycr,"-",eyr_twentycr,"_2ndgrid.Rdata"))}
+        # new version 3
+        } else if (twentycr_vali){load(paste0(twentycrpath,"twentycr_tps_",syr_twentycr,"-",eyr_twentycr,"_2ndgrid.Rdata"))}
       } else {
         if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,".Rdata",sep=""))
         } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,".Rdata",sep="")) 
-        } else if (twentycr_vali){load(paste0(twentycrpath,"twentycr_allvar_",syr_twentycr,"-",eyr_twentycr,".Rdata"))}
+        # old version 2
+        #} else if (twentycr_vali){load(paste0(twentycrpath,"twentycr_allvar_",syr_twentycr,"-",eyr_twentycr,".Rdata"))}
+        # new version 3
+        } else if (twentycr_vali){load(paste0(twentycrpath,"twentycr_tps_",syr_twentycr,"-",eyr_twentycr,".Rdata"))}
       }
       # if (ind_recon) {
       #   load(file=paste("../data/indices/indices_recon_",syr,"-",eyr,".Rdata",sep=""))
@@ -1239,7 +1246,7 @@ for (cyr in syr2:eyr) {
       inst_prec$data <- cbind(prec2017$data,prec2019$data[precpos,])
       inst_prec$lon <- c(prec2017$lon,prec2019$lon)
       inst_prec$lat <- c(prec2017$lat,prec2019$lat)
-      inst_prec$names <- c(prec2017$name,prec2019$names)
+      inst_prec$names <- rep('precip',length(c(prec2017$name,prec2019$names)))
       inst_prec$height <- c(prec2017$height,prec2019$height)
       inst_prec$time <- prec2017$time
     }

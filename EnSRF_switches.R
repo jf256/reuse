@@ -2,7 +2,7 @@
 ################################ EnSRF_switches.R ####################################
 ######################################################################################
 
-expname="allinput_fullres_50climcovar_alloldvar" 
+expname="allinput_fullres_50climcovar_alloldvar" # "test_v2_oct17" #
 
 version="v1.4"    # set code version number for experiment and netcdf file names
 # v1.1 at DKRZ is experiment 1.2 here!
@@ -17,7 +17,8 @@ syr_cru=1901
 eyr_cru=2004
 syr_recon=1750
 eyr_recon=1900
-syr_twentycr=1901 # currently statistics only work for same periods of CRU and 20CR (20CR data actually start from 1850)
+syr_twentycr=1901 #1836 # 20CR data start from 1836, currently only TPS, validation stats need to be adapted
+  # currently statistics only work for same periods of CRU and 20CR (20CR data actually start from 1850)
 eyr_twentycr=2004
 #syr_ind=1901
 #eyr_ind=2004
@@ -57,7 +58,7 @@ generate_CCSM_last_mill_ens=F   # CCSM last millinnium ensemble for DAPS no forc
 
 # generate VALIDATION data in .Rdata format
 # next line not included yet: 
-generate_20CRv2=F                # generate 20CR reanalysis for independent verification
+generate_20CR=F                # generate 20CR v3 reanalysis for independent verification
 generate_CRUALLVAR=F             # if FALSE -> cru_allvar.Rdata 
 generate_HadCRU4SD=F             # HadCRU ens. SD for instr. uncertainty and error-spread ratio
 #generate_LUTPAULKUT=F           # gridded seasonal recons (1750-1999) NOT tested forever
@@ -336,7 +337,7 @@ ana.enssize=F
 # choose validation data sets saved in the analysis step (EnSRF_data):
 # (all three can be selected simultaneously)
 vali_cru=T
-vali_twentycr=T
+vali_twentycr=T # now 20CRv3
 vali_recon=F
 #####################################################################################
 
@@ -350,27 +351,28 @@ vali_recon=F
 # prepare plot switches
 #####################################################################################
 
-validation_set=c("cru_vali","twentycr_vali")    #can be set to cru_vali, or twentycr_vali or 
+tps_only_postproc=F             # due validation only with tps
+validation_set=c("cru_vali") #,"twentycr_vali")    #can be set to cru_vali, or twentycr_vali or 
 # both together c("cru_vali","twentycr_vali")
 # choses which validation set should be used in the postprocessing and plots
-monthly_out=F                   # if sixmonstatevector=T output is backtransformed to seasonal 
+monthly_out=T                   # if sixmonstatevector=T output is backtransformed to seasonal 
 # yearly out is old switch from nevin. annual output automatically if pseudo_prox=T
   yearly_out=F                    # if both false, plots seasonal averages are calculated
                                 # average or monthly data if monthly_out=T 
 temporal_postproc=T             # save half year averages calc from monthly data into /prepplot folder
-mergetime_indices=T             # if TRUE: indices are combined to allts variables for whole period 
+mergetime_indices=F             # if TRUE: indices are combined to allts variables for whole period 
                                 # (e.g. also for 1604-2004) and saved into image folder for TS-plots
 # run next option "load_prepplot" for entire validation period, usually 
 # 1902-2003, because it creates time series
-mergetime_fields=T              # if calc_prepplot has been run, load_prepplot can be used
+mergetime_fields=F              # if calc_prepplot has been run, load_prepplot can be used
 # saves image and only needs to be run once, afterward set "load_images=T" 
 load_images=F                   # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
                                 # of merged indices and fields. NOT need if just calculated before
-calc_vali_stat=T                # calculate validation statistics after preparation (set "load_image=T")
+calc_vali_stat=F                # calculate validation statistics after preparation (set "load_image=T")
 CRPS=F                          # calculate Continuous Ranked Probability Score
 ind_anom=T                      # calculate indices from anomaly data
 
-vali_plots=T                    # source EnSRF_plots.R script 
+vali_plots=F                    # source EnSRF_plots.R script 
 
 #ind_ECHAM=T                     # delete/comment code in prepplot script and then delete switches here
 #ind_recon=F                     # delete/comment code in prepplot script and then delete switches here
@@ -380,7 +382,7 @@ write_coor=F                    # write ascii files with assimilated stations an
 # maybe change files names for new EKF400 version "1.0" to "1.1"
 # write_netcdf requires to run calc_postproc before 
 # best set mergetime_*=F and load_image=F
-write_netcdf=F                  # write entire EKF400 to NetCDF files
+write_netcdf=T                  # write entire EKF400 to NetCDF files
 if (!monthly_out & write_netcdf) {
   write_netcdf=F
   print('ACHTUNG: write_netcdf set to FALSE because monthly_out=F')
@@ -395,7 +397,7 @@ if (!monthly_out & write_netcdf) {
 #####################################################################################
 
 monthly=F
-station_yr=1905                # specific year to plot the station locations (syr>=station_yr<=eyr)
+#station_yr=1905                # specific year to plot the station locations (syr>=station_yr<=eyr)
 #pseudoproxy=F                 # old from Nevin pseudoproxy try
 #plot_dweights=F
 #write_nc=F

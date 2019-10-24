@@ -139,11 +139,24 @@ if (generate_HadCRU4SD){
   }
 }
 
-if (generate_20CRv2) {
-  twentycr.all <- read_20cr(filehead="twentycr_allvar_1901-2004.nc",path=twentycrpath,xlim=c(-180,180), 
-                            ylim=c(-90,90), timlim=c(1901, 2004), small=every2grid, landonly=F, 
-                            calc_ensmean=T)
-  save(twentycr.all,file='twentycrv2_allvar_1901-2004.Rdata')
+# old version 2
+# if (generate_20CR) {
+#   twentycr.all <- read_20cr(filehead="twentycr_allvar_1901-2004.nc",path=twentycrv2path,xlim=c(-180,180), 
+#                             ylim=c(-90,90), timlim=c(1901,2004), small=every2grid, landonly=F, 
+#                             calc_ensmean=T)
+#   save(twentycr.all,file='twentycrv2_allvar_1901-2004.Rdata')
+# }
+
+# new version 3
+if (generate_20CR) {
+  twentycr.all <- read_20cr(filehead="20CRv3_1836-2015.nc",path=twentycrpath,xlim=c(-180,180), 
+                            ylim=c(-90,90), timlim=c(1836,2004), small=every2grid, landonly=F, 
+                            calc_ensmean=F)
+  if (every2grid) {
+    save(twentycr.all,file='twentycrv3_allvar_1836-2004_2ndgrid.Rdata')
+  } else {
+    save(twentycr.all,file='twentycrv3_allvar_1836-2004.Rdata')
+  }
 }
 
 # if (generate_LUTPAULKUT){ 

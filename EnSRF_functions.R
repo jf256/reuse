@@ -29,7 +29,8 @@ mxdpath <- paste0(dataextdir,'assimil_data/proxies/mxd/')
 pagespath = paste0(dataextdir,'assimil_data/proxies/PAGES/')
 ntrendpath = paste0(dataextdir,'assimil_data/proxies/NTREND/')
 schweingrpath <- paste0(dataextdir,'assimil_data/proxies/schweingr/')
-twentycrpath <- paste0(dataextdir,'vali_data/20CRv2/')
+#twentycrpath <- paste0(dataextdir,'vali_data/20CRv2/')
+twentycrpath <- paste0(dataextdir,'vali_data/20CRv3/')
 indicespath <- paste0(dataextdir,'vali_data/indices/')
 
 
@@ -826,7 +827,11 @@ read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,
     ti <- which(tim >= timlim[1] & tim < (timlim[2]+1))
     outdata <- NULL
     names <- NULL
-    for (varname in c('temp2', 'precip', 'slp','air','prate','hgt','omega')){
+    if (path == twentycrpath) {
+      #varnames <- c('temp2', 'precip', 'slp','air','prate','hgt','omega')
+      varnames <- c('temp2', 'precip', 'slp')
+    }
+    for (varname in varnames){
       if (varname %in% names(nc$var)){
         if (length(nc$var[[varname]]$dim) == 3){
           if (length(ti)==1) {
@@ -859,6 +864,7 @@ read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,
           }
         }
         if (path == twentycrpath) {
+          if (varname == 'temp2') data <- data - 273.15
           if (varname == 'precip') data <- data * 3600 * 24 * 30
           if (varname == 'slp') data <- data / 100
         }
@@ -4069,15 +4075,19 @@ plot_echam <- function(x, levs, varname='temp2', type='data',  ti=1,
           try(points(stations$lon[stations$names=='temp2' & !is.na(stations$data[,i])], 
                      stations$lat[stations$names=='temp2' & !is.na(stations$data[,i])], 
                      pch=1, col=rgb(10,0,0,8,maxColorValue=10), cex=st.cex*2))
-          try(points(stations$lon[stations$names=='precip' & !is.na(stations$data[,i])], 
-                     stations$lat[stations$names=='precip' & !is.na(stations$data[,i])], 
-                     pch=3, col=rgb(10,0,10,8,maxColorValue=10), cex=st.cex))
+          try(points(stations$lon[(stations$names=='precip' | stations$names=='prec')  & !is.na(stations$data[,i])], 
+                     stations$lat[(stations$names=='precip' | stations$names=='prec') & !is.na(stations$data[,i])], 
+                     pch=3, col=rgb(0,0,10,8,maxColorValue=10), cex=st.cex))
           try(points(stations$lon[stations$names=='slp' & !is.na(stations$data[,i])], 
                      stations$lat[stations$names=='slp' & !is.na(stations$data[,i])], 
-                     pch=4, col=rgb(0,0,10,8,maxColorValue=10), cex=st.cex))
-          try(points(stations$lon[stations$names=='prox' & !is.na(stations$data[,i])], 
-                     stations$lat[stations$names=='prox' & !is.na(stations$data[,i])], 
-                     pch=3, col=ifelse(apply(is.na(stations$mr),1,all),"firebrick4","darkgreen"), cex=st.cex,lwd=1.5))
+                     pch=4, col=rgb(10,0,10,8,maxColorValue=10), cex=st.cex))
+          try(points(stations$lon[stations$names=='prox' & !is.na(stations$data[,i]) & apply(is.na(stations$mr),1,all)], 
+                     stations$lat[stations$names=='prox' & !is.na(stations$data[,i]) & apply(is.na(stations$mr),1,all)],
+                     pch=5, col="darkgreen", cex=st.cex))
+          # try(points(stations$lon[stations$names=='prox' & !is.na(stations$data[,i])], 
+          #            stations$lat[stations$names=='prox' & !is.na(stations$data[,i])], 
+          #            pch=5, col=ifelse(apply(is.na(stations$mr[stations$names=='prox' & 
+          #            !is.na(stations$data[,i]),]),1,all),"firebrick4","darkgreen"), cex=st.cex/2)) #,lwd=1.5))
         } else {
           points(statlon, statlat, pch=1, col=st.col, cex=st.cex)
         }
@@ -4100,7 +4110,7 @@ plot_echam <- function(x, levs, varname='temp2', type='data',  ti=1,
         plot_colourbar(tmp, cex=1.4)
       }
     }
-    mtext(main, side=3, line=2, outer=TRUE, font=1, cex=1.4)
+    mtext(main, side=3, line=0, outer=TRUE, font=1, cex=1.4)
     if (!add) par(oldpar)
   }
 }
@@ -7514,7 +7524,8 @@ calc_indices<-function(dataset, setname){
   # (code was given, I (nevin) only changed it into a fct to shorten the indices calculation in prepplot)
   giorgi<-get("giorgi")
   H.giorgi <- compute_giorgi_H_v2(giorgi, dataset)
-  if(setname=="echam2" | setname=="analysis2" | setname=="twentycr_vali"){
+  # JF 2019/10 20CR excluded because currently not containing all vars
+  if(setname=="echam2" | setname=="analysis2"){ # | setname=="twentycr_vali"){
     indices_tmp <- c('ENH.temp2','NAM.temp2','SAM.temp2','AFR.temp2',
                      'ASI.temp2','AUS.temp2','ARC.temp2','ANT.temp2',
                      'NEU.temp2','MED.temp2',
@@ -7544,7 +7555,7 @@ calc_indices<-function(dataset, setname){
     # "MC" kein z300 in output! 'HCL.calc',
     # SO WIRD INDEX NUR MITTELWERT ¨UBER REGION UND ZEIT!
     # Deshalb Indicies die min max etc basiert sind extra rechnen
-    if(!tps_only){
+    if(!tps_only_postproc){
       Hind <- matrix(0,nrow=length(indices_tmp),ncol=nrow(dataset$data))
     }else{
       Hind <- matrix(0,nrow=length(indices_tmp),ncol=nrow(dataset$data))
@@ -7586,11 +7597,11 @@ calc_indices<-function(dataset, setname){
     Hind[32,which(dataset$names=="temp2")] <- H.giorgi[which(giorgi.short == 'EU'),which(dataset$names=="temp2")]
     Hind[33,which(dataset$names=="precip")] <- H.giorgi[which(giorgi.short == 'EU'),which(dataset$names=="precip")]
     Hind[34,which(dataset$names=="slp")] <- H.giorgi[which(giorgi.short == 'EU'),which(dataset$names=="slp")]
-    if (tps_only){
+    if (tps_only_postproc){
       ind <- list(ensmean=Hind%*%dataset$ensmean, names=indices_tmp[1:34])
     }
     
-    if(!tps_only){
+    if(!tps_only_postproc){
       # stratospheric polar vortex
       Hind[35,which(dataset$names=="gph100")] <- H.giorgi[which(giorgi.short == 'PV1'),which(dataset$names=="gph100")]
       Hind[36,which(dataset$names=="gph100")] <- H.giorgi[which(giorgi.short == 'PV2'),which(dataset$names=="gph100")]
@@ -7639,8 +7650,11 @@ calc_indices<-function(dataset, setname){
         pos1 <- which(trunc(dataset$lat,digits=8)==trunc(l,digits=8))
         pos2 <- which(dataset$names=='omega500')
         pos <- intersect(pos1,pos2)
-        if (length(dataset$ensmean[pos,])==2 | (monthly_out & length(dataset$ensmean[pos,])==12)) { zmean[c,] <- dataset$ensmean[pos,] }
-        else if (length(dataset$ensmean[pos,])>2 | (monthly_out & length(dataset$ensmean[pos,])>12)) { zmean[c,] <- apply(dataset$ensmean[pos,,drop=F],2,mean) }
+        if (length(dataset$ensmean[pos,])==2 | (monthly_out & length(dataset$ensmean[pos,])==12)) { 
+          zmean[c,] <- dataset$ensmean[pos,] 
+        } else if (length(dataset$ensmean[pos,])>2 | (monthly_out & length(dataset$ensmean[pos,])>12)) { 
+          zmean[c,] <- apply(dataset$ensmean[pos,,drop=F],2,mean) 
+        }
         c=c+1
       }
       latlist <- unique(dataset$lat)[which(which(unique(dataset$lat) > -30) %in%which(unique(dataset$lat) < 30))]
@@ -7648,14 +7662,20 @@ calc_indices<-function(dataset, setname){
       zmean <- zmean[pos3,,drop=F]
       itcz <- apply(zmean[2:(nrow(zmean)-1),,drop=F],2,min)
       dlat <-  mean(latlist[1:(length(latlist)-1)]-latlist[2:(length(latlist))])
-      gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(itcz,digits=8)),each =length(pos3)), nrow=length(pos3))),2,which)
+      gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(itcz,digits=8)),
+                      each =length(pos3)), nrow=length(pos3))),2,which)
+      if (is.list(gridminpos)) {
+        gridminpos <- c(gridminpos[[1]][1],gridminpos[[2]][1])
+      } else if (length(gridminpos)==4) {
+        gridminpos <- gridminpos[1,]
+      }
       gridmin <- latlist[gridminpos-seq(0,(nseas-1)*length(pos3),by=length(pos3))]
-      
-      itcz <- gridmin - dlat * (((zmean[(gridminpos-1)])-(zmean[(gridminpos+1)]))/(2*(abs(zmean[gridminpos]-apply(cbind(zmean[(gridminpos-1)],zmean[(gridminpos+1)]),1,max)))))
+      itcz <- gridmin - dlat * (((zmean[(gridminpos-1)])-(zmean[(gridminpos+1)]))/
+                (2*(abs(zmean[gridminpos]-apply(cbind(zmean[(gridminpos-1)],
+                zmean[(gridminpos+1)]),1,max)))))
       
       
       # subtropical jet from subtrop. jet (u200) max
-      
       c=1
       # zonal means:
       zmean <- matrix(0,nrow=length(unique(dataset$lat)),ncol=nseas)
@@ -7672,11 +7692,19 @@ calc_indices<-function(dataset, setname){
       zmean <- zmean[pos3,,drop=F]
       sj <- apply(zmean[2:(nrow(zmean)-1),,drop=F],2,max) # max uwind
       dlat <-  mean(latlist[1:(length(latlist)-1)]-latlist[2:(length(latlist))])   
-      gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(sj,digits=8)),each =length(pos3)), nrow=length(pos3))),2,which)
+      gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(sj,digits=8)),
+                      each =length(pos3)), nrow=length(pos3))),2,which)
+      if (is.list(gridminpos)) {
+        gridminpos <- c(gridminpos[[1]][1],gridminpos[[2]][1])
+      } else if (length(gridminpos)==4) {
+        gridminpos <- gridminpos[1,]
+      }
       gridmin <- latlist[gridminpos-seq(0,(nseas-1)*length(pos3),by=length(pos3))]
       zmean <- zmean * -1 # because next equation is to find minimum and here we search for max
       sj <- sj * -1
-      sj_u200 <- gridmin - dlat * (((zmean[(gridminpos-1)])-(zmean[(gridminpos+1)]))/(2*(abs(zmean[gridminpos]-apply(cbind(zmean[(gridminpos-1)],zmean[(gridminpos+1)]),1,max)))))
+      sj_u200 <- gridmin - dlat * (((zmean[(gridminpos-1)])-(zmean[(gridminpos+1)]))/
+                   (2*(abs(zmean[gridminpos]-apply(cbind(zmean[(gridminpos-1)],
+                   zmean[(gridminpos+1)]),1,max)))))
       
       # subtropical jet from zonal SLP max
       c=1
@@ -7695,12 +7723,20 @@ calc_indices<-function(dataset, setname){
       zmean <- zmean[pos3,,drop=F]
       sj <- apply(zmean[2:(nrow(zmean)-1),,drop=F],2,max) # max slp
       dlat <-  mean(latlist[1:(length(latlist)-1)]-latlist[2:(length(latlist))])   
-      gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(sj,digits=8)),each =length(pos3)), nrow=length(pos3))),2,which)
+      gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(sj,digits=8)),
+                      each =length(pos3)), nrow=length(pos3))),2,which)
+      if (is.list(gridminpos)) {
+        gridminpos <- c(gridminpos[[1]][1],gridminpos[[2]][1])
+      } else if (length(gridminpos)==4) {
+        gridminpos <- gridminpos[1,]
+      }
       gridmin <- latlist[gridminpos-seq(0,(nseas-1)*length(pos3),by=length(pos3))]
       zmean <- zmean * -1 # because next equation is to find minimum and here we search for max
       sj <- sj * -1
       
-      sj_slp <- gridmin - dlat * (((zmean[(gridminpos-1)])-(zmean[(gridminpos+1)]))/(2*(abs(zmean[gridminpos]-apply(cbind(zmean[(gridminpos-1)],zmean[(gridminpos+1)]),1,max)))))
+      sj_slp <- gridmin - dlat * (((zmean[(gridminpos-1)])-(zmean[(gridminpos+1)]))/
+                  (2*(abs(zmean[gridminpos]-apply(cbind(zmean[(gridminpos-1)],
+                  zmean[(gridminpos+1)]),1,max)))))
       
       
       # stratospheric polar vortex
@@ -7780,11 +7816,12 @@ calc_indices<-function(dataset, setname){
       ind$ensmean[which(indices=='PNA.calc'),] <- pna
     }
     
-    
-    if(setname=="twentycr_vali"){
-      ind$data<-ind$ensmean
-    }else if(setname=="echam2"|setname=="analysis2"){
-      if(tps_only){
+    # JF 2019/10 20CR excluded because currently not containing all vars
+    #if(setname=="twentycr_vali"){
+    #  ind$data<-ind$ensmean
+    #}else 
+    if(setname=="echam2"|setname=="analysis2"){
+      if(tps_only_postproc){
         ind$data<-array(Hind %*% array(dataset$data, c(nrow(dataset$data),length(dataset$data)/nrow(dataset$data))), c(nrow(Hind),dim(dataset$data)[2:3]))
       }else{
         ind_tmp <- list(data=array(Hind %*% array(dataset$data, c(nrow(dataset$data),length(dataset$data)/nrow(dataset$data))), c(nrow(Hind),dim(dataset$data)[2:3])), names=indices_tmp)
@@ -7832,10 +7869,18 @@ calc_indices<-function(dataset, setname){
           itcz_tmp <- apply(zmean[2:(nrow(zmean)-1),,drop=F],2,min)
           dlat <-  mean(latlist[1:(length(latlist)-1)]-latlist[2:(length(latlist))])   
           
-          gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(itcz_tmp,digits=8)),each =length(pos3)), nrow=length(pos3))),2,which)
+          gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(itcz_tmp,digits=8)),
+                              each=length(pos3)), nrow=length(pos3))),2,which)
+          if (is.list(gridminpos)) {
+            gridminpos <- c(gridminpos[[1]][1],gridminpos[[2]][1])
+          } else if (length(gridminpos)==4) {
+            gridminpos <- gridminpos[1,]
+          }
           gridmin <- latlist[gridminpos-seq(0,(nseas-1)*length(pos3),by=length(pos3))]
           
-          itcz[m,] <- gridmin - dlat * (((zmean[(gridminpos-1)])-(zmean[(gridminpos+1)]))/(2*(abs(zmean[gridminpos]-apply(cbind(zmean[(gridminpos-1)],zmean[(gridminpos+1)]),1,max)))))
+          itcz[m,] <- gridmin - dlat * (((zmean[(gridminpos-1)])-(zmean[(gridminpos+1)]))/
+                        (2*(abs(zmean[gridminpos]-apply(cbind(zmean[(gridminpos-1)],
+                        zmean[(gridminpos+1)]),1,max)))))
         }
         
         # subtropical jet (u200)
@@ -7857,12 +7902,19 @@ calc_indices<-function(dataset, setname){
           zmean <- zmean[pos3,,drop=F]
           sj_tmp <- apply(zmean[2:(nrow(zmean)-1),,drop=F],2,max) # max uwind
           dlat <-  mean(latlist[1:(length(latlist)-1)]-latlist[2:(length(latlist))])   
-          gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(sj_tmp,digits=8)),each =length(pos3)), nrow=length(pos3))),2,which)
+          gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(sj_tmp,digits=8)),
+                          each =length(pos3)), nrow=length(pos3))),2,which)
+          if (is.list(gridminpos)) {
+            gridminpos <- c(gridminpos[[1]][1],gridminpos[[2]][1])
+          } else if (length(gridminpos)==4) {
+            gridminpos <- gridminpos[1,]
+          }
           gridmin <- latlist[gridminpos-seq(0,(nseas-1)*length(pos3),by=length(pos3))]
           zmean <- zmean * -1 # because next equation is to find minimum and here we search for max
           sj_tmp <- sj_tmp * -1
-          sj_u200[m,] <- gridmin - dlat * (((zmean[(gridminpos-1)])-(zmean[(gridminpos+1)]))/(2*(abs(zmean[gridminpos]-apply(cbind(zmean[(gridminpos-1)],zmean[(gridminpos+1)]),1,max)))))
-          
+          sj_u200[m,] <- gridmin - dlat * (((zmean[(gridminpos-1)])-(zmean[(gridminpos+1)]))/
+                           (2*(abs(zmean[gridminpos]-apply(cbind(zmean[(gridminpos-1)],
+                           zmean[(gridminpos+1)]),1,max)))))
         }
         
         # subtropical jet (slp)
@@ -7883,13 +7935,20 @@ calc_indices<-function(dataset, setname){
           zmean <- zmean[pos3,,drop=F]
           sj_tmp <- apply(zmean[2:(nrow(zmean)-1),,drop=F],2,max) # max slp
           dlat <-  mean(latlist[1:(length(latlist)-1)]-latlist[2:(length(latlist))])   
-          
-          gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(sj_tmp,digits=8)),each =length(pos3)), nrow=length(pos3))),2,which)
+          gridminpos <- apply(apply(round(zmean,digits=8),2,'==',matrix(rep(t(round(sj_tmp,digits=8)),
+                          each =length(pos3)), nrow=length(pos3))),2,which)
+          if (is.list(gridminpos)) {
+            gridminpos <- c(gridminpos[[1]][1],gridminpos[[2]][1])
+          } else if (length(gridminpos)==4) {
+            gridminpos <- gridminpos[1,]
+          }
           gridmin <- latlist[gridminpos-seq(0,(nseas-1)*length(pos3),by=length(pos3))]
           
           zmean <- zmean * -1 # because next equation is to find minimum and here we search for max
           sj_tmp <- sj_tmp * -1
-          sj_slp[m,] <- gridmin - dlat * (((zmean[(gridminpos-1)])-(zmean[(gridminpos+1)]))/(2*(abs(zmean[gridminpos]-apply(cbind(zmean[(gridminpos-1)],zmean[(gridminpos+1)]),1,max)))))
+          sj_slp[m,] <- gridmin - dlat * (((zmean[(gridminpos-1)])-(zmean[(gridminpos+1)]))/
+                          (2*(abs(zmean[gridminpos]-apply(cbind(zmean[(gridminpos-1)],
+                          zmean[(gridminpos+1)]),1,max)))))
         }   
         
         # stratospheric polar vortex
@@ -7982,7 +8041,8 @@ calc_indices<-function(dataset, setname){
         }
       }
     }
-  }else if (setname=="cru_vali"){
+    # JF 2019/10 add 20CR because not all vars included yet
+  }else if (setname=="cru_vali" | setname=="twentycr_vali"){  
     monthly_out<-get("monthly_out")
     #load validation indices
     load(file=paste0(dataextdir,'vali_data/indices/indices_recon_1900-2000_monthly.Rdata'))
@@ -7990,7 +8050,7 @@ calc_indices<-function(dataset, setname){
       indann <- matrix(0,6,101)
       for(i in 1:101){indann[,i]<-apply(indall[,((i-1)*12+1):((i-1)*12+12)],1,mean,na.rm=T)}
       indall<-indann
-    } else if (!monthly_out & !tps_only){
+    } else if (!monthly_out & !tps_only_postproc){
       indseasonal<-matrix(0,6,200)
       for(i in 1:200){indseasonal[,i]<-apply(indall[,((i-1)*6+10):((i-1)*6+15)],1,mean, na.rm = T)}
       indall<-indseasonal
@@ -8054,7 +8114,7 @@ calc_indices<-function(dataset, setname){
     #validatanona <- dataset$data[vpos,]
     # JF 2019/12
     validatanona <- dataset$ensmean[vpos,]
-    if(!tps_only){
+    if(!tps_only_postproc){
       ind <- list(data=Hind2 %*% validatanona, names=indices)
       if (pseudo_prox) {
         ind$data<- rbind(ind$data,indall[,(cyr-1900),drop=F])

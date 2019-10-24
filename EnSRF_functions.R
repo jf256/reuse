@@ -126,6 +126,7 @@ read_echam4 <- function(filehead, path=echallvarpath, xlim=c(-180,180), ylim=c(-
   lat2 <- lat
   #  }
   
+  
   files <- list.files(path, pattern=paste('^', filehead, sep=''), full.names=T)
   tmp <- list()
   ensmean <- 0
@@ -162,22 +163,17 @@ read_echam4 <- function(filehead, path=echallvarpath, xlim=c(-180,180), ylim=c(-
       # u200, omega500, u850, v850, T850
       
       # old state vector
-      # for (varname in c('temp2', 'precip', 'slp', 'geopoth', 'u', 'v', 'omega',
-      #                   'st', 'stream')){
-      #   #      'geopoth' 1=50000 2=10000
-      #   #      'u', 'v' 1=85000 2=20000
-      #   #       'omega' 1=50000
-      #   #      'st' 1=85000
-      #   #      'stream' 5 lev but just 1 lon (zonal mean) 100000, 85000, 50000, 30000, 20000
+      for (varname in c('temp2', 'precip', 'slp', 'geopoth', 'u', 'v', 'omega',
+                        'st', 'stream')){
+        #      'geopoth' 1=50000 2=10000
+        #      'u', 'v' 1=85000 2=20000
+        #       'omega' 1=50000
+        #      'st' 1=85000
+        #      'stream' 5 lev but just 1 lon (zonal mean) 100000, 85000, 50000, 30000, 20000
       
       # new state vector
-      for (varname in c('temp2', 'precip', 'slp','wdays','geopoth', 'u', 'v', 'omega',
-                        'blocks', 'cycfreq','stream')){
-        #      'geopoth' 1=50000 2=10000
-        #      'u' 1=85000 2=20000
-        #      'v' 1=85000
-        #      'omega' 1=50000
-        #      'stream' 5 lev but just 1 lon (zonal mean) 100000, 85000, 50000, 30000, 20000
+      # for (varname in c('temp2', 'precip', 'slp','wdays','geopoth', 'u', 'v', 'omega',
+      #                  'blocks', 'cycfreq','stream')){
         
         print(varname)
         if (varname %in% names(nc$var)){
@@ -283,15 +279,15 @@ read_echam4 <- function(filehead, path=echallvarpath, xlim=c(-180,180), ylim=c(-
             names <- c(names, c(rep('omega500',nrow(data))))
             #          print(names)
           }
-          # if (varname=='st') {
-          #   data <- ncvar_get(nc, varname, start=c(1,1,1,min(ti)),
-          #                        count=c(-1,-1,1,length(ti)))[loi, lai,]
-          #   data <- array(data, c(dim(data)[1]*dim(data)[2], dim(data)[3]))
-          #   print(dim(data))
-          #   outdata <- rbind(outdata, data)
-          #   names <- c(names, c(rep('t850',nrow(data))))
-          #   #          print(names)
-          # }
+          if (varname=='st') {
+            data <- ncvar_get(nc, varname, start=c(1,1,1,min(ti)),
+                                 count=c(-1,-1,1,length(ti)))[loi, lai,]
+            data <- array(data, c(dim(data)[1]*dim(data)[2], dim(data)[3]))
+            print(dim(data))
+            outdata <- rbind(outdata, data)
+            names <- c(names, c(rep('t850',nrow(data))))
+            #          print(names)
+          }
           if (varname=='stream') {
             data <- ncvar_get(nc, varname, start=c(1,1,1,min(ti)),
                               count=c(1,-1,1,length(ti)))[laistream,]
@@ -765,8 +761,6 @@ read_last_mill_ens <- function(filehead, path=ncarpath, xlim=c(-180,180), ylim=c
   file.remove(fnames)
   file.remove("../data/ncar_last_mill/tmp")
 } # end function
-
-
 
 read_20cr <- function(filehead, path=twentycrpath, xlim=c(-180,180), ylim=c(-90,90), timlim=c(1980, 2000), 
                       small=F, landonly=F,calc_ensmean=FALSE){ 
@@ -2897,8 +2891,7 @@ compute_Hi_Hredux_sixmonstatevector <- function(stations, echam, threshold=700){
         }
       }
       if (ghcn_wday) {
-        # when the new state vector is ready the if (tpsw) can be delteted -< will be always in 4th place 
-        if (tpsw_only) {
+        if (unique(echam$names)[4] == "wdays") {
           if (stations$names[i] == 'wetdays') {
             if (i < nstat+1) {
               if (min(dist) < threshold) {
@@ -2938,8 +2931,7 @@ compute_Hi_Hredux_sixmonstatevector <- function(stations, echam, threshold=700){
             }
           }
         } else {
-          print("The H operator was not yet adopted to use the full statevector, but tpsw_only")
-          # because in the full state vector the wetdays are not the 4 filed!!!!!!
+          stop("wetdays has to be the 4th field in the statevector, otherwise H operator doesnt work")
         }
       }
     }
@@ -4244,7 +4236,7 @@ plot_echam3 <- function(x, levs, varname='temp2', type='data',  ti=1,
     }
     if (is.null(cols)){
       if (varname == 'precip'){
-        cols <- gbfun(length(levs) - 1)
+        cols <- gbfun(length(levs) - 1) 
       } else { 
         cols <- rbfun(length(levs) - 1)
       }
@@ -4376,7 +4368,7 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$en
                         contlev=levs, addvectors=F, vecnames=NULL, #vectortype='data',
                         veccol='black', veclen=0.03, vecscale=0.3, vecwd=0.75, every_x_vec=4,
                         wcol='black', zonalmean=F, zmvarname='gph500', colorbar=T,NHseason,
-                        plotname,paper,diff_map=FALSE, valimask=TRUE){
+                        plotname,paper,diff_map=FALSE, valimask=TRUE,plot_skill=T){
    oldpar <- par(no.readonly=TRUE)
   if (monthly_out & s.plot==12 & length(ti)==24){
     if (NHseason=="winter") {
@@ -4510,7 +4502,7 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$en
     if (monthly_out){
       pdf(paste( get("figpath"),plotname,sep='/'), width=width, height=height, paper=paper)
     }else{           
-      pdf(paste( get("figpath"),plotname,sep='/'), width=width, height=height, paper=paper)
+       pdf(paste( get("figpath"),plotname,sep='/'), width=width, height=height, paper=paper)
     }
     
     dd <- lcm(2)
@@ -4540,10 +4532,14 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$en
       }
     }
     if (is.null(cols)){
-      if (varname == 'precip'){
-        cols <- gbfun(length(levs) - 1)
-      } else { 
+      if(plot_skill) {
         cols <- rbfun(length(levs) - 1)
+      } else {
+        if (varname == 'precip'){
+          cols <- gbfun(length(levs) - 1)
+        } else { 
+          cols <- rbfun(length(levs) - 1)
+        }
       }
     } else {
       cols <- two.colors(n=length(levs)-1,start=cols[1],middle=cols[2],end=cols[3], alpha=1.0)
@@ -4562,13 +4558,13 @@ plot_echam4 <- function(x, levs, varname='temp2', type='data',  ti=c(1:ncol(x$en
       #           axes=F, xlab='', ylab='')      
       plot(0, type='n', xlim=lonlim, ylim=latlim,
            axes=F, xlab='', ylab='')
+      li <- as.numeric(cut(plotdata[,i], breaks=levs))
+      points(x$lon, x$lat, pch=15, col=cols[li], cex=cex.pt)
       if (valimask == T & (varname=="temp2" | varname=="precip" | varname =="slp")) {
-        dvali = apply(validate$ensmean[validate$names==varname,], 1, mean)
+        dvali = apply(validate$ensmean[validate$names==varname,], 1, mean, na.rm=T)
         dvali = which(is.na(dvali))
         points(validate$lon[dvali],validate$lat[dvali],pch=15,col="gray93",cex=cex.pt)
       }
-      li <- as.numeric(cut(plotdata[,i], breaks=levs))
-      points(x$lon, x$lat, pch=15, col=cols[li], cex=cex.pt)
       if (!is.null(colnames)) {
         if (i <= length(colnames)) axis(3, at=mean(range(x$lon)), label=colnames[i], 
                                         tick=FALSE, cex=1.4)
@@ -6163,13 +6159,26 @@ getgridboxnum <- function(stat, echam) {
       mtmp <- mtmp[1]
     }
     if (length(mtmp) > 0) {
-      #      print("mtmp > 0")
-      m[i] <- mtmp
-      try(if ((stat$names[i]=="precip") | (stat$names[i]=="prec")) {
-        m[i] <- m[i]+one_var_dim
-      } else if (stat$names[i]=="slp") {
-        m[i] <- m[i]+(2*one_var_dim)
-      },silent = T)
+      if (stat$names[i] %in% c("temp2", "precip", "prec", "slp", "wetdays")) {
+        #      print("mtmp > 0")
+        m[i] <- mtmp
+        try(if ((stat$names[i]=="precip") | (stat$names[i]=="prec")) {
+          m[i] <- m[i]+one_var_dim
+        } else if (stat$names[i]=="slp") {
+          m[i] <- m[i]+(2*one_var_dim)
+        } else if (stat$names[i] =="wetdays"){
+          m[i] <- m[i]+(3*one_var_dim)
+        },silent = T)
+      } else {
+        stop("getgridboxnum: station name is NOT identified!!!")
+      }
+      ##      print("mtmp > 0")
+      # m[i] <- mtmp
+      # try(if ((stat$names[i]=="precip") | (stat$names[i]=="prec")) {
+      #   m[i] <- m[i]+one_var_dim
+      # } else if (stat$names[i]=="slp") {
+      #   m[i] <- m[i]+(2*one_var_dim)
+      # },silent = T)
     } else { m[i] <- NA }
   }
   invisible(m)
@@ -7435,6 +7444,12 @@ convert_to_2_seasons <- function(x,source){
     x$ensmean <- array(tmp32,c(dim(tmp32)[1]/(((dim(x$ensmean)[2]/12)-1)*2),
                                (((dim(x$ensmean)[2]/12)-1)*2)))
     x$time <- c(cyr,cyr+0.5)
+    # VV 2019 October: converting lat/lon and names as well to 6mons format
+    if (new_statvec) {
+      x$lat = rep(x$lat,6)
+      x$lon = rep(x$lon,6)
+      x$names = rep(x$names,6)
+    }
     return(x)
   }
 }
@@ -8051,6 +8066,9 @@ calc_indices<-function(dataset, setname){
       for(i in 1:101){indann[,i]<-apply(indall[,((i-1)*12+1):((i-1)*12+12)],1,mean,na.rm=T)}
       indall<-indann
     } else if (!monthly_out & !tps_only_postproc){
+      if (length(seq(syr:eyr)) > 100) {
+        stop("calc_indices: If mothly_out=F and tps_only=F, indices can be calculated only for 100 years")
+      }
       indseasonal<-matrix(0,6,200)
       for(i in 1:200){indseasonal[,i]<-apply(indall[,((i-1)*6+10):((i-1)*6+15)],1,mean, na.rm = T)}
       indall<-indseasonal
@@ -8340,7 +8358,7 @@ plot_example_ts<-function(validate,analysis,echam,lonlat,type="absolute",loc="so
 # The B can be static or recalculated for every year
 # Modified by Roni (2018.02)
 background_matrix = function (state,n_covar, ech) {
-  if (state == "static") { # loading only once the members, selecting them and using the same ones over the whole assimilation period
+  if (old_statvec & state == "static") { # loading only once the members, selecting them and using the same ones over the whole assimilation period
     if (cyr == syr2){
       load(paste0(file=dataextdir,"/echam/echallts_for_covar.Rdata"))
       dat = echanomallts 
@@ -8393,20 +8411,50 @@ background_matrix = function (state,n_covar, ech) {
           }
         }
       } else {
-        load(paste0(echanompath,'echam_anom_',yr1,'-',yr2,'.Rdata'))
-        dat = echam_anom
+        if (old_statvec) {
+          load(paste0(echanompath,'echam_anom_',yr1,'-',yr2,'.Rdata'))
+          dat = echam_anom
+        } else if (new_statvec) {
+          # temp
+          load(paste0("/mnt/climstor/giub/EKF400/echam_anom_v2/echam_anom_temp2/echam_anom_temp2_",yr1,"-",yr2,".Rdata"))
+          a_temp2 = echam_anom
+          # precip
+          load(paste0("/mnt/climstor/giub/EKF400/echam_anom_v2/echam_anom_precip/echam_anom_precip_",yr1,"-",yr2,".Rdata"))
+          a_precip = echam_anom
+          #join the two lists
+          a_t2pr = join_lists(a_temp2,a_precip)
+          # slp
+          load(paste0("/mnt/climstor/giub/EKF400/echam_anom_v2/echam_anom_slp/echam_anom_slp_",yr1,"-",yr2,".Rdata"))
+          a_slp = echam_anom
+          echam.anom = join_lists(a_t2pr,a_slp)
+          rm (a_temp2,a_precip,a_slp,a_t2pr)
+          for (i in statvari) {
+            load(paste0("/mnt/climstor/REUSE/newCompo/echam_anom/echam_anom_every_grid/echam_anom_",i,"/echam_anom_",i,"_",yr1,"-",yr2,".Rdata"))
+            a_x = echam_anom
+            echam.anom = join_lists(echam.anom,a_x)
+          }
+          dat = echam.anom
+        }
       }
       if (n==1){
         if (precip_ratio) {
           echam_anom_data <- dat$data[,,m[n]]
         } else {
-          echam_anom_data <- echam_anom$data[,,m[n]]
+          if (old_statvec) {
+            echam_anom_data <- echam_anom$data[,,m[n]]
+          } else if (new_statvec) {
+            echam_anom_data <- echam.anom$data[,,m[n]]
+          }
         }
       } else {
         if (precip_ratio) {
           echam_anom_data <- abind(echam_anom_data,dat$data[,,m[n]],along=3)
         } else {
-          echam_anom_data <- abind(echam_anom_data,echam_anom$data[,,m[n]],along=3)
+          if (old_statvec) {
+            echam_anom_data <- abind(echam_anom_data,echam_anom$data[,,m[n]],along=3)
+          } else if (new_statvec) {
+            echam_anom_data <- abind(echam_anom_data,echam.anom$data[,,m[n]],along=3)
+          }
         }
       }
     }
@@ -8492,3 +8540,15 @@ calc_avg_realprox_per_grid<-function(stat){
   return(stat)
 }
 
+join_lists = function(x,y) {
+  z=list()
+  z$data = abind(x$data,y$data,along=1)
+  z$ensmean = abind(x$ensmean,y$ensmean,along=1)
+  z$lon = c(x$lon,y$lon)
+  z$lat = c(x$lat,y$lat)
+  z$height = c(x$height,y$height)
+  z$lsm.i = c(x$lsm.i,y$lsm.i)
+  z$time = x$time
+  z$names=c(x$names,y$names)
+  return(z)
+}

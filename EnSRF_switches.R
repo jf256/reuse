@@ -2,7 +2,12 @@
 ################################ EnSRF_switches.R ####################################
 ######################################################################################
 
+<<<<<<< HEAD
 expname="allinput_fullres_50climcovar_alloldvar" # "test_v2_oct17" #
+=======
+expname="assim_ghcn_d_better_wdays_R2days_timeloc_new" 
+
+>>>>>>> f0b033073483a821f3f3d7853512c93f16b73702
 
 version="v1.4"    # set code version number for experiment and netcdf file names
 # v1.1 at DKRZ is experiment 1.2 here!
@@ -151,13 +156,18 @@ generate_PROXIES=F
 
 
 #### Instrumental Data ####
-old_statvec = T
-new_statvec = F          # has +: wetdays, block, cycfreq; -: v200, t500
+old_statvec = F
+new_statvec = T      # has +: wetdays, block, cycfreq, gph
+ statvari=c("wdays","u")  # if new_statvec=T, define which variable should be in the statvector
+                           # can be: blocks', 'cycfreq','wdays', 'gph','u', 'v', 'omega', 'st'
+                           # at the moment temp2,precip,slp is always loaded
 
-yuri_temp = T            # yuri's data compilation, SLP always loaded
+
 yuri_slp = T
-yuri_prec = T
  inst_slp_err = sqrt(10) # instrumental slp error (10 is the variance of slp error)
+yuri_prec = T
+yuri_wday = T
+yuri_temp = T            # yuri's data compilation, SLP always loaded
 ghcn_temp = T
  inst_t_err = sqrt(0.9)  # instrumental temp error (0.9 is the variance of temp error)
  isti_instead_ghcn = T    # switch from ghcn to isti (ghcn_temp must still be set to TRUE)
@@ -167,8 +177,8 @@ ghcn_prec = T
   precip_ratio = F       # if T assimilating ratio, if F assimilating the difference
   gauss_ana = F          # use Gaussian anamorphosis for precipitation ratio
   check_norm = F         # check whether the GA transformed values normally distributed and use only those that are
-  ghcn_wday = F          # assimilating wetdays calculated from daily precip ghcn data
-  ghnc_w_err = 2         # error number of days (based on US stations estimation should be 2 days)
+ghcn_wday = T           # assimilating wetdays calculated from daily precip ghcn data
+  ghcn_w_err = 2         # error number of days (based on US stations estimation should be 2 days)
 
 
 #### Documentary Data ####
@@ -250,6 +260,9 @@ if (loc) {
   l_dist_gph100=2500*1.5
   l_dist_u850=1200*1.5
   l_dist_u200=1200*1.5
+  l_dist_u300=1200*1.5
+  l_dist_u700=1200*1.5
+  l_dist_u500=1200*1.5
   l_dist_v850=1000*1.5
   l_dist_v200=1000*1.5
   l_dist_omega500=300*1.5
@@ -297,11 +310,11 @@ avg_obs_per_grid=T     # average more than one observation per echam grid box
                        # and calc proxy vs echam correlation
 ins_tim_loc = T        # whether the instrumental obs-s should be localized in time or not
 instmaskprox=F         # remove proxy data from grid boxes that have instr. data
-every2grid=F           # only use every third grid cell of ECHAM, CRU validation, ...
+
+every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=F            # calc on land only
-tps_only=F             # only use temp, precip and slp in state vector, remove other vars
-tpsw_only=F            # only use temp, precip, slp and wetdays in state vector, remove other vars
-no_stream=T            # all echam vars but stream function as there is problem with 
+tps_only=T             # only use temp, precip and slp in state vector, remove other vars
+no_stream=F            # all echam vars but stream function as there is problem with 
 #                       # 5/9 levels, which are in lat dimension before and after 1880
 loo=F                  # leave-one-out validation 
 
@@ -314,10 +327,12 @@ if (loo) {tps_only=T;no_stream=F}  # reduce state vector for faster validation
 #  anom_save=F}
 check_assimdata=T               # screen assimilation data before using it
 
-if (no_stream & tps_only) {
-  stop("Either no_stream or tps_only has to be TRUE but not both!")
-}else if(!tps_only &!no_stream){
-  stop("Either no_stream or tps_only has to be TRUE but not both!")
+if (old_statvec) {
+  if (no_stream & tps_only) {
+    stop("Either no_stream or tps_only has to be TRUE but not both!")
+  }else if(!tps_only & !no_stream) {
+    stop("Either no_stream or tps_only has to be TRUE but not both!")
+  }
 }
 
 
@@ -355,11 +370,12 @@ tps_only_postproc=F             # due validation only with tps
 validation_set=c("cru_vali") #,"twentycr_vali")    #can be set to cru_vali, or twentycr_vali or 
 # both together c("cru_vali","twentycr_vali")
 # choses which validation set should be used in the postprocessing and plots
-monthly_out=T                   # if sixmonstatevector=T output is backtransformed to seasonal 
+monthly_out=F                  # if sixmonstatevector=T output is backtransformed to seasonal 
 # yearly out is old switch from nevin. annual output automatically if pseudo_prox=T
   yearly_out=F                    # if both false, plots seasonal averages are calculated
                                 # average or monthly data if monthly_out=T 
-temporal_postproc=T             # save half year averages calc from monthly data into /prepplot folder
+temporal_postproc=F             # save half year averages calc from monthly data into /prepplot folder
+indices=F
 mergetime_indices=F             # if TRUE: indices are combined to allts variables for whole period 
                                 # (e.g. also for 1604-2004) and saved into image folder for TS-plots
 # run next option "load_prepplot" for entire validation period, usually 
@@ -370,7 +386,7 @@ load_images=F                   # directly load image for syr-eyr period: 1902-2
                                 # of merged indices and fields. NOT need if just calculated before
 calc_vali_stat=F                # calculate validation statistics after preparation (set "load_image=T")
 CRPS=F                          # calculate Continuous Ranked Probability Score
-ind_anom=T                      # calculate indices from anomaly data
+ind_anom=F                      # calculate indices from anomaly data
 
 vali_plots=F                    # source EnSRF_plots.R script 
 

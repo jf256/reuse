@@ -4,6 +4,7 @@
 
 if (generate_ECHAM){
   print("generate_ECHAM")
+  print("ATTENTION: manually copy generated .Rdata file to climstor!")
   # create ECHAM .RData from .nc
   # ACHTUNG: members 001 to 030 with land surface bug, 103 and 2xx without
   # for 60 ensm: timlim=c(1941,1970)
@@ -15,6 +16,7 @@ if (generate_ECHAM_anom){
   # read echam 71yr anom, clim and sd calculated with cdo from .nc files to .RData
   # for 60 ensm: timlim=c(1941,1970)
   print("generate_ECHAM_anom") 
+  print("ATTENTION: manually copy generated .Rdata file to climstor!")
   read_echam4('EnSRF', path=echanompath, timlim=c(1601,2004), small=every2grid, # originally was 'ano', path=echanompath, timlim=c(1601,2005)
               landonly=land_only, anom=T)
   read_echam4('EnSRF', path=echclimpath, timlim=c(1601,2004), small=every2grid, # originally was timlim=c(1635,1970)
@@ -32,6 +34,7 @@ if (generate_ECHAM_anom){
 
 if (generate_ECHAM_103){
   print("generate_ECHAM ens. mem. 103")
+  print("ATTENTION: manually copy generated .Rdata file to climstor!")
   # ens. member WITHOUT land surface bug
   read_echam4(filehead='EnSRF', path=paste0(ext,'echam/echam103'), timlim=c(syr,eyr), 
               small=every2grid, landonly=land_only)
@@ -39,10 +42,21 @@ if (generate_ECHAM_103){
 
 if (generate_ECHAM_covar){
   print("generate_ECHAM all time step array long-term covariance")
+  print("ATTENTION: manually copy generated .Rdata file to climstor!")
   echam_covar(syr=1603,eyr=2004)
 }
 
+if (generate_CCSM_last_mill_ens){
+  print("generate CCSM last millennium ensemble")
+  print("ATTENTION: manually copy generated .Rdata file to climstor!")
+  # following filehead including "001" just reads first member
+  # only works with landonly=F
+  read_last_mill_ens(filehead="ncar_last_mill_001")
+}
+
 if (generate_ind_recon){
+  print("generate Broennimann et al. 2009 atm. indices")
+  print("ATTENTION: manually copy generated .Rdata file to climstor!")
   # read Broennimann et al. 2009 atm. indices from .txt to .Rdata for comparison
   #if (syr<1901){syr_ind=1901} else {syr_ind=syr}
   #if (eyr>2004){eyr_ind=2004} else {eyr_ind=eyr}
@@ -92,13 +106,12 @@ if (generate_ind_recon){
   # save(indall, file=paste0(dataintdir,'/indices/indices_recon_',syr_ind,'-',eyr_ind,'_seasonal.Rdata',sep=''))
   # 
   # 
-  
-  
 }
 
 
 if (generate_CRUALLVAR) {
   print("generate_CRUALLVAR")
+  print("ATTENTION: manually copy generated .Rdata file to climstor!")
   #  see script in EnSRF/script/merge_cru.sh for regridding and co of orig. cru data set
   cruall <- read_echam1('cru_allvar_abs_1901-2004_v2019.nc',timlim=c(syr_cru,eyr_cru),
                         path=crupath,small=every2grid,landonly=land_only)
@@ -109,8 +122,9 @@ if (generate_CRUALLVAR) {
   }
 }
 
-if (generate_HadCRU4){ 
+if (generate_HadCRU4SD){ 
   print("generate_HadCRU4 standard deviations")
+  print("ATTENTION: manually copy generated .Rdata file to climstor!")
   # from instr. CRU ensemble, precalculated with cdo
   cru4_may_sep <- read_echam1('HadCRUT4_ens_sd_may-sep_yrmean.nc',
                               timlim=c(1901,2002),path=crupath,small=every2grid,landonly=F)
@@ -119,29 +133,37 @@ if (generate_HadCRU4){
   cru4_may_sep$ensmean <- cru4_may_sep$data
   cru4_oct_apr$ensmean <- cru4_oct_apr$data
   if (every2grid) {
-    save(cru4_may_sep,cru4_oct_apr, file="../data/cru/cru4_ens_sd_2ndgrid.Rdata")
+    save(cru4_may_sep,cru4_oct_apr, file="cru4_ens_sd_2ndgrid.Rdata")
   } else {
-    save(cru4_may_sep,cru4_oct_apr, file="../data/cru/cru4_ens_sd.Rdata")  
+    save(cru4_may_sep,cru4_oct_apr, file="cru4_ens_sd.Rdata")  
   }
 }
 
-if (generate_LUTPAULKUT){ 
-  print("generate_LUTPAULKUT")
-  # ATTENTION: seasonal resolution
-  #  see script in EnSRF/script/merge_recon.sh for regridding and co of orig. recon data set
-  reconall <- read_echam1('recon_allvar_1750-1999',xlim=c(-180,180), ylim=c(-90,90), 
-                          timlim=c(syr_recon,eyr_recon),path=reconpath,small=every2grid,
-                          landonly=land_only)
-  reconall$data[reconall$names=="precip",,]<-reconall$data[reconall$names=="precip",,]/3
-  if (every2grid) {
-    save(reconall, file=paste0(dataintdir,"recon/recon_allvar_",syr_recon,"-",eyr_recon,"_2ndgrid.Rdata"))
-  } else {
-    save(reconall, file=paste0(dataintdir,"recon/recon_allvar_",syr_recon,"-",eyr_recon,".Rdata"))  
-  }
+if (generate_20CRv2) {
+  twentycr.all <- read_20cr(filehead="twentycr_allvar_1901-2004.nc",path=twentycrpath,xlim=c(-180,180), 
+                            ylim=c(-90,90), timlim=c(1901, 2004), small=every2grid, landonly=F, 
+                            calc_ensmean=T)
+  save(twentycr.all,file='twentycrv2_allvar_1901-2004.Rdata')
 }
+
+# if (generate_LUTPAULKUT){ 
+#   print("generate_LUTPAULKUT")
+#   # ATTENTION: seasonal resolution
+#   #  see script in EnSRF/script/merge_recon.sh for regridding and co of orig. recon data set
+#   reconall <- read_echam1('recon_allvar_1750-1999',xlim=c(-180,180), ylim=c(-90,90), 
+#                           timlim=c(syr_recon,eyr_recon),path=reconpath,small=every2grid,
+#                           landonly=land_only)
+#   reconall$data[reconall$names=="precip",,]<-reconall$data[reconall$names=="precip",,]/3
+#   if (every2grid) {
+#     save(reconall, file=paste0(dataintdir,"recon/recon_allvar_",syr_recon,"-",eyr_recon,"_2ndgrid.Rdata"))
+#   } else {
+#     save(reconall, file=paste0(dataintdir,"recon/recon_allvar_",syr_recon,"-",eyr_recon,".Rdata"))  
+#   }
+# }
 
 if (generate_GHCN){
   print("generate_GHCN")
+  print("ATTENTION: manually copy generated .Rdata file to climstor!")
   # created only once for the full period and then cut after loading
   ghcn <- read_ghcn_refyr(1600,2005,1600,statyr)
   # create table of assimilated data including first and last year with data
@@ -152,38 +174,48 @@ if (generate_GHCN){
     lyr[i] <- floor(ghcn$time[pos[length(pos)]])
   }
   ghcn_tab <- cbind(ghcn$id,ghcn$names,ghcn$lon,ghcn$lat,fyr,lyr)
-  write.table(ghcn_tab,file='EKF400_v1_assim_GHCN.txt')
+  write.table(ghcn_tab,file=paste0('EKF400_v2_assim_GHCN_freeze',statyr,'.txt'))
   
   ghcn$names <-rep('temp2',length(ghcn$names))
-  save(ghcn, file=paste0("../assim_data/ghcn/ghcn_temp",fsyr,"-",feyr,".Rdata"))
+  save(ghcn, file=paste0("ghcn_temp_freeze",statyr,"_",fsyr,"-",feyr,".Rdata"))
 }
 
 if (generate_GHCN_precip){
   print("generate_GHCN_precip")
+  print("ATTENTION: manually copy generated .Rdata file to climstor!")
   # created only once for the full period and then cut after loading
   ghcn_precip <- read_ghcn_refyr_precip(1600,2005,1600,statyr)
   ghcn_precip$data <- ghcn_precip$data / 10 # to make units echam conform
   ghcn_precip$names <-rep('precip',length(ghcn_precip$names))
   # old: save(ghcn_precip, file=paste0("../assim_data/ghcn/ghcn_precip_",fsyr,"-",feyr,".Rdata")) 
-  save(ghcn_precip, file=paste0("../assimil_data/ghcn/ghcn_precip_1600-2005.Rdata")) 
+  save(ghcn_precip, file=paste0("ghcn_precip_freeze",statyr,"_",fsyr,"-",feyr,".Rdata"))
 }
 
-if (generate_t_yuri){
+if (generate_ISTI){
+  print("generate_ISTI")
+  print("ATTENTION: manually copy generated .Rdata file to climstor!")
+  source("convert_ISTI_to_EKF400.R")
+}
+
+if (generate_instr_yuri){
   print("generate_t_yuri")
-  source(paste0(dataextdir,"assim_data/data_yuri/t_assimil/read_all.R"))
-}
-
-if (generate_slp_yuri){
-  print("generate_slp_yuri")
-  source(paste0(dataextdir,"assim_data/data_yuri/slp_assimil/read_all.R"))
+  print("ATTENTION: manually copy generated .Rdata file to climstor!")
+  source(paste0(dataextdir,"assim_data/v1/t/read_all.R"))
+  source('read_instr_monthly_v2_2019.R')
+  source(paste0(dataextdir,"assim_data/v1/slp/read_all.R"))
+  source(paste0(dataextdir,"assim_data/v1/prec/read_all.R"))
 }
 
 if (generate_DOCUM){
   print("generate_DOCUM")
-  source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_seas.R"))
-  source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_monthly.R"))
-  source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_JFMA.R"))
-  source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_AMJJA.R"))
+  # new version 2 with angie's collection
+  source('read_docum_monthly_v2_2019.R')
+  print("ATTENTION: manually copy generated .Rdata file to climstor!")
+  # old version 1
+  #source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_seas.R"))
+  #source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_monthly.R"))
+  #source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_JFMA.R"))
+  #source(paste0(dataextdir,"assim_data/data_yuri/t_docu/read_AMJJA.R"))
 }
 
 # generate PAGES v2 from Raphi's 2018/01 export (version 1.6.1 from Raphi's data base):
@@ -196,6 +228,7 @@ if (generate_DOCUM){
 
 if (generate_PROXIES){
   print("generate_PROXIES")
+  print("ATTENTION: manually copy generated .Rdata file to climstor!")
   #read.these <- c("trw","mxd","schweingr","ntrend","pages","trw_petra")[c(TRW,MXD,SCHWEINGR,NTREND,PAGES,TRW_PETRA)]
   read.these <- c("ntrend","pages","trw_petra","mxd","schweingr","trw")[c(NTREND,PAGES,TRW_PETRA,MXD,SCHWEINGR,TRW)]
   if(exists("realprox")){rm(realprox)}
@@ -224,7 +257,7 @@ if (generate_PROXIES){
         realprox$lon <- c(realprox$lon, mxdprox$lon)
         realprox$lat <- c(realprox$lat, mxdprox$lat)
         realprox$mr <- rbind(realprox$mr, mxdprox$mr)
-        realprox$var_residu <- c(realprox$var_residu, mxdprox$var_residu)
+        realprox$var_residu <- rbind(realprox$var_residu, mxdprox$var_residu)
         realprox$archivetype <- c(realprox$archivetype,mxdprox$archivetype)
         realprox$datasource <- c(realprox$datasource,mxdprox$datasource)
         
@@ -244,7 +277,7 @@ if (generate_PROXIES){
         realprox$lon <- c(realprox$lon, schprox$lon)
         realprox$lat <- c(realprox$lat, schprox$lat)
         realprox$mr <- rbind(realprox$mr, schprox$mr)
-        realprox$var_residu <- c(realprox$var_residu, schprox$var_residu)
+        realprox$var_residu <- rbind(realprox$var_residu, schprox$var_residu)
         realprox$archivetype <- c(realprox$archivetype,schprox$archivetype)
         realprox$datasource <- c(realprox$datasource,schprox$datasource)
         
@@ -262,7 +295,7 @@ if (generate_PROXIES){
         realprox$lon <- c(realprox$lon, ntrend$lon)
         realprox$lat <- c(realprox$lat, ntrend$lat)
         realprox$mr <- rbind(realprox$mr, ntrend$mr)
-        realprox$var_residu <- c(realprox$var_residu, ntrend$var_residu)
+        realprox$var_residu <- rbind(realprox$var_residu, ntrend$var_residu)
         realprox$archivetype <- c(realprox$archivetype,ntrend$archivetype)
         realprox$datasource <- c(realprox$datasource,ntrend$datasource)
         
@@ -280,7 +313,7 @@ if (generate_PROXIES){
         realprox$lon <- c(realprox$lon, pagesprox$lon)
         realprox$lat <- c(realprox$lat, pagesprox$lat)
         realprox$mr <- rbind(realprox$mr, pagesprox$mr)
-        realprox$var_residu <- c(realprox$var_residu, pagesprox$var_residu)
+        realprox$var_residu <- rbind(realprox$var_residu, pagesprox$var_residu)
         realprox$archivetype <- c(realprox$archivetype,pagesprox$archivetype)
         realprox$datasource <- c(realprox$datasource,pagesprox$datasource)
         
@@ -300,7 +333,7 @@ if (generate_PROXIES){
         realprox$lon <- c(realprox$lon, trw_petra$lon)
         realprox$lat <- c(realprox$lat, trw_petra$lat)
         realprox$mr <- rbind(realprox$mr, trw_petra$mr)
-        realprox$var_residu <- c(realprox$var_residu, trw_petra$var_residu)
+        realprox$var_residu <- rbind(realprox$var_residu, trw_petra$var_residu)
         realprox$archivetype <- c(realprox$archivetype,trw_petra$archivetype)
         realprox$datasource <- c(realprox$datasource,trw_petra$datasource)
         
@@ -313,6 +346,7 @@ if (generate_PROXIES){
 if (pseudo_prox) {
   if (generate_PSEUDO){
     print("generate_PSEUDO")
+    print("ATTENTION: manually copy generated .Rdata file to climstor!")
     pseudoprox<-read_pseudo()
     realprox<-pseudoprox
     save(realprox, file=paste0("../data/proxies/DAPS_pseudoproxies_",fsyr,"-",feyr,".Rdata"))

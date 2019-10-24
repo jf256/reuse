@@ -27,8 +27,10 @@ rm(list=ls())
 #syrtot=1903 #set to the same syr and eyr of the prepplots script (default 1602)
 #eyrtot=1904 #(default 2000) 
 
+
 syr=1951 #validation period: syr>=1902, eyr<2004. Syr should be the later of the two 1902 and syr in prepplots
-eyr=2004
+eyr=2004 #2000
+
 
 
 user <- system("echo $USER",intern=T)
@@ -66,6 +68,7 @@ if (monthly_out) {
   s.plot=2
 }
 figpath=paste0('../figures/EKF400_',version,'_',expname,'_',syr,'-',eyr) #format(Sys.time(), "%Y%m%d_%H-%M_")
+#figpath=paste0('/mnt/climstor/REUSE/figures/EKF400_',version,'_',expname,'_',syr,'-',eyr)
 dir.create(figpath)
 
 pnames <- paste(c('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'), ')', sep='')
@@ -95,7 +98,12 @@ if (countseries & !pseudo_prox) {
     ninsttemp[i] <- length(which(calibrate$sour=="inst"&calibrate$names=="temp2"))
     ninstslp[i] <- length(which(calibrate$sour=="inst"&calibrate$names=="slp"))
     ndoc[i] <- length(which(calibrate$sour=="doc"))
-    nprox[i] <- length(which(calibrate$sour=="prox"))-length(which(apply(is.na(calibrate$mr[which(calibrate$sour=="prox"),]),1,all)))-length(which(apply(is.na(calibrate$data[which(calibrate$sour=="prox"),]),1,all)&apply(!is.na(calibrate$mr[which(calibrate$sour=="prox"),]),1,all)))
+    if (length(which(calibrate$sour=="prox")) > 0) {
+      nprox[i] <- length(which(calibrate$sour=="prox"))-
+        length(which(apply(is.na(calibrate$mr[which(calibrate$sour=="prox"),]),1,all)))-
+        length(which(apply(is.na(calibrate$data[which(calibrate$sour=="prox"),]),1,all)&
+                     apply(!is.na(calibrate$mr[which(calibrate$sour=="prox"),]),1,all)))
+    }
     i <- i+1
   }
   nrecords <- cbind((syr:eyr),ninst,ninsttemp,ninstslp,ndoc,nprox,rep(0,length(syr:eyr)))
@@ -106,8 +114,10 @@ if (countseries & !pseudo_prox) {
   plot(nrecords[,1],nrecords[,7],ty="l",col='white',ylim=c(0,5000),xlab="year",ylab="No of records")
   polygon(c(nrecords[,1],rev(nrecords[,1])),c(nrecords[,6],rev(nrecords[,7])),col="seagreen3")
   polygon(c(nrecords[,1],rev(nrecords[,1])),c((nrecords[,5]+nrecords[,6]),rev(nrecords[,6])),col="plum2")
-  polygon(c(nrecords[,1],rev(nrecords[,1])), c((nrecords[,3]+nrecords[,5]+nrecords[,6]),rev((nrecords[,5]+nrecords[,6]))),col="firebrick1")
-  polygon(c(nrecords[,1],rev(nrecords[,1])), c((nrecords[,4]+nrecords[,3]+nrecords[,5]+nrecords[,6]),rev((nrecords[,3]+nrecords[,5]+nrecords[,6]))),col="goldenrod1")
+  polygon(c(nrecords[,1],rev(nrecords[,1])), c((nrecords[,3]+nrecords[,5]+nrecords[,6]),
+                                               rev((nrecords[,5]+nrecords[,6]))),col="firebrick1")
+  polygon(c(nrecords[,1],rev(nrecords[,1])), c((nrecords[,4]+nrecords[,3]+nrecords[,5]+nrecords[,6]),
+                                               rev((nrecords[,3]+nrecords[,5]+nrecords[,6]))),col="goldenrod1")
   legend("topleft", c("Instr. SLP","Instr. temp.", "Docum. temp.",'Proxies'), 
          pch=rep(15,6), col=c("goldenrod1","firebrick1", "plum2", "seagreen3"), pt.cex=1, pt.lwd=1, 
          inset=0.005, bg='transparent', box.col='transparent', cex=1)
@@ -188,15 +198,19 @@ for (v in validation_set){
   #}
   validate.init <- validate
   validate.anom.init <- validate.anom
+  if (indices) {
   vind.init <- vind
   vind.anom.init <- vind.anom
+  }
 #  vind.tot.init <- vind.tot
 #  vind.anom.tot.init <- vind.anom.tot
   
   validate <- validate.init[[v]]
   validate.anom<-validate.anom.init[[v]]
-  vind<-vind.init[[v]]
-  vind.anom<-vind.anom.init[[v]]
+  if (indices) {
+     vind<-vind.init[[v]]
+  vind.anom<-vind.anom.init[[v]] 
+  }
 #  vind.tot<-vind.tot.init[[v]]
 #  vind.anom.tot<-vind.anom.tot.init[[v]]
   

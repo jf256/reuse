@@ -12,8 +12,8 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
-syr=1902 #1902 #1941
-eyr=1950 #2000 #2003 #1970
+syr=1951 #1902 #1941
+eyr=2004 #2000 #2003 #1970
 
 
 # syrtot and eyrtot are only used for the total 400 yr indices time series 
@@ -2002,10 +2002,11 @@ if (calc_vali_stat) {
     }
     
     # delete next 3 lines again JF 08/2019
+    if (indices) {
     if (tps_only) {
       vind.anom <- convert_to_tps_only(vind.anom)  
     }
-    
+    }
     
     if (nrow(echam$data)!=nrow(validate$data)) { # when 20cr_vali then nrow should be different when v="cru_vali"
       # probably could use here the shorten_func as well

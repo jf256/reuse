@@ -6149,7 +6149,6 @@ getgridboxnum <- function(stat, echam) {
       mtmp <- mtmp[1]
     }
     if (length(mtmp) > 0) {
-<<<<<<< HEAD
       if (stat$names[i] %in% c("temp2", "precip", "prec", "slp", "wetdays")) {
         #      print("mtmp > 0")
         m[i] <- mtmp
@@ -6163,15 +6162,6 @@ getgridboxnum <- function(stat, echam) {
       } else {
         stop("getgridboxnum: station name is NOT identified!!!")
       }
-=======
-      #      print("mtmp > 0")
-      m[i] <- mtmp
-      try(if ((stat$names[i]=="precip") | (stat$names[i]=="prec")) {
-        m[i] <- m[i]+one_var_dim
-      } else if (stat$names[i]=="slp") {
-        m[i] <- m[i]+(2*one_var_dim)
-      },silent = T)
->>>>>>> 7cafbfa0c0b3d2077fa31f8e4e62120479d97327
     } else { m[i] <- NA }
   }
   invisible(m)

@@ -2,10 +2,10 @@
 ################################ EnSRF_switches.R ####################################
 ######################################################################################
 
-expname="assim_ghcn_d_better_wdays_R2days_timeloc_new" 
+expname="assim_ghcn_d_better_precip_R30_L900_timeloc" 
 
 
-version="v1.4"    # set code version number for experiment and netcdf file names
+version="v1.3"    # set code version number for experiment and netcdf file names
 # v1.1 at DKRZ is experiment 1.2 here!
 # v1.4 after merging JF proxy fixes and VV precip assimilation
 #####################################################################################

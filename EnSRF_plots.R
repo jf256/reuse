@@ -27,15 +27,10 @@ rm(list=ls())
 #syrtot=1903 #set to the same syr and eyr of the prepplots script (default 1602)
 #eyrtot=1904 #(default 2000) 
 
-<<<<<<< HEAD
 
 syr=1951 #validation period: syr>=1902, eyr<2004. Syr should be the later of the two 1902 and syr in prepplots
 eyr=2004 #2000
 
-=======
-syr=1902 #validation period: syr>=1902, eyr<2004. Syr should be the later of the two 1902 and syr in prepplots
-eyr=1950 #2000
->>>>>>> 7cafbfa0c0b3d2077fa31f8e4e62120479d97327
 
 
 user <- system("echo $USER",intern=T)

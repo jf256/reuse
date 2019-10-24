@@ -5,7 +5,7 @@
 expname="assim_ghcn_d_better_wdays_R2days_timeloc_new" 
 
 
-version="v1.3"    # set code version number for experiment and netcdf file names
+version="v1.4"    # set code version number for experiment and netcdf file names
 # v1.1 at DKRZ is experiment 1.2 here!
 # v1.4 after merging JF proxy fixes and VV precip assimilation
 #####################################################################################
@@ -176,7 +176,6 @@ ghcn_wday = T           # assimilating wetdays calculated from daily precip ghcn
   ghcn_w_err = 2         # error number of days (based on US stations estimation should be 2 days)
 
 
-
 #### Documentary Data ####
 assim_docu = T           # use docu series from version 1 and series from angie 2019, all monthly resolution only! 
   docu_err = sqrt(0.25)  # equals 0.5 std. dev.
@@ -306,6 +305,7 @@ avg_obs_per_grid=T     # average more than one observation per echam grid box
                        # and calc proxy vs echam correlation
 ins_tim_loc = T        # whether the instrumental obs-s should be localized in time or not
 instmaskprox=F         # remove proxy data from grid boxes that have instr. data
+
 every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=F            # calc on land only
 tps_only=T             # only use temp, precip and slp in state vector, remove other vars
@@ -361,7 +361,7 @@ vali_recon=F
 # prepare plot switches
 #####################################################################################
 
-validation_set=c("cru_vali")    #can be set to cru_vali, or twentycr_vali or 
+validation_set=c("cru_vali","twentycr_vali")    #can be set to cru_vali, or twentycr_vali or 
 # both together c("cru_vali","twentycr_vali")
 # choses which validation set should be used in the postprocessing and plots
 monthly_out=F                  # if sixmonstatevector=T output is backtransformed to seasonal 
@@ -371,6 +371,7 @@ monthly_out=F                  # if sixmonstatevector=T output is backtransforme
 temporal_postproc=F             # save half year averages calc from monthly data into /prepplot folder
 indices=F
 mergetime_indices=F             # if TRUE: indices are combined to allts variables for whole period 
+
                                 # (e.g. also for 1604-2004) and saved into image folder for TS-plots
 # run next option "load_prepplot" for entire validation period, usually 
 # 1902-2003, because it creates time series

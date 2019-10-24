@@ -252,34 +252,35 @@ for (cyr in syr2:eyr) {
   
   # 1.2 Choose which variables want to use from the model
   # just leave temp precip slp in state vector
+<<<<<<< HEAD
   if (old_statvec) {
-    if (tps_only) {
-      # JF commented 09/2019
-      #tpspos <- c(which(echam$names=='temp2'), which(echam$names=='precip'),
-      #            which(echam$names=='slp'))
-      #echam$data <- echam$data[tpspos,,]
-      #echam$ensmean <- echam$ensmean[tpspos,]
-      #echam$names <- echam$names[tpspos]
-      if (anomaly_assim){
-        tpspos <- c(which(echam_anom$names=='temp2'), which(echam_anom$names=='precip'),
-                    which(echam_anom$names=='slp'))
-        echam_anom$data <- echam_anom$data[tpspos,,]
-        echam_anom$ensmean <- echam_anom$ensmean[tpspos,]
-        echam_anom$names <- echam_anom$names[tpspos]
-        if (state == "changing" & covarclim>0) {
-          tpspos <- c(which(echanomallts$names=='temp2'), which(echanomallts$names=='precip'),
-                      which(echanomallts$names=='slp'))
-          echanomallts$data <- echanomallts$data[tpspos,,]
-          echanomallts$ensmean <- echanomallts$ensmean[tpspos,]
-          echanomallts$names <- echanomallts$names[tpspos]
-        }
-        tpspos <- c(which(echam_clim$names=='temp2'), which(echam_clim$names=='precip'),
-                    which(echam_clim$names=='slp'))
-        echam_clim$data <- echam_clim$data[tpspos,,]
-        echam_clim$ensmean <- echam_clim$ensmean[tpspos,]
-        echam_clim$names <- echam_clim$names[tpspos]
+  if (tps_only) {
+    # JF commented 09/2019
+    #tpspos <- c(which(echam$names=='temp2'), which(echam$names=='precip'),
+    #            which(echam$names=='slp'))
+    #echam$data <- echam$data[tpspos,,]
+    #echam$ensmean <- echam$ensmean[tpspos,]
+    #echam$names <- echam$names[tpspos]
+    if (anomaly_assim){
+      tpspos <- c(which(echam_anom$names=='temp2'), which(echam_anom$names=='precip'),
+                  which(echam_anom$names=='slp'))
+      echam_anom$data <- echam_anom$data[tpspos,,]
+      echam_anom$ensmean <- echam_anom$ensmean[tpspos,]
+      echam_anom$names <- echam_anom$names[tpspos]
+      if (state == "changing" & covarclim>0) {
+        tpspos <- c(which(echanomallts$names=='temp2'), which(echanomallts$names=='precip'),
+                    which(echanomallts$names=='slp'))
+        echanomallts$data <- echanomallts$data[tpspos,,]
+        echanomallts$ensmean <- echanomallts$ensmean[tpspos,]
+        echanomallts$names <- echanomallts$names[tpspos]
       }
+      tpspos <- c(which(echam_clim$names=='temp2'), which(echam_clim$names=='precip'),
+                  which(echam_clim$names=='slp'))
+      echam_clim$data <- echam_clim$data[tpspos,,]
+      echam_clim$ensmean <- echam_clim$ensmean[tpspos,]
+      echam_clim$names <- echam_clim$names[tpspos]
     }
+  }
     
     
     if (no_stream) {
@@ -1624,6 +1625,7 @@ for (cyr in syr2:eyr) {
         }
       }
     }
+
     if (yuri_wday) {
       if (dim(inst_w$data)[2]>0) {
         if (anomaly_assim & sixmonstatevector){

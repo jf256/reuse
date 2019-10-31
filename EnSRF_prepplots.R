@@ -12,8 +12,8 @@ rm(list=ls())
 
 # enter syr ane eyr manually
 
-syr=1902 #1902 #1941
-eyr=2002 #2000 #2003 #1970
+syr=1835 #1902 #1941
+eyr=1838 #2003 #1970
 
 
 # syrtot and eyrtot are only used for the total 400 yr indices time series 
@@ -38,6 +38,8 @@ if (user=="veronika") {
   workdir ='/scratch3/veronika/reuse/reuse_git/' # where are the scripts from github
 } else if (user=="joerg") {
   workdir='/scratch3/joerg/projects/reuse/git/'
+} else if (user=="sabrina") {
+  workdir='/home/sabrina/reuse/git/'
   #} else if (user=="lucaf") {
   #  workdir='/scratch3/lucaf/reuse/reuse_git/'
   #} else if (user == "nevin"){
@@ -46,41 +48,47 @@ if (user=="veronika") {
   stop("Unknown user!")
 }
 dataextdir='/mnt/climstor/giub/EKF400/'
-dataintdir=paste0(workdir,'../data/')
+dataintdir="/mnt/climstor/REUSE/" #paste0(workdir,'../data/')
 setwd(workdir)
 
 source('EnSRF_switches.R')
 source('EnSRF_functions.R')
 
+if (version=="v1.4" | version=="v1.3") {
+  dataintdir=paste0(workdir,'../data/')
+}
+
 if (pseudo_prox) {
   if (temporal_postproc) {
-    dir.create(paste0("../data/prepplot/EKF400_",version,"_",expname))
-    dir.create(paste0("../data/prepplot/EKF400_",version,"_",expname,'/prepplot_annual/'))
+    dir.create(paste0(dataintdir,"prepplot/EKF400_",version,"_",expname))
+    dir.create(paste0(dataintdir,"prepplot/EKF400_",version,"_",expname,'/prepplot_annual/'))
   }
-  prepplotdir=paste0("../data/prepplot/EKF400_",version,"_",expname,'/prepplot_annual/')
+  prepplotdir=paste0(dataintdir,"prepplot/EKF400_",version,"_",expname,'/prepplot_annual/')
   nseas=1
 } else if (monthly_out) {
   if (temporal_postproc) {
-    dir.create(paste0("../data/prepplot/EKF400_",version,"_",expname))
-    dir.create(paste0("../data/prepplot/EKF400_",version,"_",expname,'/prepplot_monthly/'))
+    dir.create(paste0(dataintdir,"prepplot/EKF400_",version,"_",expname))
+    dir.create(paste0(dataintdir,"prepplot/EKF400_",version,"_",expname,'/prepplot_monthly/'))
   }
-  prepplotdir=paste0("../data/prepplot/EKF400_",version,"_",expname,'/prepplot_monthly/')
+  prepplotdir=paste0(dataintdir,"prepplot/EKF400_",version,"_",expname,'/prepplot_monthly/')
   nseas=12
 } else {
   if (temporal_postproc) {
-    dir.create(paste0("../data/prepplot/EKF400_",version,"_",expname))
-    dir.create(paste0("../data/prepplot/EKF400_",version,"_",expname,'/prepplot_seasonal/'))
+    dir.create(paste0(dataintdir,"prepplot/EKF400_",version,"_",expname))
+    dir.create(paste0(dataintdir,"prepplot/EKF400_",version,"_",expname,'/prepplot_seasonal/'))
     #dir.create("/mnt/climstor/REUSE/prepplot")
     #dir.create(paste0("/mnt/climstor/REUSE/prepplot/EKF400_",version,"_",expname))
     #dir.create(paste0("/mnt/climstor/REUSE/prepplot/EKF400_",version,"_",expname,"/prepplot_seasonal/"))
   }
-  prepplotdir=paste0("../data/prepplot/EKF400_",version,"_",expname,'/prepplot_seasonal/') 
+  prepplotdir=paste0(dataintdir,"prepplot/EKF400_",version,"_",expname,'/prepplot_seasonal/') 
   #prepplotdir=paste0("/mnt/climstor/REUSE/prepplot/EKF400_",version,"_",expname,'/prepplot_seasonal/')
   nseas=2
 }
 # VV commented it 2019 Oct
-#if (mergetime_fields) {dir.create(paste0("../data/image/EKF400_",version,"_",expname))}
-#dir.create(paste0('../data/indices/EKF400_",version,"_',expname))
+if (mergetime_fields) {dir.create(paste0(dataintdir,"image/EKF400_",version,"_",expname))}
+if (indices){
+  dir.create(paste0(dataintdir,'indices/EKF400_",version,"_',expname))
+}
 
 # if (ind_anom) {
 #   if (land_only) {
@@ -125,8 +133,13 @@ if (temporal_postproc) {
   # tps_only can be set to T, even when it was set to F before in the data script: like that the complete data is shortened to tps. 
   # In the end the processed data is again saved for each year.
   for (cyr in syr:eyr) {
-    if (cyr > min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)]) & cyr<=max(c(eyr_cru,eyr_twentycr,eyr_recon)[c(vali_cru, vali_twentycr, vali_recon)])) {        # if we don't use reconvali, the eyr here should be changed (Error in valiall : object 'valiall' not found) -> but then instead of the eyr we should use cyr
-      vali=T                 # switch off prepplot if no vali data selected
+    if (!"twentycr_vali" %in% validation_set) {vali_twentycr=F}
+    if (!"cru_vali" %in% validation_set) {vali_cru=F}
+    if (cyr > min(c(syr_cru,syr_twentycr,syr_recon)[c(vali_cru, vali_twentycr, vali_recon)]) & 
+        cyr<=max(c(eyr_cru,eyr_twentycr,eyr_recon)[c(vali_cru, vali_twentycr, vali_recon)])) {        
+       # if we don't use reconvali, the eyr here should be changed 
+       # (Error in valiall : object 'valiall' not found) -> but then instead of the eyr we should use cyr
+      vali=T                 
     } else {
       vali=F
     }
@@ -155,11 +168,12 @@ if (temporal_postproc) {
     #print(paste("recon_vali=",recon_vali))
     #print(paste("vali=",vali))
     if (every2grid){
-      load(file=paste0('../data/analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
+      rm(validate,analysis,echam)
+      load(file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
       #load(file=paste0('/mnt/climstor/REUSE/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
       } else {  
       rm(validate,analysis,echam)
-      load(file=paste0('../data/analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'.Rdata'))
+      load(file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'.Rdata'))
     }
     if (tps_only_postproc&length(unique(echam.abs$names))!=3) {
       echam.abs<-convert_to_tps_only(echam.abs)
@@ -222,9 +236,9 @@ if (temporal_postproc) {
         outprox2 <- unique(t(apply(outprox[,1:2],1,paste0)))
         outstat <- outstr[outstr[,3]!="prox",]
         outstat2 <- unique(t(apply(outstat[,1:2],1,paste0)))
-        write.table(outstat2, file=paste0('../data/coor/stat_coor_',calibrate$time[t],'.csv'),
+        write.table(outstat2, file=paste0(dataintdir,'coor/stat_coor_',calibrate$time[t],'.csv'),
                     row.names=F,col.names=F)
-        write.table(outprox2, file=paste0('../data/coor/prox_coor_',calibrate$time[t],'.csv'),
+        write.table(outprox2, file=paste0(dataintdir,'coor/prox_coor_',calibrate$time[t],'.csv'),
                     row.names=F,col.names=F)
       }
     }
@@ -479,28 +493,28 @@ if (temporal_postproc) {
 
 
     if (indices) {
-          echam.anom2 <- echam2.anom
-    analysis.anom2 <- analysis2.anom
-    echam.abs2 <- echam2.abs
-    analysis.abs2 <- analysis2.abs
+      echam.anom2 <- echam2.anom
+      analysis.anom2 <- analysis2.anom
+      echam.abs2 <- echam2.abs
+      analysis.abs2 <- analysis2.abs
       
-    eind<-calc_indices(echam.abs2,"echam2")
-    aind<-calc_indices(analysis.abs2,"analysis2")
-    eind.anom<-calc_indices(echam.anom2,"echam2")
-    aind.anom<-calc_indices(analysis.anom2,"analysis2")
-    if (vali) {
-      valiname = names(validate2)
-      vind_all<-list()
-      validate2_init <- validate2
-      l=0
-      for (v in valiname){  ## for multiple vali data sets
-        l=l+1
-        validate2<-validate2_init[[v]]
-        vind_all[[l]]<-calc_indices(validate2,v)
+      eind<-calc_indices(echam.abs2,"echam2")
+      aind<-calc_indices(analysis.abs2,"analysis2")
+      eind.anom<-calc_indices(echam.anom2,"echam2")
+      aind.anom<-calc_indices(analysis.anom2,"analysis2")
+      if (vali) {
+        valiname = names(validate2)
+        vind_all<-list()
+        validate2_init <- validate2
+        l=0
+        for (v in valiname){  ## for multiple vali data sets
+          l=l+1
+          validate2<-validate2_init[[v]]
+          vind_all[[l]]<-calc_indices(validate2,v)
+        }
+        names(vind_all)<-valiname
+        vind<-vind_all
       }
-      names(vind_all)<-valiname
-      vind<-vind_all
-    }
     } # end indices
     
     # save annual file
@@ -591,6 +605,9 @@ if (temporal_postproc) {
 
 if (write_netcdf) {
   print("write_netcdf")
+  if (!file.exists(paste0(dataintdir,"netcdf/",version))) {
+    dir.create(paste0(dataintdir,"netcdf/",version))
+  }
   dir.create(paste0(dataintdir,"netcdf/",version,"/",expname)) 
   dir.create(paste0(dataintdir,"netcdf/",version,"/",expname,"/CCC400_ensmean")) 
   dir.create(paste0(dataintdir,"netcdf/",version,"/",expname,"/CCC400_ens_mem"))
@@ -1255,10 +1272,10 @@ if (mergetime_fields){
         #validate.anom_all <- list()
         # commented JF 01/2018
         if (indices) {
-         vind_init <- vind
-        #vind.anom_init <- vind.anom # anom is commented
-         vind_all <- list()
-        #vind.anom_all <- list()
+          vind_init <- vind
+          #vind.anom_init <- vind.anom # anom is commented
+          vind_all <- list()
+          #vind.anom_all <- list()
         }
         l=0
         for (v in valiname) {  ## for multiple vali data sets
@@ -1274,12 +1291,12 @@ if (mergetime_fields){
           #validate.anom<-convert_to_tps_only(validate.anom)
           # commented JF 01/2018
           if (indices) {
-           vind<-vind_init[[v]]
-          #vind.anom<-vind.anom_init[[v]] # anom is commented
-           vind<-convert_to_tps_only(vind)
-          #vind.anom<-convert_to_tps_only(vind.anom) # anom is commented
-           vind_all[[l]]<-vind
-          #vind.anom_all[[l]]<-vind.anom
+            vind<-vind_init[[v]]
+            #vind.anom<-vind.anom_init[[v]] # anom is commented
+            vind<-convert_to_tps_only(vind)
+            #vind.anom<-convert_to_tps_only(vind.anom) # anom is commented
+            vind_all[[l]]<-vind
+            #vind.anom_all[[l]]<-vind.anom
           }
         }
         names(validate_all)<-valiname
@@ -1487,25 +1504,26 @@ if (mergetime_fields){
       } else {
         calibrate.allts$data=abind(calibrate.allts$data[pos,],calibrate$data[pos,],along=2)
       }
-        calibrate.allts$time=c(calibrate.allts$time,calibrate$time)
-        calibrate.allts$lon=cbind(calibrate.allts$lon[pos,],calibrate$lon[pos])
-        calibrate.allts$lat=cbind(calibrate.allts$lat[pos,],calibrate$lat[pos])
-        if (!pseudo_prox){
-          calibrate.allts$names=cbind(calibrate.allts$names[pos,],calibrate$names[pos])
-        }
-        calibrate.allts$sour=cbind(calibrate.allts$sour[pos,],calibrate$sour[pos])
+      calibrate.allts$time=c(calibrate.allts$time,calibrate$time)
+      calibrate.allts$lon=cbind(calibrate.allts$lon[pos,],calibrate$lon[pos])
+      calibrate.allts$lat=cbind(calibrate.allts$lat[pos,],calibrate$lat[pos])
+      if (!pseudo_prox){
+        calibrate.allts$names=cbind(calibrate.allts$names[pos,],calibrate$names[pos])
+      }
+      calibrate.allts$sour=cbind(calibrate.allts$sour[pos,],calibrate$sour[pos])
         #      calibrate.anom.allts$data=abind(calibrate.anom.allts$data[pos,],calibrate.anom$data[pos,],along=2)
         #      calibrate.anom.allts$time=c(calibrate.anom.allts$time,calibrate.anom$time)
         #      calibrate.anom.allts$lon=cbind(calibrate.anom.allts$lon[pos,],calibrate.anom$lon[pos])
         #      calibrate.anom.allts$lat=cbind(calibrate.anom.allts$lat[pos,],calibrate.anom$lat[pos])
         #      calibrate.anom.allts$names=cbind(calibrate.anom.allts$names[pos,],calibrate.anom$names[pos])
         #      calibrate.anom.allts$sour=cbind(calibrate.anom.allts$sour[pos,],calibrate.anom$sour[pos])
+    }   
 #<<<<<<< HEAD
 #      #}
 #    }
 #=======
-      }
-    } # "end of" cyr=syr 
+#      }
+#    } # "end of" cyr=syr 
 #>>>>>>> f0b033073483a821f3f3d7853512c93f16b73702
     
     # adapted by Nevin: 
@@ -1522,10 +1540,11 @@ if (mergetime_fields){
       validate_init <- validate
       # commented JF 01/2018
       if (indices) {
-      vind_init<-vind
+        vind_init<-vind
       }
       
-      # it still can jump into this part even when one validation set already is running. Here it checks if it's the first time a validation set is started.
+      # it still can jump into this part even when one validation set already is running. 
+      # Here it checks if it's the first time a validation set is started.
       if (exists("validate.allts")){
         validate.allts_init <- validate.allts
         # commented JF 01/2018
@@ -1536,7 +1555,7 @@ if (mergetime_fields){
         validate.allts_init <- validate
         # commented JF 01/2018
         if (indices) {
-         vind.allts_init<-vind
+          vind.allts_init<-vind
         }
       }
       validate_all <- list()
@@ -1560,18 +1579,18 @@ if (mergetime_fields){
           validate.allts <- validate.allts_init[[v]]
           # commented JF 01/2018
           if (indices) {
-          vind.allts<-vind.allts_init[[v]]
-          validate.allts$data=cbind(validate.allts$data,validate$data)
-          validate.allts$ensmean=cbind(validate.allts$ensmean,validate$ensmean)
-          validate.allts$time=c(validate.allts$time,validate$time)
-          # commented JF 01/2018
-          vind.allts$data=cbind(vind.allts$data,vind$data)
-          vind.allts$ensmean=cbind(vind.allts$ensmean,vind$ensmean)
-          if(monthly_out){
-            vind.allts$time=c(vind.allts$time,seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
-          }else{
-            vind.allts$time=c(vind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
-          }
+            vind.allts<-vind.allts_init[[v]]
+            validate.allts$data=cbind(validate.allts$data,validate$data)
+            validate.allts$ensmean=cbind(validate.allts$ensmean,validate$ensmean)
+            validate.allts$time=c(validate.allts$time,validate$time)
+            # commented JF 01/2018
+            vind.allts$data=cbind(vind.allts$data,vind$data)
+            vind.allts$ensmean=cbind(vind.allts$ensmean,vind$ensmean)
+            if(monthly_out){
+              vind.allts$time=c(vind.allts$time,seq(cyr-1,cyr+1,by=(1/nseas))[10:21])
+            }else{
+              vind.allts$time=c(vind.allts$time,seq(cyr,cyr+1,by=(1/nseas))[-(nseas+1)])
+            }
           }
         } else {
           validate.allts <- validate_init[[v]]
@@ -1599,11 +1618,11 @@ if (mergetime_fields){
       validate.allts <- validate.allts_all
       # commented JF 01/2018
       if (indices) {
-      names(vind_all)<-valiname
-      vind<-vind_all
-      names(vind.allts_all)<-valiname
-      vind.allts<-vind.allts_all
-    }
+        names(vind_all)<-valiname
+        vind<-vind_all
+        names(vind.allts_all)<-valiname
+        vind.allts<-vind.allts_all
+      }
     } else if (vali){
       valiname = names(validate)
       validate_init <- validate
@@ -1691,7 +1710,6 @@ if (mergetime_fields){
        #  vali_ind <- vali_ind.allts
        rm(vali_ind.allts, vind.allts)
      }
-   
   }
   #print("calc time for a year")
   
@@ -1744,9 +1762,9 @@ if (mergetime_fields){
   validate.anom_init <- validate.anom
   # commented JF 01/2018
   if (indices) {
-   vind.anom_all <- list()
-   vind.anom<-list()
-  # vind.anom.tot<-list() # vind.anom is commented
+    vind.anom_all <- list()
+    vind.anom<-list()
+    # vind.anom.tot<-list() # vind.anom is commented
   }
   vanom.yrly<-list()
   l=1
@@ -1771,27 +1789,29 @@ if (mergetime_fields){
       valitmp$names<-validate.anom$names
       vanom.yrly[[i]]<-valitmp
     }
-    vind.anom_all<-lapply(vanom.yrly,calc_indices,setname=v)
-    vindtmp<-vind.anom_all[[1]]
-    vindtmp$time<-validate.anom$time[,1]
-    for(i in 2:length(vind.anom_all)){
-      vindtmp$data<-cbind(vindtmp$data,vind.anom_all[[i]]$data)
-      vindtmp$ensmean<-cbind(vindtmp$ensmean,vind.anom_all[[i]]$ensmean)
-      vindtmp$time<-c(vindtmp$time,validate.anom$time[,i])
+    if (indices) {
+      vind.anom_all<-lapply(vanom.yrly,calc_indices,setname=v)
+      vindtmp<-vind.anom_all[[1]]
+      vindtmp$time<-validate.anom$time[,1]
+      for(i in 2:length(vind.anom_all)){
+        vindtmp$data<-cbind(vindtmp$data,vind.anom_all[[i]]$data)
+        vindtmp$ensmean<-cbind(vindtmp$ensmean,vind.anom_all[[i]]$ensmean)
+        vindtmp$time<-c(vindtmp$time,validate.anom$time[,i])
+      }
+      if (!tps_only_postproc) {
+        vind.clim<-apply(vindtmp$data[35:40,],1,mean)
+        vindtmp$data[35:40]<-vindtmp$data[35:40,]-vind.clim
+        vindtmp$ensmean[35:40]<-vindtmp$ensmean[35:40,]-vind.clim
+      }
+      vind.anom[[l]]<-vindtmp
+      l=l+1
     }
-    if (!tps_only_postproc) {
-      vind.clim<-apply(vindtmp$data[35:40,],1,mean)
-      vindtmp$data[35:40]<-vindtmp$data[35:40,]-vind.clim
-      vindtmp$ensmean[35:40]<-vindtmp$ensmean[35:40,]-vind.clim
-    }
-    vind.anom[[l]]<-vindtmp
-    l=l+1
   }
   validate.anom<-validate.anom_init
   # commented JF 01/2018
   if (indices) {
-  names(vind.anom)<-valiname
-  names(vind.anom.tot)<-valiname
+    names(vind.anom)<-valiname
+    names(vind.anom.tot)<-valiname
   }
   #print("calc anomalies")
   rm(v,valiname,validate_all,validate_init,validate.allts_all,validate.allts_init,validate.anom_all,
@@ -1799,26 +1819,26 @@ if (mergetime_fields){
   
   if (every2grid) {
     if (monthly_out) {
-      save.image(file=paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
+      save.image(file=paste0(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
                              syr,"-",eyr,"_monthly_2ndgrid.Rdata"))  
     } else if (pseudo_prox) {
-      save.image(file=paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
+      save.image(file=paste0(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
                              syr,"-",eyr,"_annual_2ndgrid.Rdata"))
     } else  {
-      save.image(file=paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
+      save.image(file=paste0(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
                              syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
       #save.image(file=paste0("/mnt/climstor/REUSE/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
       #                       syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
     }  
   } else {
     if (monthly_out) {
-      save.image(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
+      save.image(file=paste(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
                             syr,"-",eyr,"_monthly.Rdata",sep=""))
     } else if (pseudo_prox) {
-      save.image(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
+      save.image(file=paste(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
                             syr,"-",eyr,"_annual.Rdata",sep=""))  
     } else {
-      save.image(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
+      save.image(file=paste(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
                             syr,"-",eyr,"_seasonal.Rdata",sep=""))
     }
   }
@@ -1854,29 +1874,29 @@ if (load_images){
   if (every2grid) {
     if (monthly_out) {
 #      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_monthly_2ndgrid.Rdata"))
-      load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
+      load(file=paste(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
                       "_monthly_2ndgrid.Rdata",sep=""))  
     } else if (pseudo_prox) {
 #      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_annual_2ndgrid.Rdata"))
-      load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
+      load(file=paste(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
                       "_annual_2ndgrid.Rdata",sep=""))
     } else {
 #      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_seasonal_2ndgrid.Rdata"))
-      load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
+      load(file=paste(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
                       "_seasonal_2ndgrid.Rdata",sep=""))
     }  
   } else {
     if (monthly_out) {
 #      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_monthly.Rdata"))
-      load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
+      load(file=paste(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
                       "_monthly.Rdata",sep=""))
     } else if (pseudo_prox) {
 #      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,"_annual.Rdata"))
-      load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
+      load(file=paste(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
                       "_annual.Rdata",sep=""))
     } else {
 #      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syr,"-",eyr,"_seasonal.Rdata"))
-      load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
+      load(file=paste(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_validation_image_",syr,"-",eyr,
                       "_seasonal.Rdata",sep=""))
     }
   }
@@ -2303,38 +2323,38 @@ if (calc_vali_stat) {
     print(paste("saving",v,"..."))
     if (every2grid) {
       if (monthly_out) {
-        save.image(file=paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+        save.image(file=paste0(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                                syr,"-",eyr,"_monthly_2ndgrid.Rdata"))  
         file.remove(paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
                            syr,"-",eyr,"_monthly_2ndgrid.Rdata"))
       } else if (pseudo_prox) {
-        save.image(file=paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+        save.image(file=paste0(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                                syr,"-",eyr,"_annual_2ndgrid.Rdata"))
-        file.remove(paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
+        file.remove(paste0(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
                            syr,"-",eyr,"_annual_2ndgrid.Rdata"))
       } else {
-         save.image(file=paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+         save.image(file=paste0(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                                 syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
-         file.remove(paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
+         file.remove(paste0(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
                             syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
         #save.image(file=paste0("/mnt/climstor/REUSE/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
         #                      syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
       }  
     } else {
       if (monthly_out) {
-        save.image(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+        save.image(file=paste(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                               syr,"-",eyr,"_monthly.Rdata",sep=""))
-        file.remove(paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
+        file.remove(paste(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
                           syr,"-",eyr,"_monthly.Rdata",sep=""))
       } else if (pseudo_prox) {
-        save.image(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+        save.image(file=paste(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                               syr,"-",eyr,"_annual.Rdata",sep=""))
-        file.remove(paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
+        file.remove(paste(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
                           syr,"-",eyr,"_annual.Rdata",sep=""))
       } else {
-        save.image(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+        save.image(file=paste(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                               syr,"-",eyr,"_seasonal.Rdata",sep=""))
-        file.remove(paste("../data/image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
+        file.remove(paste(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_validation_image_",
                           syr,"-",eyr,"_seasonal.Rdata",sep=""))
       }
     } # end saving

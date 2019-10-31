@@ -2,14 +2,9 @@
 ################################ EnSRF_switches.R ####################################
 ######################################################################################
 
-<<<<<<< HEAD
-expname="allinput_fullres_50climcovar_alloldvar" # "test_v2_oct17" #
-=======
-expname="assim_ghcn_d_better_wdays_R2days_timeloc_new" 
+expname="allinput_fullres_50climcovar_alloldvar" #"allinput_fullres_50climcovar_tpsw_gph_u_v" # "test_v2_oct24" 
 
->>>>>>> f0b033073483a821f3f3d7853512c93f16b73702
-
-version="v1.4"    # set code version number for experiment and netcdf file names
+version="v1.4" #"v2.0"    # set code version number for experiment and netcdf file names
 # v1.1 at DKRZ is experiment 1.2 here!
 # v1.4 after merging JF proxy fixes and VV precip assimilation
 #####################################################################################
@@ -22,7 +17,7 @@ syr_cru=1901
 eyr_cru=2004
 syr_recon=1750
 eyr_recon=1900
-syr_twentycr=1901 #1836 # 20CR data start from 1836, currently only TPS, validation stats need to be adapted
+syr_twentycr=1836 #1901  # 20CR data start from 1836, currently only TPS, validation stats need to be adapted
   # currently statistics only work for same periods of CRU and 20CR (20CR data actually start from 1850)
 eyr_twentycr=2004
 #syr_ind=1901
@@ -158,8 +153,9 @@ generate_PROXIES=F
 #### Instrumental Data ####
 old_statvec = F
 new_statvec = T      # has +: wetdays, block, cycfreq, gph
- statvari=c("wdays","u")  # if new_statvec=T, define which variable should be in the statvector
-                           # can be: blocks', 'cycfreq','wdays', 'gph','u', 'v', 'omega', 'st'
+ statvari=c("wdays","geopoth","u","v") 
+                           # if new_statvec=T, define which variable should be in the statvector
+                           # can be: blocks', 'cycfreq','wdays', 'geopoth','u', 'v', 'omega', 'st'
                            # at the moment temp2,precip,slp is always loaded
 
 
@@ -224,10 +220,12 @@ cov_inflate = F         # inflate the PB matrix
 state = "changing"      # can be "static" or "changing" (static = the same big ens used for all year, changing = it is recalculated for every year)
 n_covar=100             # set sample size for covar calc or for no_forc LMR like experiment, e.g. 250 or 500
 PHclim_loc = T          # whether we want to localize the PHclim, only works if covarclim > 0
-PHclim_lvec_factor = 2  # if PHclim_loc=T, we can use eg. 2times the distances as in the 30 ensemble member, at the moment only works for shape_wgt= "circle"
+PHclim_lvec_factor = 2  # if PHclim_loc=T, we can use eg. 2times the distances as in the 
+                        # 30 ensemble member, at the moment only works for shape_wgt= "circle"
 mixed_loc = F           # first combining Pb and Pclim then localizing
 update_PHclim = T       # whether PHclim should be updated assimilating observation-by-observation
-save_ananomallts = F    # in the covarclim exps if we update the climatology part -> whether to save the "climatological" analysis or not
+save_ananomallts = F    # in the covarclim exps if we update the climatology part -> whether to 
+                        # save the "climatological" analysis or not
 
 if (covarclim==0) {
   update_PHclim = F
@@ -255,37 +253,49 @@ if (loc) {
   l_dist_temp2=1000*1.5         # factor *1.5 after stefans recommendation
   l_dist_slp=1800*1.5
   l_dist_precip=300*1.5
-  #l_dist_precip=900
-  l_dist_gph500=1800*1.5
+  l_dist_gph1000=2500*1.5
+  l_dist_gph850=2500*1.5
+  l_dist_gph500=2500*1.5
+  l_dist_gph300=2500*1.5
+  l_dist_gph200=2500*1.5
   l_dist_gph100=2500*1.5
   l_dist_u850=1200*1.5
-  l_dist_u200=1200*1.5
-  l_dist_u300=1200*1.5
   l_dist_u700=1200*1.5
   l_dist_u500=1200*1.5
-  l_dist_v850=1000*1.5
-  l_dist_v200=1000*1.5
+  l_dist_u300=1200*1.5
+  l_dist_u200=1200*1.5
+  l_dist_v850=1200*1.5
+  l_dist_v700=1200*1.5
+  l_dist_v500=1200*1.5
+  l_dist_v300=1200*1.5
+  l_dist_v200=1200*1.5
   l_dist_omega500=300*1.5
-  # l_dist_t850=1000*1.5 #Roni: in the echam there is no t850 but t500. They refer to the same level but I forgot which one is the correct one
   l_dist_t500=1000*1.5
   l_dist_ind=999999 # precalculated indices should be removed
   l_dist_wdays = 300*1.5
-  #l_dist_wdays = 900
   l_dist_blocks = 1800*1.5
   l_dist_cycfreq = 1800*1.5
 } else {
   l_dist_temp2=999999
   l_dist_slp=999999
   l_dist_precip=999999
+  l_dist_gph1000=999999
+  l_dist_gph850=999999
   l_dist_gph500=999999
+  l_dist_gph300=999999
+  l_dist_gph200=999999
   l_dist_gph100=999999
-  l_dist_u850=999999
+  l_dist_u700=999999
+  l_dist_u500=999999
+  l_dist_u300=999999
   l_dist_u200=999999
   l_dist_v850=999999
+  l_dist_v700=999999
+  l_dist_v500=999999
+  l_dist_v300=999999
   l_dist_v200=999999
   l_dist_omega500=999999
   l_dist_t500=999999
-  # l_dist_t850=999999 # see above
   l_dist_ind=999999 
 }
 shape_wgt = "circle"          # can be "circle" or "ellipse" depends on how we want to do the localization
@@ -311,9 +321,9 @@ avg_obs_per_grid=T     # average more than one observation per echam grid box
 ins_tim_loc = T        # whether the instrumental obs-s should be localized in time or not
 instmaskprox=F         # remove proxy data from grid boxes that have instr. data
 
-every2grid=T           # only use every third grid cell of ECHAM, CRU validation, ...
+every2grid=F           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=F            # calc on land only
-tps_only=T             # only use temp, precip and slp in state vector, remove other vars
+tps_only=F             # only use temp, precip and slp in state vector, remove other vars
 no_stream=F            # all echam vars but stream function as there is problem with 
 #                       # 5/9 levels, which are in lat dimension before and after 1880
 loo=F                  # leave-one-out validation 
@@ -367,15 +377,15 @@ vali_recon=F
 #####################################################################################
 
 tps_only_postproc=F             # due validation only with tps
+indices=F
 validation_set=c("cru_vali") #,"twentycr_vali")    #can be set to cru_vali, or twentycr_vali or 
 # both together c("cru_vali","twentycr_vali")
 # choses which validation set should be used in the postprocessing and plots
-monthly_out=F                  # if sixmonstatevector=T output is backtransformed to seasonal 
+monthly_out=T                  # if sixmonstatevector=T output is backtransformed to seasonal 
 # yearly out is old switch from nevin. annual output automatically if pseudo_prox=T
   yearly_out=F                    # if both false, plots seasonal averages are calculated
                                 # average or monthly data if monthly_out=T 
-temporal_postproc=F             # save half year averages calc from monthly data into /prepplot folder
-indices=F
+temporal_postproc=T             # save half year averages calc from monthly data into /prepplot folder
 mergetime_indices=F             # if TRUE: indices are combined to allts variables for whole period 
                                 # (e.g. also for 1604-2004) and saved into image folder for TS-plots
 # run next option "load_prepplot" for entire validation period, usually 
@@ -400,8 +410,7 @@ write_coor=F                    # write ascii files with assimilated stations an
 # best set mergetime_*=F and load_image=F
 write_netcdf=T                  # write entire EKF400 to NetCDF files
 if (!monthly_out & write_netcdf) {
-  write_netcdf=F
-  print('ACHTUNG: write_netcdf set to FALSE because monthly_out=F')
+    stop('ACHTUNG: write_netcdf set to FALSE because monthly_out=F')
 }
 
 #####################################################################################

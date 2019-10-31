@@ -17,8 +17,8 @@ rm(list=ls())
 
 
 
-syr=1950
-eyr=1951
+syr=1901
+eyr=1902
 
 
 # read syr and eyr from Rscript parameters entered in bash and 
@@ -39,6 +39,8 @@ if (user=="veronika") {
 #  workdir='/scratch3/lucaf/reuse/reuse_git/'
 } else if (user=="joerg") {
   workdir='/scratch3/joerg/projects/reuse/git/'
+} else if (user=="sabrina") {
+  workdir='/home/sabrina/reuse/git/'
 #} else if (user == "nevin"){
 #  workdir = '/scratch3/nevin/reuse_climcal/reuse_git/'
 } else{
@@ -46,20 +48,24 @@ if (user=="veronika") {
   
 }
 dataextdir='/mnt/climstor/giub/EKF400/'
-dataintdir=paste0(workdir,'../data/')
+dataintdir="/mnt/climstor/REUSE/" #paste0(workdir,'../data/')
 setwd(workdir)
 
 source('EnSRF_switches.R')
 source('EnSRF_functions.R')
 
-dir.create(paste0("../data/analysis/EKF400_",version,'_',expname))
+#dir.create(paste0("../data/analysis/EKF400_",version,'_',expname))
+dir.create(paste0(dataintdir,"analysis/EKF400_",version,'_',expname))
 # create logfile
 logfn <- paste0("EKF400_",version,'_',expname,'_',syr,'-',eyr,'_',format(Sys.time(),"%Y%m%d_%H%M"),'.log')
-write(c(user),file=paste0('../log/',logfn),append=F)
+#write(c(user),file=paste0('../log/',logfn),append=F)
+write(c(user),file=paste0(dataintdir,'log/',logfn),append=F)
 if (loo) {dir.create(paste0("../data/loo/",expname))}
 
 # it can be useful to save how the switches were set
-con <- file(paste0(workdir,"../data/analysis/EKF400_",version,'_',expname,"/switches_",format(Sys.time(),"%Y%m%d_%H%M"),".log"))
+#con <- file(paste0(workdir,"../data/analysis/EKF400_",version,'_',expname,"/switches_",format(Sys.time(),"%Y%m%d_%H%M"),".log"))
+con <- file(paste0(dataintdir,"analysis/EKF400_",version,'_',expname,
+                   "/switches_",format(Sys.time(),"%Y%m%d_%H%M"),".log"))
 sink(con, append=TRUE)
 sink(con, append=TRUE, type="message")
 # This will echo all input and not truncate 150+ character lines...
@@ -71,6 +77,7 @@ sink(type="message")
 # cat(readLines("test.log"), sep="\n")
 
 source('EnSRF_generate.R')
+
 
 
 ##########################################################################################
@@ -205,11 +212,13 @@ for (cyr in syr2:eyr) {
     echam.anom=list()
     echam.clim=list()
     # temp
+    print("load echam temp")
     load(paste0(echanompath_v2,"/echam_anom_temp2/echam_anom_temp2_",yr1,"-",yr2,".Rdata"))
     a_temp2 = echam_anom
     load(paste0(echclimpath_v2,"/echam_clim_temp2/echam_clim_temp2_",yr1,"-",yr2,".Rdata"))
     c_temp2 = echam_clim
     # precip
+    print("load echam precip")
     load(paste0(echanompath_v2,"/echam_anom_precip/echam_anom_precip_",yr1,"-",yr2,".Rdata"))
     a_precip = echam_anom
     load(paste0(echclimpath_v2,"/echam_clim_precip/echam_clim_precip_",yr1,"-",yr2,".Rdata"))
@@ -218,6 +227,7 @@ for (cyr in syr2:eyr) {
     a_t2pr = join_lists(a_temp2,a_precip)
     c_t2pr = join_lists(c_temp2,c_precip)
     # slp
+    print("load echam slp")
     load(paste0(echanompath_v2,"/echam_anom_slp/echam_anom_slp_",yr1,"-",yr2,".Rdata"))
     a_slp = echam_anom
     load(paste0(echclimpath_v2,"/echam_clim_slp/echam_clim_slp_",yr1,"-",yr2,".Rdata"))
@@ -226,6 +236,7 @@ for (cyr in syr2:eyr) {
     echam.clim = join_lists(c_t2pr,c_slp)
     rm (a_temp2,a_precip,a_slp,a_t2pr,c_temp2,c_precip,c_slp,c_t2pr)
     for (i in statvari) {
+      print(paste("load echam",i))
       load(paste0(echanompath_v2,"/echam_anom_",i,"/echam_anom_",i,"_",yr1,"-",yr2,".Rdata"))
       a_x = echam_anom
       load(paste0(echclimpath_v2,"/echam_clim_",i,"/echam_clim_",i,"_",yr1,"-",yr2,".Rdata"))
@@ -792,11 +803,11 @@ for (cyr in syr2:eyr) {
       if (every2grid) {
         if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,"_2ndgrid.Rdata",sep=""))
         } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid.Rdata",sep=""))
-        } else if (twentycr_vali){load(paste0(twentycrpath,"twentycr_allvar_",syr_twentycr,"-",eyr_twentycr,"_2ndgrid.Rdata"))}
+        } else if (twentycr_vali){load(paste0(twentycrpath,"twentycrv3_allvar_",syr_twentycr,"-",eyr_twentycr,"_2ndgrid.Rdata"))}
       } else {
         if (recon_vali) {load(paste(dataextdir,"vali_data/recon/recon_allvar_",syr_recon,"-",eyr_recon,".Rdata",sep=""))
         } else if (cru_vali) {load(paste(dataextdir,"vali_data/cru/cru_allvar_",syr_cru,"-",eyr_cru,".Rdata",sep="")) 
-        } else if (twentycr_vali){load(paste0(twentycrpath,"twentycr_allvar_",syr_twentycr,"-",eyr_twentycr,".Rdata"))}
+        } else if (twentycr_vali){load(paste0(twentycrpath,"twentycrv3_allvar_",syr_twentycr,"-",eyr_twentycr,".Rdata"))}
       }
       # if (ind_recon) {
       #   load(file=paste("../data/indices/indices_recon_",syr,"-",eyr,".Rdata",sep=""))
@@ -2891,18 +2902,22 @@ for (cyr in syr2:eyr) {
       if (vali) {
         if (every2grid){
           save(analysis,echam,validate,calibrate, #calibrate.allts,
-               file=paste0('../data/analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
+               file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
+               #file=paste0('../data/analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
         } else {
           save(analysis,echam,validate,calibrate, #calibrate.allts,
-               file=paste0('../data/analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'.Rdata'))
+               file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'.Rdata'))
+               #file=paste0('../data/analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'.Rdata'))
         }
       } else {
         if (every2grid){
           save(analysis,echam,calibrate, #calibrate.allts,
-               file=paste0('../data/analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
+               file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
+               #file=paste0('../data/analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'_2ndgrid.Rdata'))
         } else {  
           save(analysis,echam,calibrate, #calibrate.allts,
-               file=paste0('../data/analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'.Rdata'))
+               file=paste0(dataintdir,'analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'.Rdata'))
+               #file=paste0('../data/analysis/EKF400_',version,'_',expname,'/analysis_',cyr,'.Rdata'))
         }
       }
     }

@@ -29,6 +29,7 @@ rm(list=ls())
 
 
 
+
 syr=1981 #validation period: syr>=1902, eyr<2004. Syr should be the later of the two 1902 and syr in prepplots
 eyr=2003 #2000
 

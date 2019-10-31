@@ -2,9 +2,11 @@
 ################################ EnSRF_switches.R ####################################
 ######################################################################################
 
+
 expname="allinput_fullres_50climcovar_alloldvar" #"allinput_fullres_50climcovar_tpsw_gph_u_v" # "test_v2_oct24" 
 
 version="v1.4" #"v2.0"    # set code version number for experiment and netcdf file names
+
 # v1.1 at DKRZ is experiment 1.2 here!
 # v1.4 after merging JF proxy fixes and VV precip assimilation
 #####################################################################################

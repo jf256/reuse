@@ -120,6 +120,8 @@ generate_PROXIES=F
   NTREND=T       # NTREND best tree data version 2018 (identical with 2015 paper)
   PAGES=T        # PAGESdata base version 2 from 01/2018
                  # works only with t and p regression months
+    rm_pages_mxd=T # remove mxd from pages collection because already in other collections
+                   # and because pages uses temp and prec forward model vs mxd only temp
   TRW_PETRA=T    # all TRW series from ITRDB and recalibrated by Petra
   MXD=T          # additional MXD, not gridded Schweizgruber data
   SCHWEINGR=T    # Schweingruber/Briffa MXD grid
@@ -212,11 +214,16 @@ if (pseudo_prox) {
 #     }
 #   }
 
-old_statvec = T #F
-  tps_only=T             # only use temp, precip and slp in state vector, remove other vars
+old_statvec=F #T
+  tps_only=F #T             # only use temp, precip and slp in state vector, remove other vars
   no_stream=F            # all echam vars but stream function as there is problem with 
   #                       # 5/9 levels, which are in lat dimension before and after 1880
 new_statvec = T #F      # has +: wetdays, block, cycfreq, gph
+  if (new_statvec & old_statvec) {
+    old_statvec=F
+    tps_only=F
+    print("ATTENTION: old_statvec has been set to FALSE because only new OR old can be true")
+  }
   statvari=c("wdays","geopoth","u","v","omega","st","blocks","cycfreq") 
     # NULL #c("geopoth","u","v","blocks","cycfreq") 
     # wdays need to follow after TPS as 4th var
@@ -308,7 +315,7 @@ if (loc) {
   l_dist_v200=1200*1.5
   l_dist_omega500=300*1.5
   l_dist_t500=1000*1.5
-  l_dist_t850=1000*1.5
+  #l_dist_t850=1000*1.5
   l_dist_ind=999999 # precalculated indices should be removed
   l_dist_wdays = 300*1.5
   l_dist_blocks = 1800*1.5
@@ -334,7 +341,7 @@ if (loc) {
   l_dist_v200=999999
   l_dist_omega500=999999
   l_dist_t500=999999
-  l_dist_t850=999999
+  #l_dist_t850=999999
   l_dist_ind=999999 
 }
 shape_wgt = "circle"          # can be "circle" or "ellipse" depends on how we want to do the localization

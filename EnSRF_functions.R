@@ -2217,6 +2217,13 @@ read_pages = function(fsyr,feyr,archivetype, validate) {
   if(archivetype == "tree") {
     print('read PAGES trees')
     load(paste0(pagespath,"pages_proxies_jf_201905.RData"))
+    if (rm_pages_mxd){
+      rmpos=grep("MXD",colnames(pages_proxies$chronologies))
+      pages_proxies$chronologies=pages_proxies$chronologies[,-rmpos]
+      pages_proxies$lonlat=pages_proxies$lonlat[,-rmpos]
+      pages_proxies$archivetype=pages_proxies$archivetype[-rmpos]
+      pages_proxies$elevation=pages_proxies$elevation[,-rmpos]
+    }
     if(exists("mrNH")){rm(mrNH)}
     if(exists("mrSH")){rm(mrSH)}
     mylist.names = c("data","time","lon","lat","archivetype","elevation")

@@ -3,12 +3,19 @@
 ######################################################################################
 
 
-expname="allinput_fullres_50climcovar_alloldvar" #"allinput_fullres_50climcovar_tpsw_gph_u_v" # "test_v2_oct24" 
+expname="EKF400_v2_2020" # "daps_exp_stat_echam_2020_01" #"daps_exp_2020_01" "daps_exp_stat_ccsm_2020_01" climcovar?
+         #allinput_fullres_50climcovar_bl_cf_gph200_wind500"   #"test_v2_tpsw_2nd_nov2"
 
-version="v1.4" #"v2.0"    # set code version number for experiment and netcdf file names
 
+version="v2.0" # "v1.4"     # set code version number for experiment and netcdf file names
+# v2.0 assimilation of wetdays, early inst. Paris, etc. coor corrected and mxd assim include
+# v1.9: we now rename all 2019 runs previously called v1.4 or v2.0 to v1.9
+# v2.0 experiment "allinput_fullres_50climcovar_bl_cf_gph200_wind500" equal to 
+#      = 1.4, i.e. NO assimilation of wetdays but newstatevector with additional variables
 # v1.1 at DKRZ is experiment 1.2 here!
-# v1.4 after merging JF proxy fixes and VV precip assimilation
+# v1.4 after merging JF proxy fixes and VV precip assimilation, bug in early inst. and no schw and mxd assim
+
+
 #####################################################################################
 # general switches 
 #####################################################################################
@@ -114,10 +121,10 @@ generate_PROXIES=F
   PAGES=T        # PAGESdata base version 2 from 01/2018
                  # works only with t and p regression months
   TRW_PETRA=T    # all TRW series from ITRDB and recalibrated by Petra
+  MXD=T          # additional MXD, not gridded Schweizgruber data
+  SCHWEINGR=T    # Schweingruber/Briffa MXD grid
   # Following switches have not been adapted to code version 08/2019, 2 col var_residu etc.
     TRW=F          # 35 best TRW records from Petra's collection
-    MXD=F          # additional MXD, not gridded Schweizgruber data
-    SCHWEINGR=F    # Schweingruber/Briffa MXD grid
   #################
 
 
@@ -153,40 +160,35 @@ generate_PROXIES=F
 
 
 #### Instrumental Data ####
-old_statvec = F
-new_statvec = T      # has +: wetdays, block, cycfreq, gph
- statvari=c("wdays","geopoth","u","v") 
-                           # if new_statvec=T, define which variable should be in the statvector
-                           # can be: blocks', 'cycfreq','wdays', 'geopoth','u', 'v', 'omega', 'st'
-                           # at the moment temp2,precip,slp is always loaded
-
-
-yuri_slp = T
+yuri_slp = T #F
  inst_slp_err = sqrt(10) # instrumental slp error (10 is the variance of slp error)
-yuri_prec = T
-yuri_wday = T
-yuri_temp = T            # yuri's data compilation, SLP always loaded
-ghcn_temp = T
+yuri_prec = T #F
+yuri_wday = T #F
+yuri_temp = T #F            # yuri's data compilation, SLP always loaded
+ghcn_temp = T #F
  inst_t_err = sqrt(0.9)  # instrumental temp error (0.9 is the variance of temp error)
  isti_instead_ghcn = T    # switch from ghcn to isti (ghcn_temp must still be set to TRUE)
-ghcn_prec = T
+ghcn_prec = T #F
   ghcn_p_err = 0.3       # error in percent (based on US stations estimation should be 30%)
   ghcn_p_min = 10        # minimum error 10 mm
   precip_ratio = F       # if T assimilating ratio, if F assimilating the difference
   gauss_ana = F          # use Gaussian anamorphosis for precipitation ratio
   check_norm = F         # check whether the GA transformed values normally distributed and use only those that are
-ghcn_wday = T           # assimilating wetdays calculated from daily precip ghcn data
+ghcn_wday = T #F           # assimilating wetdays calculated from daily precip ghcn data
   ghcn_w_err = 2         # error number of days (based on US stations estimation should be 2 days)
 
 
 #### Documentary Data ####
-assim_docu = T           # use docu series from version 1 and series from angie 2019, all monthly resolution only! 
+assim_docu = T #F           # use docu series from version 1 and series from angie 2019, all monthly resolution only! 
   docu_err = sqrt(0.25)  # equals 0.5 std. dev.
+  if (assim_docu & !any(NTREND,PAGES,TRW_PETRA)) {
+    stop("combination of instr data and docu data without proxies not coded")
+  }
 
 
 #### Pseudo Proxy Data ####
 pseudo_prox=F                    # use DAPS Pseudo-Proxies and annual resolution Jan-Dez
-  last_mill_prior=F              # use NCAR last Millennium ensemble as prior in stat. offline 
+  ccsm_last_mill_prior=F         # use NCAR last Millennium ensemble as prior in stat. offline 
                                  # DAPS pseudoproxy experiment instead of ECHAM CCC400
                                  # only works with landonly=F
 if (pseudo_prox) {
@@ -210,11 +212,44 @@ if (pseudo_prox) {
 #     }
 #   }
 
+old_statvec = T #F
+  tps_only=T             # only use temp, precip and slp in state vector, remove other vars
+  no_stream=F            # all echam vars but stream function as there is problem with 
+  #                       # 5/9 levels, which are in lat dimension before and after 1880
+new_statvec = T #F      # has +: wetdays, block, cycfreq, gph
+  statvari=c("wdays","geopoth","u","v","omega","st","blocks","cycfreq") 
+    # NULL #c("geopoth","u","v","blocks","cycfreq") 
+    # wdays need to follow after TPS as 4th var
+    # set to NULL for tps only
+    # if new_statvec=T, define which variable should be in the statvector
+    # can be: blocks', 'cycfreq','wdays', 'geopoth','u', 'v', 'omega', 'st'
+    # at the moment temp2,precip,slp is always loaded
+  statlev=c("wdays","gph500","gph100","u850","u200","v850","v200","omega500","t500","blocks","cycfreq") 
+    NULL #c('gph200','u500','v500',"blocks","cycfreq") 
+    # anom_v2 and clim_v2.Rdata files are split by variable
+    # set to NULL for tps only
+    # here single levels of these variables can be selected to shrink the state
+    # vector and enhance calculation speed
+    # single levels have to be defined, too!!!
+    # gph options: "gph500"  "gph100"  "gph1000" "gph200"  "gph850"  "gph300"
+    # u options: "u850" "u200" "u300" "u700" "u500"
+    # v options:  "v850" "v200" "v300" "v700" "v500"
+    # "wdays", "omega500","t500","blocks","cycfreq"
+  
+  
+  
 #################
 # To use a bigger ensemble for the background
-no_forc_big_ens= F      # use all years as one big ensemble regardless of forcing like LMR
+no_forc_big_ens=F #T       # use all years as one big ensemble regardless of forcing like LMR
                         # ONLY works with next option load_71yr_anom=T
-covarclim=50            # set 50 or 100 [%] how much echam climatology covariance should be used
+if (no_forc_big_ens==T) { 
+  old_statvec = T
+  tps_only=T             # only use temp, precip and slp in state vector, remove other vars
+  no_stream=F
+  print("ATTENTION: old_statvec has been set to TRUE because no_forc_big_ens currently requires this!")
+}
+  
+covarclim=50 #0            # set 50 or 100 [%] how much echam climatology covariance should be used
                             # default=0, i.e. current year covar from ECHAM ensemble
 cov_inflate = F         # inflate the PB matrix
   inflate_fac = 1.02      # the factor of covariance inflation
@@ -273,6 +308,7 @@ if (loc) {
   l_dist_v200=1200*1.5
   l_dist_omega500=300*1.5
   l_dist_t500=1000*1.5
+  l_dist_t850=1000*1.5
   l_dist_ind=999999 # precalculated indices should be removed
   l_dist_wdays = 300*1.5
   l_dist_blocks = 1800*1.5
@@ -298,6 +334,7 @@ if (loc) {
   l_dist_v200=999999
   l_dist_omega500=999999
   l_dist_t500=999999
+  l_dist_t850=999999
   l_dist_ind=999999 
 }
 shape_wgt = "circle"          # can be "circle" or "ellipse" depends on how we want to do the localization
@@ -309,7 +346,16 @@ landcorr = F                  # use simulation WITHOUT land use bug if TRUE
 
 # how to treat multiple input series in same grid box
 best2worst=T           # order proxies from best first to worst last based on residuals
-                       # if FALSE then worst first and best last
+worst2best=F           # reverse ordering, only one can be true
+                       # if both FALSE no reordering
+if (best2worst & worst2best) {
+  stop("ONLY one of the options best2worst or worst2best can be true")
+}
+if (pseudo_prox) {
+  best2worst=F
+  worst2best=F
+  print("ATTENTION: data ordering switched off for pseudoproxy experiment!")
+}
 best_tree_per_grid=T   # use only one real tree proxy record with lowest residuals per grid cell 
   besttreeres=0.1      # generates lon/lat grid with set resolution 0.1 mean only best proxy in ~10km2 grid
                        # NOT for corals that have two values per year because 2nd val would be deleted
@@ -323,11 +369,8 @@ avg_obs_per_grid=T     # average more than one observation per echam grid box
 ins_tim_loc = T        # whether the instrumental obs-s should be localized in time or not
 instmaskprox=F         # remove proxy data from grid boxes that have instr. data
 
-every2grid=F           # only use every third grid cell of ECHAM, CRU validation, ...
+every2grid=F #T           # only use every third grid cell of ECHAM, CRU validation, ...
 land_only=F            # calc on land only
-tps_only=F             # only use temp, precip and slp in state vector, remove other vars
-no_stream=F            # all echam vars but stream function as there is problem with 
-#                       # 5/9 levels, which are in lat dimension before and after 1880
 loo=F                  # leave-one-out validation 
 
 if (loo) {tps_only=T;no_stream=F}  # reduce state vector for faster validation
@@ -364,7 +407,7 @@ ana.enssize=F
 # choose validation data sets saved in the analysis step (EnSRF_data):
 # (all three can be selected simultaneously)
 vali_cru=T
-vali_twentycr=T # now 20CRv3
+vali_twentycr=T #F # now 20CRv3
 vali_recon=F
 #####################################################################################
 
@@ -378,12 +421,12 @@ vali_recon=F
 # prepare plot switches
 #####################################################################################
 
-tps_only_postproc=F             # due validation only with tps
+tps_only_postproc=T             # due validation only with tps
 indices=F
 validation_set=c("cru_vali") #,"twentycr_vali")    #can be set to cru_vali, or twentycr_vali or 
 # both together c("cru_vali","twentycr_vali")
 # choses which validation set should be used in the postprocessing and plots
-monthly_out=T                  # if sixmonstatevector=T output is backtransformed to seasonal 
+monthly_out=F                  # if sixmonstatevector=T output is backtransformed to seasonal 
 # yearly out is old switch from nevin. annual output automatically if pseudo_prox=T
   yearly_out=F                    # if both false, plots seasonal averages are calculated
                                 # average or monthly data if monthly_out=T 
@@ -392,15 +435,15 @@ mergetime_indices=F             # if TRUE: indices are combined to allts variabl
                                 # (e.g. also for 1604-2004) and saved into image folder for TS-plots
 # run next option "load_prepplot" for entire validation period, usually 
 # 1902-2003, because it creates time series
-mergetime_fields=F              # if calc_prepplot has been run, load_prepplot can be used
+mergetime_fields=T              # if calc_prepplot has been run, load_prepplot can be used
 # saves image and only needs to be run once, afterward set "load_images=T" 
 load_images=F                   # directly load image for syr-eyr period: 1902-2001 or 1651-1750 image
                                 # of merged indices and fields. NOT need if just calculated before
-calc_vali_stat=F                # calculate validation statistics after preparation (set "load_image=T")
+calc_vali_stat=T                # calculate validation statistics after preparation (set "load_image=T")
 CRPS=F                          # calculate Continuous Ranked Probability Score
 ind_anom=F                      # calculate indices from anomaly data
 
-vali_plots=F                    # source EnSRF_plots.R script 
+vali_plots=T                    # source EnSRF_plots.R script 
 
 #ind_ECHAM=T                     # delete/comment code in prepplot script and then delete switches here
 #ind_recon=F                     # delete/comment code in prepplot script and then delete switches here
@@ -410,7 +453,7 @@ write_coor=F                    # write ascii files with assimilated stations an
 # maybe change files names for new EKF400 version "1.0" to "1.1"
 # write_netcdf requires to run calc_postproc before 
 # best set mergetime_*=F and load_image=F
-write_netcdf=T                  # write entire EKF400 to NetCDF files
+write_netcdf=F                  # write entire EKF400 to NetCDF files
 if (!monthly_out & write_netcdf) {
     stop('ACHTUNG: write_netcdf set to FALSE because monthly_out=F')
 }

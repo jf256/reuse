@@ -1,4 +1,7 @@
 ########### TODO #########
+2020/01 check blocks, cycl. tracks against Marco's 20CR data
+2019/11 add removal of duplicates in 10km grid to instr. data (same as for proxies) before avg
+2020/01 test if inst data avg improves results (Sabrina)
 2019/09 calibrate.height not complete
 2019/08 optimise code, e.g. docall used in some places doc_t in others or first "proxies" then "calibrate"
 2019/08 add single line input/output for each observation
@@ -24,6 +27,16 @@ Currently working on improvements in proxy only period
 - index_correlation/RE plots regions + NAO, PNA, etc. (land_only=F?)
 - index time series plots regions + NAO, PNA, etc. on multiple pdf pages currently
 
+############### OTHER THINGS TO DO: ########################
+"Check Indices calculation, especially the last few (DIMI, PAO, ITCZ), which also were taken from Stefans Reanalysis (Not quite the same)"
+"Improve plot_echam4 function: Some plots still only work with plot_echam (1)"
+"Add a Switch to plot_echam4, such that can be chosen in advance whether the plot shall be saved or shown in the graphics device of Rstudio"
+"To visualise yearly output a solution is also needed for plot_echam4: Maybe just duplicate the yearly output to pretend like there were two seasons?"
+
+OK 2020/01 netcdf output of all selected vars: done quick mannual addaptions for gil
+OK 2020/01 added mxd and schweingr proxies again
+OK 2019/12 coor Paris, etc. corrected
+OK 2019/12 change vali the 1º berkeley earth instead of 5º HadCRU
 OK How to make easy DAPS experiment with better season? changed all pseudoprox code
 OK add netcdf output for annual pseudoproxy experiment
 OK best per grid cell not good with lowest residual selection, 
@@ -53,7 +66,18 @@ OK- 20CR validation testen
   switched on in current exp., let's see if it works? YES, but much slower!
 OK- are we using full or screened-by-Raphi(FDR) PAGES data and which version number?
   full version, but I checked FDR screened records now! Still many probably prec sensitive in US SW
-
+########### SOLVED 2019/11 #########
+Error in dist_calc that which.min does not find first position in temp2 but position 
+in cycfreq because that have slightly different lon/lat at some decimal point due to 
+different processing by marco
+Problem:s
+j=7535, first slp obs
+problem in H.i: pos not existing
+bug in compute_Hi_Hredux_sixmonstatevector?
+error with new_state_vector if more than tps is selected (full res, climcovar:
+Error in tmp[abs(tmp) >= 1] <- round(tmp[abs(tmp) >= 1]) :
+  NAs are not allowed in subscripted assignments
+Calls: compute_dist_2d
 
 
 This file serves as an overview of all experiments (e.g. date, explanation, name).
@@ -208,16 +232,6 @@ FREEZE 1600 PROXY NETWORK EXPERIMENT
 "proxies_only_pval99_no_forc_big_ens_changing_ncovar100" 	# TPS, PETRA, PAGES, NTREND
 "proxies_only_pval99_no_forc_big_ens_changing_ncovar500"	# TPS, PETRA, PAGES, NTREND
 "proxies_only_pval99_no_forc_big_ens_changing_ncovar1000"	# TPS, PETRA, PAGES, NTREND
-
-
-############### OTHER THINGS TO DO: ########################
-"Check Indices calculation, especially the last few (DIMI, PAO, ITCZ), which also were taken from Stefans Reanalysis (Not quite the same)"
-"Improve plot_echam4 function: Some plots still only work with plot_echam (1)"
-"Add a Switch to plot_echam4, such that can be chosen in advance whether the plot shall be saved or shown in the graphics device of Rstudio"
-"To visualise yearly output a solution is also needed for plot_echam4: Maybe just duplicate the yearly output to pretend like there were two seasons?"
-
-
-
 
 
 ################ DONE: ###################

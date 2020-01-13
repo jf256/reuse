@@ -13,16 +13,22 @@ if (generate_ECHAM){
 } 
 
 if (generate_ECHAM_anom){
+  # Version 2 (newstatevector switch)
+  # CHECK read_newCompo() function for Roni's code to generate newstatevector 
+  # where vars can be choosen
+  # probably not fully working and some var names need to be un/commented
+  
+  # Version 1 (oldstatevector switch)
   # read echam 71yr anom, clim and sd calculated with cdo from .nc files to .RData
   # for 60 ensm: timlim=c(1941,1970)
-  print("generate_ECHAM_anom") 
-  print("ATTENTION: manually copy generated .Rdata file to climstor!")
-  read_echam4('EnSRF', path=echanompath, timlim=c(1601,2004), small=every2grid, # originally was 'ano', path=echanompath, timlim=c(1601,2005)
-              landonly=land_only, anom=T)
-  read_echam4('EnSRF', path=echclimpath, timlim=c(1601,2004), small=every2grid, # originally was timlim=c(1635,1970)
-              landonly=land_only, clim=T)
-  read_echam4('EnSRF', path=echsdpath, timlim=c(1601,2005), small=every2grid, 
-              landonly=land_only, std=T)
+  # print("generate_ECHAM_anom") 
+  # print("ATTENTION: manually copy generated .Rdata file to climstor!")
+  # read_echam4('EnSRF', path=echanompath, timlim=c(1601,2004), small=every2grid, # originally was 'ano', path=echanompath, timlim=c(1601,2005)
+  #             landonly=land_only, anom=T)
+  # read_echam4('EnSRF', path=echclimpath, timlim=c(1601,2004), small=every2grid, # originally was timlim=c(1635,1970)
+  #             landonly=land_only, clim=T)
+  # read_echam4('EnSRF', path=echsdpath, timlim=c(1601,2005), small=every2grid, 
+  #             landonly=land_only, std=T)
 }
 
 # if (generate_ECHAM_1901_70){
@@ -113,12 +119,21 @@ if (generate_CRUALLVAR) {
   print("generate_CRUALLVAR")
   print("ATTENTION: manually copy generated .Rdata file to climstor!")
   #  see script in EnSRF/script/merge_cru.sh for regridding and co of orig. cru data set
-  cruall <- read_echam1('cru_allvar_abs_1901-2004_v2019.nc',timlim=c(syr_cru,eyr_cru),
-                        path=crupath,small=every2grid,landonly=land_only)
+  # cruall <- read_echam1('cru_allvar_abs_1901-2004_v2019.nc',timlim=c(syr_cru,eyr_cru),
+  #                       path=crupath,small=every2grid,landonly=land_only)
+  # load 1º BEST temp instead for 5º CRU 
+  cruall <- read_echam1('cru_allvar_abs_1901-2004_berkeley2019.nc',timlim=c(syr_cru,eyr_cru),
+                        path=bestpath,small=every2grid,landonly=land_only)
   if (every2grid) {
-    save(cruall, file=paste0(dataintdir,"cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid.Rdata"))
+    # save(cruall, file=paste0(dataintdir,"cru/cru_allvar_",syr_cru,"-",eyr_cru,"_2ndgrid.Rdata"))
+    # load 1º BEST temp instead for 5º CRU 
+    save(cruall, file=paste0(dataintdir,"data/cru_allvar_",syr_cru,"-",eyr_cru,"_berkeley2019_2ndgrid.Rdata"))
+    print("copy validation file manually to climstor!")
   } else {
-    save(cruall, file=paste0(dataintdir,"cru/cru_allvar_",syr_cru,"-",eyr_cru,".Rdata"))  
+    # save(cruall, file=paste0(dataintdir,"cru/cru_allvar_",syr_cru,"-",eyr_cru,".Rdata"))  
+    # load 1º BEST temp instead for 5º CRU 
+    save(cruall, file=paste0(dataintdir,"data/cru_allvar_",syr_cru,"-",eyr_cru,"_berkeley2019.Rdata"))  
+    print("copy validation file manually to climstor!")
   }
 }
 
@@ -261,8 +276,8 @@ if (generate_PROXIES){
     
     if (varname=="mxd") {
       print("reading mxd")
-      mxdprox <- read_proxy_mxd(fsyr,feyr)
-      mxdprox$archivetype <- rep('tree',length(mxdproxd$lon))
+      mxdprox <- read_proxy_mxd(fsyr,feyr,validate=lm_fit_data)
+      mxdprox$archivetype <- rep('tree',length(mxdprox$lon))
       mxdprox$datasource <- rep('mxdprox',length(mxdprox$lon))
       
       if (exists("realprox")){
@@ -280,8 +295,8 @@ if (generate_PROXIES){
     if (varname=="schweingr") {
       
       print("reading schweingr")
-      schprox <- read_proxy_schweingr(fsyr,feyr)
-      schprox$archivetype <- rep('tree',length(schproxd$lon))
+      schprox <- read_proxy_schweingr(fsyr,feyr,validate=lm_fit_data)
+      schprox$archivetype <- rep('tree',length(schprox$lon))
       schprox$datasource <- rep('schweingruber_mxd',length(schprox$lon))
       
       if (exists("realprox")){
@@ -338,7 +353,7 @@ if (generate_PROXIES){
       print("reading trw_petra")
       trw_petra <- read_trw_petra(fsyr,feyr, validate=lm_fit_data) 
       trw_petra$archivetype <- rep('tree',length(trw_petra$lon))
-      trw_petra$datasource <- rep('ntrend',length(trw_petra$lon))
+      trw_petra$datasource <- rep('petra',length(trw_petra$lon))
       
       if (exists("realprox")){
         

@@ -13,8 +13,8 @@ rm(list=ls())
 # enter syr ane eyr manually
 
 
-syr=1951 #1902 #1941
-eyr=2004 #2000 #2003 #1970
+vsyr=1902 #1902 #1941
+veyr=1904 #2000 #2003 #1970
 
 
 
@@ -28,9 +28,11 @@ eyr=2004 #2000 #2003 #1970
 # if existing overwrite manually entered years 
 args <- commandArgs(TRUE)
 if (length(args)>0) {
-  syr = as.numeric(args[1])
-  eyr = as.numeric(args[2])
+  vsyr = as.numeric(args[1])
+  veyr = as.numeric(args[2])
 }
+syr=vsyr
+eyr=veyr
 print(paste('period',syr, 'to', eyr))
 
 user <- system("echo $USER",intern=T)
@@ -632,17 +634,17 @@ if (write_netcdf) {
     if (cyr==feyr) {stop("last year cannot be created because oct-dec data is missing")}
     if (!pseudo_prox) {
       if (every2grid) {
-        load(file=paste0(prepplotdir,'/analysis_',(cyr+1),'_2ndgrid.Rdata')) 
+        load(file=paste0(prepplotdir,'analysis_',(cyr+1),'_2ndgrid.Rdata')) 
       } else {
-        load(file=paste0(prepplotdir,'/analysis_',(cyr+1),'.Rdata')) 
+        load(file=paste0(prepplotdir,'analysis_',(cyr+1),'.Rdata')) 
       }
       echam2 <- echam
       analysis2 <- analysis
     }
     if (every2grid) {
-      load(file=paste0(prepplotdir,'/analysis_',cyr,'_2ndgrid.Rdata')) 
+      load(file=paste0(prepplotdir,'analysis_',cyr,'_2ndgrid.Rdata')) 
     } else {
-      load(file=paste0(prepplotdir,'/analysis_',cyr,'.Rdata')) 
+      load(file=paste0(prepplotdir,'analysis_',cyr,'.Rdata')) 
     }
     #    if (monthly_out) {
     if (!pseudo_prox) {
@@ -668,7 +670,7 @@ if (write_netcdf) {
           if (v=="temp2") { 
             unilon <- unique(analysis$lon)
             unilon[unilon<0] <- unilon[unilon<0]+360
-            unilat <- unique(analysis$lat)
+            unilat <- unique(round(analysis$lat,digits=2)) #unique(analysis$lat)
             # define dimensions  once
             lon <- ncdim_def( "longitude", "degrees_east",vals=unilon)
             lat <- ncdim_def( "latitude", "degrees_north", vals=unilat)
@@ -735,8 +737,8 @@ if (write_netcdf) {
             fullout_ech <- fullout_ana <- NULL
           }
           if (v=="precip") {
-            precip <- ncvar_def(name="precipitation_amount",longname="precipitation amount (rain and snow)", 
-                                units="kg m-2", dim=list(lon,lat,time))
+            precip <- ncvar_def(name="total precipitation",longname="total precipitation (rain and snow)", 
+                                units="kg m-2",dim=list(lon,lat,time))
             precip_data_ech <- fullout_ech
             precip_data_ana <- fullout_ana
             fullout_ech <- fullout_ana <- NULL
@@ -858,21 +860,21 @@ if (write_netcdf) {
         ncatt_put(outfile_ana,vw,"_FillValue",-99999,prec="single")
         ncatt_put(outfile_ana,omega,"_FillValue",-99999,prec="single")
         
-        ncatt_put(outfile_ech,temp,"cell_methods","time: mean within months")  
-        ncatt_put(outfile_ech,precip,"cell_methods","time: sum within months")
-        ncatt_put(outfile_ech,slp,"cell_methods","time: mean within months")
-        ncatt_put(outfile_ech,gph,"cell_methods","time: mean within months")
-        ncatt_put(outfile_ech,uw,"cell_methods","time: mean within months")
-        ncatt_put(outfile_ech,vw,"cell_methods","time: mean within months")
-        ncatt_put(outfile_ech,omega,"cell_methods","time: mean within months")
+        ncatt_put(outfile_ech,temp,"cell_methods","time: mean (interval: 1 month)")  
+        ncatt_put(outfile_ech,precip,"cell_methods","time: sum (interval: 1 month)")
+        ncatt_put(outfile_ech,slp,"cell_methods","time: mean (interval: 1 month)")
+        ncatt_put(outfile_ech,gph,"cell_methods","time: mean (interval: 1 month)")
+        ncatt_put(outfile_ech,uw,"cell_methods","time: mean (interval: 1 month)")
+        ncatt_put(outfile_ech,vw,"cell_methods","time: mean (interval: 1 month)")
+        ncatt_put(outfile_ech,omega,"cell_methods","time: mean (interval: 1 month)")
         
-        ncatt_put(outfile_ana,temp,"cell_methods","time: mean within months")
-        ncatt_put(outfile_ana,precip,"cell_methods","time: sum within months")
-        ncatt_put(outfile_ana,slp,"cell_methods","time: mean within months")
-        ncatt_put(outfile_ana,gph,"cell_methods","time: mean within months")
-        ncatt_put(outfile_ana,uw,"cell_methods","time: mean within months")
-        ncatt_put(outfile_ana,vw,"cell_methods","time: mean within months")
-        ncatt_put(outfile_ana,omega,"cell_methods","time: mean within months")
+        ncatt_put(outfile_ana,temp,"cell_methods","time: mean (interval: 1 month)")
+        ncatt_put(outfile_ana,precip,"cell_methods","time: sum (interval: 1 month)")
+        ncatt_put(outfile_ana,slp,"cell_methods","time: mean (interval: 1 month)")
+        ncatt_put(outfile_ana,gph,"cell_methods","time: mean (interval: 1 month)")
+        ncatt_put(outfile_ana,uw,"cell_methods","time: mean (interval: 1 month)")
+        ncatt_put(outfile_ana,vw,"cell_methods","time: mean (interval: 1 month)")
+        ncatt_put(outfile_ana,omega,"cell_methods","time: mean (interval: 1 month)")
         
         ncatt_put(outfile_ech,"pressure_level_wind","positive","down")
         ncatt_put(outfile_ana,"pressure_level_wind","positive","down")
@@ -1696,7 +1698,8 @@ if (mergetime_fields){
     eind.anom<-eind.anom.allts
     aind<-aind.allts
     aind.anom<-aind.anom.allts
-    ana_ind <- ana_ind.allts
+    # commented JF 11/2019
+    #ana_ind <- ana_ind.allts
     rm(ana_ind.allts, eind.allts,aind.anom.allts,eind.anom.allts)
   }
   
@@ -1766,7 +1769,8 @@ if (mergetime_fields){
   if (indices) {
     vind.anom_all <- list()
     vind.anom<-list()
-    # vind.anom.tot<-list() # vind.anom is commented
+    # commented JF 11/2019
+    #vind.anom.tot<-list() # vind.anom is commented
   }
   vanom.yrly<-list()
   l=1
@@ -1813,7 +1817,8 @@ if (mergetime_fields){
   # commented JF 01/2018
   if (indices) {
     names(vind.anom)<-valiname
-    names(vind.anom.tot)<-valiname
+    # commented JF 11/2019
+    #names(vind.anom.tot)<-valiname
   }
   #print("calc anomalies")
   rm(v,valiname,validate_all,validate_init,validate.allts_all,validate.allts_init,validate.anom_all,
@@ -2365,8 +2370,10 @@ if (calc_vali_stat) {
   
 
 if (vali_plots) {
-  source('EnSRF_plots.R')
-  print('ATTENTION: make sure that time periods in EnSRF_plot are set properly by hand!')
+  syr=NULL
+  eyr=NULL
+  source(paste('EnSRF_plots.R',vsyr,veyr))
+  #print('ATTENTION: make sure that time periods in EnSRF_plot are set properly by hand!')
 }
 
 

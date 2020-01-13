@@ -30,10 +30,19 @@ rm(list=ls())
 
 
 
-syr=1981 #validation period: syr>=1902, eyr<2004. Syr should be the later of the two 1902 and syr in prepplots
-eyr=2003 #2000
+vsyr=1902 #validation period: syr>=1902, eyr<2004. Syr should be the later of the two 1902 and syr in prepplots
+veyr=1970 #2003
 
-
+# read syr and eyr from Rscript parameters entered in bash and 
+# if existing overwrite manually entered years 
+args <- commandArgs(TRUE)
+if (length(args)>0) {
+  vsyr = as.numeric(args[1])
+  veyr = as.numeric(args[2])
+}
+syr=vsyr
+eyr=veyr
+print(paste('period',syr, 'to', eyr))
 
 user <- system("echo $USER",intern=T)
 print(paste('User:',user))
@@ -164,39 +173,40 @@ if (countseries & !pseudo_prox) {
 
 
 for (v in validation_set){
+  print(v)
   # loop over all validation datasets in validation_set, specified in the SWITCHES script.
   # 1. reads validation statistics file with everything related to the 20th century vali period
   # 2. reads the indices_tot file for plotting of time series over the entire e.g. 400-yr period
   if (every2grid) {
     if (monthly_out) {
-      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+      load(file=paste0(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                        syr,"-",eyr,"_monthly_2ndgrid.Rdata"))
 #      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,
 #                       "_monthly_2ndgrid.Rdata"))
     } else if (pseudo_prox) {
-      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+      load(file=paste0(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                        syr,"-",eyr,"_annual_2ndgrid.Rdata"))
 #      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,
 #                       "_annual_2ndgrid.Rdata"))
     } else {
-      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+      load(file=paste0(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                        syr,"-",eyr,"_seasonal_2ndgrid.Rdata"))
 #      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,
 #                       "_seasonal_2ndgrid.Rdata"))
     }  
   } else {
     if (monthly_out) {
-      load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+      load(file=paste(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                       syr,"-",eyr,"_monthly.Rdata",sep=""))
 #      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,
 #                       "_monthly.Rdata"))
     } else if (pseudo_prox) {
-      load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+      load(file=paste(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                       syr,"-",eyr,"_annual.Rdata",sep=""))
 #      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,
 #                       "_annual.Rdata"))
     } else {
-      load(file=paste("../data/image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
+      load(file=paste(dataintdir,"image/EKF400_",version,"_",expname,"/prepplot_",v,"_calc_vali_stat_image_",
                       syr,"-",eyr,"_seasonal.Rdata",sep=""))
 #      load(file=paste0("../data/image/EKF400_",version,"_",expname,"/indices_tot_",syrtot,"-",eyrtot,
 #                       "_seasonal.Rdata"))
@@ -229,7 +239,7 @@ for (v in validation_set){
   data.dim <- dim(echam$data)[c(1,2,2,3)]
   data.dim[2:3] <- c(s.plot,data.dim[3]/s.plot)
   ens.dim <- c(nrow(echam$ensmean), s.plot, ncol(echam$ensmean)/s.plot)
-  print(paste("monthly_out:",monthly_out))
+  #print(paste("monthly_out:",monthly_out))
   
   
   
